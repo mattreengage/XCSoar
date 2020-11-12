@@ -38,8 +38,8 @@ Copyright_License {
 #endif
 
 namespace CommandLine {
-  unsigned width = IsKobo() ? 600 : 640;
-  unsigned height = IsKobo() ? 800 : 480;
+  unsigned width = IsKobo() ? 600 : 480;
+  unsigned height = IsKobo() ? 800 : 960;
 
 #ifdef HAVE_CMDLINE_FULLSCREEN
   bool full_screen = false;
@@ -103,7 +103,10 @@ CommandLine::Parse(Args &args)
         args.UsageError();
     } else if (StringIsEqual(s, "-portrait")) {
       width = 480;
-      height = 640;
+      height = 960;
+    } else if (StringIsEqual(s, "-landscape")) {
+      width = 960;
+      height = 480;
     } else if (StringIsEqual(s, "-square")) {
       width = 480;
       height = 480;
