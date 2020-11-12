@@ -168,6 +168,8 @@ namespace InfoBoxFactory
 
     e_StandbyRadio, /* Standby Radio Frequency */
 
+    e_Thermal_1_turn, /* Thermal average for 1 turn */
+
     e_NUM_TYPES /* Last item */
   };
 

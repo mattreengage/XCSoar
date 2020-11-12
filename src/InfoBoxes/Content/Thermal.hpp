@@ -37,6 +37,9 @@ void
 UpdateInfoBoxThermal30s(InfoBoxData &data);
 
 void
+UpdateInfoBoxThermalTurn(InfoBoxData &data);
+
+void
 UpdateInfoBoxThermalLastAvg(InfoBoxData &data);
 
 void

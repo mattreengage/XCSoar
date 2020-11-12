@@ -156,6 +156,14 @@ static constexpr MetaData meta_data[] = {
     UpdateInfoBoxThermal30s,
   },
 
+  // e_Thermal_1_turn
+  {
+    N_("Thermal climb, last turn"),
+    N_("TC turn"),
+    N_("A 1 turn rolling average climb rate based of the reported GPS altitude, or vario if available."),
+    UpdateInfoBoxThermalTurn,
+  },
+
   // e_Bearing
   {
     N_("Next bearing"),

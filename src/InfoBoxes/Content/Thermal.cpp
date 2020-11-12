@@ -65,6 +65,16 @@ UpdateInfoBoxThermal30s(InfoBoxData &data)
 }
 
 void
+UpdateInfoBoxThermalTurn(InfoBoxData &data)
+{
+  SetVSpeed(data, CommonInterface::Calculated().turn_average);
+
+  // Set Color (red/black)
+  data.SetValueColor(2 * CommonInterface::Calculated().turn_average <
+      CommonInterface::Calculated().common_stats.current_risk_mc ? 1 : 0);
+}
+
+void
 UpdateInfoBoxThermalLastAvg(InfoBoxData &data)
 {
   const OneClimbInfo &thermal = CommonInterface::Calculated().last_thermal;
