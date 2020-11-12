@@ -31,6 +31,7 @@ AverageVarioComputer::Reset()
   delta_time.Reset();
   vario_30s_filter.Reset();
   netto_30s_filter.Reset();
+  vario_turn_filter.Reset();
 }
 
 void
@@ -43,6 +44,7 @@ AverageVarioComputer::Compute(const MoreData &basic,
     Reset();
     vario_info.average = basic.brutto_vario;
     vario_info.netto_average = basic.netto_vario;
+    vario_info.turn_average = basic.brutto_vario;
     return;
   }
 
@@ -56,8 +58,10 @@ AverageVarioComputer::Compute(const MoreData &basic,
   for (unsigned i = 0; i < Elapsed; ++i) {
     vario_30s_filter.Update(basic.brutto_vario);
     netto_30s_filter.Update(basic.netto_vario);
+    vario_turn_filter.Update(basic.brutto_vario);
   }
 
   vario_info.average = vario_30s_filter.Average();
   vario_info.netto_average = netto_30s_filter.Average();
+  vario_info.turn_average = vario_turn_filter.Average(20);
 }

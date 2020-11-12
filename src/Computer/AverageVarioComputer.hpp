@@ -35,6 +35,7 @@ class AverageVarioComputer {
 
   WindowFilter<30> vario_30s_filter;
   WindowFilter<30> netto_30s_filter;
+  WindowFilter<60> vario_turn_filter;
 
 public:
   void Reset();

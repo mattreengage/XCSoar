@@ -71,6 +71,18 @@ public:
   }
 
   /**
+   * Calculate average from samples with a time constant
+   *
+   * @return Average value in buffer
+   */
+  gcc_pure
+  double Average(int records) const {
+    assert(!x.empty());
+
+    return std::accumulate(x.end() - records, x.end(), 0.0) / records;
+  }
+
+  /**
    * Resets filter (zero samples)
    */
   void Reset() {
