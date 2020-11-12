@@ -70,7 +70,8 @@ static const char *const Usage = "\n"
 #endif
   "  -profile=fname  load profile from file fname\n"
   "  -WIDTHxHEIGHT   use screen resolution WIDTH x HEIGHT\n"
-  "  -portrait       use a 480x640 screen resolution\n"
+  "  -portrait       use a 480x960 screen resolution\n"
+  "  -landscape      use a 960x480 screen resolution\n"
   "  -square         use a 480x480 screen resolution\n"
   "  -small          use a 320x240 screen resolution\n"
 #if !defined(ANDROID)
