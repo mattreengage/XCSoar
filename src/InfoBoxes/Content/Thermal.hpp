@@ -27,6 +27,8 @@ Copyright_License {
 #include "InfoBoxes/Content/Base.hpp"
 #include "Gauge/ThermalAssistantRenderer.hpp"
 
+extern const InfoBoxPanel thermal_turn_panels[];
+
 void
 UpdateInfoBoxVario(InfoBoxData &data);
 

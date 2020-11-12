@@ -21,30 +21,11 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_AVERAGE_VARIO_COMPUTER_HPP
-#define XCSOAR_AVERAGE_VARIO_COMPUTER_HPP
+#include "ThermalEdit.hpp"
+#include "Dialogs/Settings/ThermalSettingsPanel.hpp"
 
-#include "Math/WindowFilter.hpp"
-#include "time/DeltaTime.hpp"
-#include "NMEA/Derived.hpp"
-#include "Settings.hpp"
-
-struct MoreData;
-
-class AverageVarioComputer {
-  DeltaTime delta_time;
-
-  WindowFilter<30> vario_30s_filter;
-  WindowFilter<30> netto_30s_filter;
-  WindowFilter<60> vario_turn_filter;
-
-public:
-  void Reset();
-
-  void Compute(const MoreData &basic,
-               bool circling, bool last_circling,
-               DerivedInfo &calculated,
-               const CirclingSettings &settings);
-};
-
-#endif
+Widget *
+LoadThermalEditPanel(unsigned id)
+{
+  return new ThermalSettingsPanel();
+}

@@ -45,6 +45,7 @@ DIALOG_SOURCES = \
 	$(SRC)/Dialogs/Airspace/dlgAirspaceWarnings.cpp \
 	$(SRC)/Dialogs/Settings/WindSettingsPanel.cpp \
 	$(SRC)/Dialogs/Settings/WindSettingsDialog.cpp \
+	$(SRC)/Dialogs/Settings/ThermalSettingsPanel.cpp \
 	$(SRC)/Dialogs/Settings/dlgBasicSettings.cpp \
 	$(SRC)/Dialogs/Settings/dlgConfiguration.cpp \
 	$(SRC)/Dialogs/Settings/dlgConfigInfoboxes.cpp \
@@ -402,6 +403,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/InfoBoxes/Panel/MacCreadyEdit.cpp \
 	$(SRC)/InfoBoxes/Panel/MacCreadySetup.cpp \
 	$(SRC)/InfoBoxes/Panel/WindEdit.cpp \
+	$(SRC)/InfoBoxes/Panel/ThermalEdit.cpp \
 	$(SRC)/InfoBoxes/Panel/ATCReference.cpp \
 	$(SRC)/InfoBoxes/Panel/RadioEdit.cpp \
 	$(SRC)/Pan.cpp \

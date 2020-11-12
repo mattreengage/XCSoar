@@ -40,13 +40,16 @@ Run(DebugReplay &replay)
   CirclingComputer circling_computer;
   AverageVarioComputer average_computer;
 
+  circling_settings.average_1_turn = true;
+  circling_settings.average_base_time = 20;
+
   printf("# time thermalling vario 30s_average\n");
 
   while (replay.Next()) {
     const MoreData &basic = replay.Basic();
     const DerivedInfo &calculated = replay.Calculated();
     const bool last_circling = calculated.circling;
-    VarioInfo vario = calculated;
+    DerivedInfo vario = calculated;
 
     circling_computer.TurnRate(replay.SetCalculated(),
                                    basic, calculated.flight);
@@ -57,7 +60,7 @@ Run(DebugReplay &replay)
                                   circling_settings);
   
     // Calculate the vario 30s average
-    average_computer.Compute(basic, calculated.circling, last_circling, vario); 
+    average_computer.Compute(basic, calculated.circling, last_circling, vario, circling_settings); 
 
     if (calculated.turning)
       printf("%.0f %d %.1f %.1f %.1f\n", 

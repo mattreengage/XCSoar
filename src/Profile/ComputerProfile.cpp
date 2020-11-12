@@ -112,6 +112,10 @@ Profile::Load(const ProfileMap &map, CirclingSettings &settings)
 {
   map.Get(ProfileKeys::EnableExternalTriggerCruise,
           settings.external_trigger_cruise_enabled);
+
+  unsigned base_time;
+  map.Get(ProfileKeys::Average1Turn, settings.average_1_turn);
+  settings.average_base_time = map.Get(ProfileKeys::AverageTimeConstant, base_time) ? base_time : 20;
 }
 
 void

@@ -162,6 +162,7 @@ static constexpr MetaData meta_data[] = {
     N_("TC turn"),
     N_("A 1 turn rolling average climb rate based of the reported GPS altitude, or vario if available."),
     UpdateInfoBoxThermalTurn,
+    thermal_turn_panels,
   },
 
   // e_Bearing

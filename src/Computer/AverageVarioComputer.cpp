@@ -23,7 +23,6 @@ Copyright_License {
 
 #include "AverageVarioComputer.hpp"
 #include "NMEA/MoreData.hpp"
-#include "NMEA/VarioInfo.hpp"
 
 void
 AverageVarioComputer::Reset()
@@ -37,14 +36,15 @@ AverageVarioComputer::Reset()
 void
 AverageVarioComputer::Compute(const MoreData &basic,
                               bool circling, bool last_circling,
-                              VarioInfo &vario_info)
+                              DerivedInfo &calculated,
+                              const CirclingSettings &settings)
 {
   const auto dt = delta_time.Update(basic.time, 1, 0);
   if (dt < 0 || circling != last_circling) {
     Reset();
-    vario_info.average = basic.brutto_vario;
-    vario_info.netto_average = basic.netto_vario;
-    vario_info.turn_average = basic.brutto_vario;
+    calculated.average = basic.brutto_vario;
+    calculated.netto_average = basic.netto_vario;
+    calculated.turn_average = basic.brutto_vario;
     return;
   }
 
@@ -61,7 +61,17 @@ AverageVarioComputer::Compute(const MoreData &basic,
     vario_turn_filter.Update(basic.brutto_vario);
   }
 
-  vario_info.average = vario_30s_filter.Average();
-  vario_info.netto_average = netto_30s_filter.Average();
-  vario_info.turn_average = vario_turn_filter.Average(20);
+  calculated.average = vario_30s_filter.Average();
+  calculated.netto_average = netto_30s_filter.Average();
+
+  const Angle turn_rate = calculated.turn_rate_heading_smoothed.Absolute();
+  const auto circle_duration = turn_rate >= Angle::Degrees(1) ?
+                  Angle::FullCircle().Native() / turn_rate.Native() :
+                  settings.average_base_time;
+
+  unsigned time = circling && settings.average_1_turn ? 
+                  circle_duration : 
+                  settings.average_base_time;
+
+  calculated.turn_average = vario_turn_filter.Average((unsigned)time);
 }

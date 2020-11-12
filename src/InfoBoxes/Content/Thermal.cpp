@@ -23,6 +23,9 @@ Copyright_License {
 
 #include "InfoBoxes/Content/Thermal.hpp"
 #include "InfoBoxes/Data.hpp"
+#include "InfoBoxes/Panel/Panel.hpp"
+#include "InfoBoxes/Panel/ThermalEdit.hpp"
+#include "Language/Language.hpp"
 #include "Units/Units.hpp"
 #include "Formatter/UserUnits.hpp"
 #include "Formatter/TimeFormatter.hpp"
@@ -32,6 +35,11 @@ Copyright_License {
 #include "Renderer/ClimbPercentRenderer.hpp"
 
 #include <tchar.h>
+
+const InfoBoxPanel thermal_turn_panels[] = {
+  { N_("Edit"), LoadThermalEditPanel },
+  { nullptr, nullptr }
+};
 
 static void
 SetVSpeed(InfoBoxData &data, double value)
@@ -67,11 +75,16 @@ UpdateInfoBoxThermal30s(InfoBoxData &data)
 void
 UpdateInfoBoxThermalTurn(InfoBoxData &data)
 {
+  CirclingSettings circling_settings = CommonInterface::GetComputerSettings().circling;
+
   SetVSpeed(data, CommonInterface::Calculated().turn_average);
 
   // Set Color (red/black)
   data.SetValueColor(2 * CommonInterface::Calculated().turn_average <
       CommonInterface::Calculated().common_stats.current_risk_mc ? 1 : 0);
+  
+  data.FormatTitle(circling_settings.average_1_turn ? _T("TC Turn (%ds)") : _T("TC %ds"), 
+      (int)circling_settings.average_base_time);
 }
 
 void

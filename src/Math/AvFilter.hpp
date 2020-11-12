@@ -76,10 +76,10 @@ public:
    * @return Average value in buffer
    */
   gcc_pure
-  double Average(int records) const {
+  double Average(unsigned time) const {
     assert(!x.empty());
 
-    return std::accumulate(x.end() - records, x.end(), 0.0) / records;
+    return std::accumulate(x.end() - time, x.end(), 0.0) / time;
   }
 
   /**

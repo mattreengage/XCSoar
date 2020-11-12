@@ -166,6 +166,9 @@ struct FeaturesSettings {
 struct CirclingSettings {
   bool external_trigger_cruise_enabled;
 
+  bool average_1_turn;
+  unsigned average_base_time;
+
   void SetDefaults() {
     external_trigger_cruise_enabled = false;
   }
