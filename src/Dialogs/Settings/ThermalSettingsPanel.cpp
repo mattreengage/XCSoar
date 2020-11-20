@@ -44,7 +44,7 @@ ThermalSettingsPanel::Prepare(ContainerWindow &parent, const PixelRect &rc)
   AddInteger(_("Time to average over"),
              _("The time to average climb rate over. Also used to smooth turn average"),
              _T("%u"), _T("%u"),
-             1, 60, 1, settings.average_base_time);
+             1, 30, 1, settings.average_base_time);
 }
 
 void

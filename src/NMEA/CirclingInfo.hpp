@@ -93,6 +93,9 @@ struct CirclingInfo
   /** True if in circling mode, False otherwise */
   bool circling;
 
+  /** Time to complete 1 turn. 0 if data is invalid */
+  double circle_period;
+
   /**
    * Circling/total time ratio in percent.  Negative value means
    * "unknown".

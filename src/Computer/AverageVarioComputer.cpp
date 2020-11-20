@@ -64,14 +64,12 @@ AverageVarioComputer::Compute(const MoreData &basic,
   calculated.average = vario_30s_filter.Average();
   calculated.netto_average = netto_30s_filter.Average();
 
-  const Angle turn_rate = calculated.turn_rate_heading_smoothed.Absolute();
-  const auto circle_duration = turn_rate >= Angle::Degrees(1) ?
-                  Angle::FullCircle().Native() / turn_rate.Native() :
+  const unsigned time = circling && 
+                        settings.average_1_turn && 
+                        (calculated.circle_period > 0) && 
+                        (calculated.circle_period <= 60) ? 
+                  (unsigned)calculated.circle_period : 
                   settings.average_base_time;
 
-  unsigned time = circling && settings.average_1_turn ? 
-                  circle_duration : 
-                  settings.average_base_time;
-
-  calculated.turn_average = vario_turn_filter.Average((unsigned)time);
+  calculated.turn_average = vario_turn_filter.Average(time);
 }
