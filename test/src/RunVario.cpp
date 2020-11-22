@@ -43,7 +43,7 @@ Run(DebugReplay &replay)
   circling_settings.average_1_turn = true;
   circling_settings.average_base_time = 20;
 
-  printf("# time thermalling vario 30s_average\n");
+  printf("# time thermalling vario 30s_average avg_time_period 1_turn_avg\n");
 
   while (replay.Next()) {
     const MoreData &basic = replay.Basic();
@@ -63,11 +63,13 @@ Run(DebugReplay &replay)
     average_computer.Compute(basic, calculated.circling, last_circling, vario, circling_settings); 
 
     if (calculated.turning)
-      printf("%.0f %d %.1f %.1f %.1f\n", 
+      printf("%.0f %d %.1f %.1f %.1f %.0f, %.1f\n", 
                 basic.time, 
                 calculated.circling, 
                 basic.brutto_vario, 
                 vario.average, 
+                vario.turn_average,
+                calculated.circle_period,
                 vario.turn_average );
   }
 }

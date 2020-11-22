@@ -35,6 +35,9 @@ Copyright_License {
 static void
 Run(DebugReplay &replay, OrderedTask &task, const GlidePolar &glide_polar)
 {
+  const GeoPoint sp = task.GetTaskPoint(0).GetWaypoint().location;
+  printf("Start = %.5f, %.5f\n", sp.latitude.Degrees(), sp.longitude.Degrees());
+
   Validity last_location_available;
   last_location_available.Clear();
 
@@ -46,9 +49,12 @@ Run(DebugReplay &replay, OrderedTask &task, const GlidePolar &glide_polar)
 
   char time_buffer[32];
 
+  double finish_alt = 0;
+
   while (replay.Next()) {
     const MoreData &basic = replay.Basic();
     const DerivedInfo &calculated = replay.Calculated();
+
 
     if (!basic.location_available) {
       last_location_available.Clear();
@@ -91,6 +97,7 @@ Run(DebugReplay &replay, OrderedTask &task, const GlidePolar &glide_polar)
       task_finished = true;
       FormatISO8601(time_buffer, basic.date_time_utc);
       printf("%s task finished\n", time_buffer);
+      finish_alt = current_as.altitude;
     }
 
     last_as = current_as;
@@ -103,7 +110,15 @@ Run(DebugReplay &replay, OrderedTask &task, const GlidePolar &glide_polar)
          task_stats.start.task_started,
          task_stats.task_finished);
 
-  printf("task elapsed %ds\n", (int)task_stats.total.time_elapsed);
+  printf("Start Alt = %.0fm, Finish Alt = %.0fm, difference = %.0fm\n", 
+          task_stats.start.altitude,
+          finish_alt,
+          task_stats.start.altitude - finish_alt);
+
+  printf("task elapsed %02d:%02d:%02d\n", 
+          (int)task_stats.total.time_elapsed / 3600,
+          (int)task_stats.total.time_elapsed % 3600 / 60,
+          (int)task_stats.total.time_elapsed % 3600 % 60);
   printf("task speed %1.2f kph\n",
          double(task_stats.total.travelled.GetSpeed() * 3.6));
   printf("travelled distance %1.3f km\n",
