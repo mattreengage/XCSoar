@@ -193,6 +193,7 @@ extern const char WindArrowStyle[];
 extern const char EnableFinalGlideBarMC0[];
 extern const char FinalGlideBarDisplayMode[];
 extern const char EnableVarioBar[];
+extern const char EnableNavRibbon[];
 extern const char ShowFAITriangleAreas[];
 extern const char FAITriangleThreshold[];
 extern const char AutoLogger[];

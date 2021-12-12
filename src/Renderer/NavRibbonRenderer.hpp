@@ -21,23 +21,33 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_COMPASS_RENDERER_HPP
-#define XCSOAR_COMPASS_RENDERER_HPP
+#ifndef XCSOAR_NAV_RIBBON_RENDERER_HPP
+#define XCSOAR_NAV_RIBBON_RENDERER_HPP
 
-struct PixelPoint;
+#include "Look/MapLook.hpp"
+#include "ui/canvas/Canvas.hpp"
+#include "Screen/Layout.hpp"
+#include "Look/FontDescription.hpp"
+
 struct PixelRect;
 struct MapLook;
 class Canvas;
-class Angle;
+class Font;
+class FontDescription;
 
-class CompassRenderer {
+class NavRibbonRenderer {
   const MapLook &look;
+  Font font;
+  Font unit_font;
 
 public:
-  CompassRenderer(const MapLook &_look):look(_look) {}
+  NavRibbonRenderer(const MapLook &_look):look(_look) 
+  {
+    font.Load(FontDescription(Layout::FontScale(14), true));
+    unit_font.Load(FontDescription(Layout::FontScale(7)));
+  }
 
-  void Draw(Canvas &canvas, Angle screen_angle, PixelPoint pos);
-  void Draw(Canvas &canvas, Angle screen_angle, PixelRect rc, bool offset);
+  void Draw(Canvas &canvas, PixelRect rc);
 };
 
 #endif

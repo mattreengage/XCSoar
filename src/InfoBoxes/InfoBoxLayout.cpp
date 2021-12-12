@@ -35,7 +35,7 @@ static constexpr unsigned char geometry_counts[] = {
   8, 8, 8, 8, 8, 8,
   9, 5, 12, 24, 12,
   12, 9, 8, 4, 4, 4, 4,
-  8, 16, 15, 10, 10, 10,
+  8, 16, 14, 10, 10, 10,
   12, // 3 rows X 4 boxes
 };
 
@@ -231,18 +231,22 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
-    layout.vario.left = rc.right - layout.control_size.width;
+    layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
     layout.vario.top = 0;
-    layout.vario.bottom = layout.vario.top + layout.control_size.height * 3;
+    layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
 
-    rc.right = MakeRightColumn(layout, layout.positions + 6, 3, rc.right,
-                               rc.top + 3 * layout.control_size.height, rc.bottom);
+    // Info boxes under the vario
+    rc.right = MakeRightColumn(layout, layout.positions + 12, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 13, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
 
-    layout.control_size.width = layout.control_size.height * 1.1;
+    // Left hand info boxes
+    layout.control_size.width = layout.control_size.height * 1.3;
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
-    rc.left = MakeLeftColumn(layout, layout.positions + 9, 6,
+    rc.left = MakeLeftColumn(layout, layout.positions + 6, 6,
                              rc.left, rc.top, rc.bottom);
     break;
 
@@ -575,7 +579,7 @@ InfoBoxLayout::CalcInfoBoxSizes(Layout &layout, PixelSize screen_size,
     // calculate control dimensions
     layout.control_size.height = screen_size.height / 6;
     // preserve relative shape
-    layout.control_size.width = layout.control_size.height * 1.35;
+    layout.control_size.width = layout.control_size.height * 1.6;
     break;
 
   case InfoBoxSettings::Geometry::RIGHT_5:
@@ -780,7 +784,7 @@ InfoBoxLayout::GetBorder(InfoBoxSettings::Geometry geometry, bool landscape,
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
-    if (!((i == 0) ||(i == 9)))
+    if (!((i == 0) || (i == 6)))
       border |= BORDERTOP;
     if (i < 12)
       border |= BORDERRIGHT;

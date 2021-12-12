@@ -150,10 +150,10 @@ inline
 GaugeVario::Geometry::Geometry(const VarioLook &look, const PixelRect &rc) noexcept
   :ballast(look, rc), bugs(look, rc)
 {
-  nlength0 = Layout::Scale(15);
-  nlength1 = Layout::Scale(6);
-  nwidth = Layout::Scale(4);
-  nline = Layout::Scale(8);
+  nlength0 = Layout::Scale(30);
+  nlength1 = Layout::Scale(12);
+  nwidth = Layout::Scale(8);
+  nline = Layout::Scale(16);
 
   offset = rc.GetMiddleRight();
 
@@ -277,7 +277,7 @@ GaugeVario::OnPaintBuffer(Canvas &canvas)
 static constexpr PixelPoint
 TransformRotatedPoint(IntPoint2D pt, IntPoint2D offset) noexcept
 {
-  return { pt.x + offset.x, (pt.y * 112 / 100) + offset.y + 1 };
+  return { pt.x + offset.x, (pt.y * 82 / 100) + offset.y + 1 };
 }
 
 void
@@ -431,7 +431,7 @@ GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
     canvas.Select(*look.text_font);
     const unsigned width = canvas.CalcTextSize(label).width;
 
-    const PixelPoint text_position{g.label_right - (int)width, g.label_y};
+    const PixelPoint text_position{g.label_right - (int)width - 10, g.label_y};
 
     if (IsPersistent()) {
       PixelRect rc;
@@ -475,6 +475,7 @@ GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
     }
   }
 
+  /*
   if (!IsPersistent() ||
       di.value.last_unit != Units::current.vertical_speed_unit) {
     auto unit = di.value.last_unit = Units::current.vertical_speed_unit;
@@ -490,6 +491,7 @@ GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
                                         g.value_y + ascent_height - unit_height),
                              unit, look.unit_fraction_pen);
   }
+  */
 }
 
 inline void

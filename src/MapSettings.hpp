@@ -188,6 +188,9 @@ struct MapSettings {
   /** Show Vario Bar arrow */
   bool vario_bar_enabled;
 
+  /** Show Navigation Ribbon */
+  bool nav_ribbon_enabled;
+
   /**
    * Overlay FAI triangle areas on the map while flying?
    */

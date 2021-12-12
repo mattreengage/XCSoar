@@ -454,6 +454,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/Renderer/AirspacePreviewRenderer.cpp \
 	$(SRC)/Renderer/BestCruiseArrowRenderer.cpp \
 	$(SRC)/Renderer/CompassRenderer.cpp \
+	$(SRC)/Renderer/NavRibbonRenderer.cpp \
 	$(SRC)/Renderer/FinalGlideBarRenderer.cpp \
 	$(SRC)/Renderer/VarioBarRenderer.cpp \
 	$(SRC)/Renderer/MapItemListRenderer.cpp \

@@ -46,16 +46,16 @@ VarioLook::Initialise(bool _inverse, bool _colors,
     background_color = COLOR_WHITE;
     text_color = COLOR_BLACK;
     dimmed_text_color = Color((uint8_t)~0xa0, (uint8_t)~0xa0, (uint8_t)~0xa0);
-    sink_color = Color(0xa3,0x69,0x0d);
+    sink_color = Color(0xeb,0x00,0x00);
     lift_color = Color(0x19,0x94,0x03);
   }
 
   sink_brush.Create(sink_color);
   lift_brush.Create(lift_color);
 
-  thick_background_pen.Create(Layout::Scale(5), background_color);
-  thick_sink_pen.Create(Layout::Scale(5), sink_color);
-  thick_lift_pen.Create(Layout::Scale(5), lift_color);
+  thick_background_pen.Create(Layout::Scale(10), background_color);
+  thick_sink_pen.Create(Layout::Scale(10), sink_color);
+  thick_lift_pen.Create(Layout::Scale(10), lift_color);
 
   background_bitmap.Load(Units::GetUserVerticalSpeedUnit() == Unit::KNOTS
                          ? IDB_VARIOSCALEC : IDB_VARIOSCALEA);
@@ -65,7 +65,7 @@ VarioLook::Initialise(bool _inverse, bool _colors,
 
   text_font = &_text_font;
 
-  const unsigned value_font_height = Layout::FontScale(10);
+  const unsigned value_font_height = Layout::FontScale(24);
   value_font.Load(FontDescription(value_font_height, false, false, true));
 
   unsigned unit_font_height = std::max(value_font_height * 2u / 5u, 7u);
