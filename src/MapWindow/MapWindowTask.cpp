@@ -164,7 +164,11 @@ void
 MapWindow::DrawNavRibbon(Canvas &canvas, const PixelRect &rc)
 {
   if (!settings_map.nav_ribbon_enabled) 
-    return;
-
-  this->nav_ribbon_renderer.Draw(canvas, rc);
+  {
+    this->nav_ribbon_renderer.Hide();
+  }
+  else
+  {
+    this->nav_ribbon_renderer.Draw(canvas, rc);
+  }
 }

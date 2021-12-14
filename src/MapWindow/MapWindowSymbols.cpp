@@ -47,7 +47,9 @@ MapWindow::DrawCompass(Canvas &canvas, const PixelRect &rc) const
     return;
 
   CompassRenderer compass_renderer(look);
-  compass_renderer.Draw(canvas, render_projection.GetScreenAngle(), rc, GetMapSettings().nav_ribbon_enabled);
+  compass_renderer.Draw(canvas, render_projection.GetScreenAngle(), 
+                          rc, 
+                          this->nav_ribbon_renderer.is_visible && GetMapSettings().nav_ribbon_enabled);
 }
 
 void

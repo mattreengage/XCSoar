@@ -36,16 +36,13 @@ class FontDescription;
 
 class NavRibbonRenderer {
   Font font;
-  bool is_dirty;
+  bool is_dirty = true;
 
 public:
-  NavRibbonRenderer() 
-  {
-    is_dirty = true;
-  }
-
+  bool is_visible = false;
   void Draw(Canvas &canvas, PixelRect rc);
   void MakeDirty();
+  void Hide();
 
 private:
   void Initialise(const PixelRect rc);

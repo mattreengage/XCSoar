@@ -53,11 +53,19 @@ void NavRibbonRenderer::MakeDirty()
   is_dirty = true;
 }
 
+void NavRibbonRenderer::Hide()
+{
+  is_dirty = true;
+  is_visible = false;
+}
+
 void
 NavRibbonRenderer::Draw(Canvas &canvas, const PixelRect rc)
 {
   if (is_dirty)
     this->Initialise(rc);
+
+  is_visible = false;
 
   const NMEAInfo &basic = CommonInterface::Basic();
   const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
@@ -71,6 +79,8 @@ NavRibbonRenderer::Draw(Canvas &canvas, const PixelRect rc)
 
   if (!way_point)
     return;
+
+  is_visible = true;
 
   const TCHAR *name = way_point->name.c_str();
   StaticString<32> buffer;
