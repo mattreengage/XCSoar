@@ -37,15 +37,28 @@ Copyright_License {
 #include "Formatter/UserUnits.hpp"
 #include "util/StaticString.hxx"
 
-#include "LogFile.hpp"
-
 #ifdef ENABLE_OPENGL
 #include "ui/canvas/opengl/Scope.hpp"
 #endif
 
+
+void NavRibbonRenderer::Initialise(const PixelRect rc)
+{
+  font.Load(FontDescription((rc.bottom - rc.top) / 26, true));
+  is_dirty = false;
+}
+
+void NavRibbonRenderer::MakeDirty()
+{
+  is_dirty = true;
+}
+
 void
 NavRibbonRenderer::Draw(Canvas &canvas, const PixelRect rc)
 {
+  if (is_dirty)
+    this->Initialise(rc);
+
   const NMEAInfo &basic = CommonInterface::Basic();
   const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
   const ElementStat &current_leg = task_stats.current_leg;

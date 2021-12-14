@@ -161,12 +161,10 @@ MapWindow::DrawTaskOffTrackIndicator(Canvas &canvas)
 }
 
 void
-MapWindow::DrawNavRibbon(Canvas &canvas, const PixelRect &rc) const
+MapWindow::DrawNavRibbon(Canvas &canvas, const PixelRect &rc)
 {
   if (!settings_map.nav_ribbon_enabled) 
     return;
 
-  NavRibbonRenderer nav_ribbon_renderer(look);
-  nav_ribbon_renderer.Draw(canvas, rc);
-
+  this->nav_ribbon_renderer.Draw(canvas, rc);
 }

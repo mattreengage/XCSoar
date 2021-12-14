@@ -44,6 +44,9 @@ MapWindow::OnResize(PixelSize new_size)
 
   visible_projection.SetScreenSize(new_size);
   visible_projection.UpdateScreenBounds();
+
+  // Force the Navigation Ribbon to re-initialise on next use
+  nav_ribbon_renderer.MakeDirty();
 }
 
 void

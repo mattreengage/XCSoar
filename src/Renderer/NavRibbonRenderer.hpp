@@ -24,7 +24,6 @@ Copyright_License {
 #ifndef XCSOAR_NAV_RIBBON_RENDERER_HPP
 #define XCSOAR_NAV_RIBBON_RENDERER_HPP
 
-#include "Look/MapLook.hpp"
 #include "ui/canvas/Canvas.hpp"
 #include "Screen/Layout.hpp"
 #include "Look/FontDescription.hpp"
@@ -36,18 +35,20 @@ class Font;
 class FontDescription;
 
 class NavRibbonRenderer {
-  const MapLook &look;
   Font font;
-  Font unit_font;
+  bool is_dirty;
 
 public:
-  NavRibbonRenderer(const MapLook &_look):look(_look) 
+  NavRibbonRenderer() 
   {
-    font.Load(FontDescription(Layout::FontScale(14), true));
-    unit_font.Load(FontDescription(Layout::FontScale(7)));
+    is_dirty = true;
   }
 
   void Draw(Canvas &canvas, PixelRect rc);
+  void MakeDirty();
+
+private:
+  void Initialise(const PixelRect rc);
 };
 
 #endif

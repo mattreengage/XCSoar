@@ -40,6 +40,7 @@ Copyright_License {
 #include "util/Compiler.h"
 #include "Weather/Features.hpp"
 #include "Tracking/SkyLines/Features.hpp"
+#include "Renderer/NavRibbonRenderer.hpp"
 
 #include <memory>
 
@@ -58,6 +59,7 @@ class GlideComputer;
 class ContainerWindow;
 class NOAAStore;
 class MapOverlay;
+class NavRibbonRenderer;
 
 namespace SkyLinesTracking {
   struct Data;
@@ -308,7 +310,8 @@ protected:
   void DrawFLARMTraffic(Canvas &canvas, PixelPoint aircraft_pos) const;
   void DrawGLinkTraffic(Canvas &canvas, PixelPoint aircraft_pos) const;
 
-  void DrawNavRibbon(Canvas &canvas, const PixelRect &rc) const;
+  NavRibbonRenderer nav_ribbon_renderer;
+  void DrawNavRibbon(Canvas &canvas, const PixelRect &rc);
 
   // thread, main functions
   /**
