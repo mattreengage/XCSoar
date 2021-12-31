@@ -21,26 +21,26 @@ Copyright_License {
 }
 */
 
-#ifndef GLUE_GAUGE_VARIO_H
-#define GLUE_GAUGE_VARIO_H
+#ifndef GLUE_GAUGE_GLIDE_H
+#define GLUE_GAUGE_GLIDE_H
 
 #include "Widget/WindowWidget.hpp"
 #include "Blackboard/BlackboardListener.hpp"
 
-struct VarioLook;
+struct GlideLook;
 class LiveBlackboard;
 
 /**
  * A variant of GaugeVario which auto-updates its data from the device
  * blackboard.
  */
-class GlueGaugeVario final
+class GlueGaugeGlide final
   : public WindowWidget, private NullBlackboardListener {
   LiveBlackboard &blackboard;
-  VarioLook &look;
+  GlideLook &look;
 
 public:
-  GlueGaugeVario(LiveBlackboard &_blackboard,  VarioLook &_look) noexcept
+  GlueGaugeGlide(LiveBlackboard &_blackboard,  GlideLook &_look) noexcept
     :blackboard(_blackboard), look(_look) {}
 
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;

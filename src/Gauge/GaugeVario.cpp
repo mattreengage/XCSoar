@@ -36,7 +36,7 @@ Copyright_License {
 #define TEXT_BALLAST _T("Bal")
 
 inline
-GaugeVario::BallastGeometry::BallastGeometry(const VarioLook &look,
+GaugeVario::BallastGeometry::BallastGeometry( VarioLook &look,
                                              const PixelRect &rc) noexcept
 {
   PixelSize tSize;
@@ -44,94 +44,93 @@ GaugeVario::BallastGeometry::BallastGeometry(const VarioLook &look,
   // position of ballast label
   label_pos.x = 1;
   label_pos.y = rc.top + 2
-    + look.text_font->GetCapitalHeight() * 2
-    - look.text_font->GetAscentHeight();
+    + look.text_font.GetCapitalHeight() * 2
+    - look.text_font.GetAscentHeight();
 
   // position of ballast value
   value_pos.x = 1;
   value_pos.y = rc.top + 1
-    + look.text_font->GetCapitalHeight()
-    - look.text_font->GetAscentHeight();
+    + look.text_font.GetCapitalHeight()
+    - look.text_font.GetAscentHeight();
 
   // set upper left corner
   label_rect.left = label_pos.x;
   label_rect.top = label_pos.y
-    + look.text_font->GetAscentHeight()
-    - look.text_font->GetCapitalHeight();
+    + look.text_font.GetAscentHeight()
+    - look.text_font.GetCapitalHeight();
 
   // set upper left corner
   value_rect.left = value_pos.x;
   value_rect.top = value_pos.y
-    + look.text_font->GetAscentHeight()
-    - look.text_font->GetCapitalHeight();
+    + look.text_font.GetAscentHeight()
+    - look.text_font.GetCapitalHeight();
 
   // get max label size
-  tSize = look.text_font->TextSize(TEXT_BALLAST);
+  tSize = look.text_font.TextSize(TEXT_BALLAST);
 
   // update back rect with max label size
   label_rect.right = label_rect.left + tSize.width;
   label_rect.bottom = label_rect.top +
-    look.text_font->GetCapitalHeight();
+    look.text_font.GetCapitalHeight();
 
   // get max value size
-  tSize = look.text_font->TextSize(_T("100%"));
+  tSize = look.text_font.TextSize(_T("100%"));
 
   value_rect.right = value_rect.left + tSize.width;
   // update back rect with max label size
   value_rect.bottom = value_rect.top +
-    look.text_font->GetCapitalHeight();
+    look.text_font.GetCapitalHeight();
 }
 
 inline
-GaugeVario::BugsGeometry::BugsGeometry(const VarioLook &look,
+GaugeVario::BugsGeometry::BugsGeometry( VarioLook &look,
                                        const PixelRect &rc) noexcept
 {
   PixelSize tSize;
 
   label_pos.x = 1;
   label_pos.y = rc.bottom - 2
-    - look.text_font->GetCapitalHeight()
-    - look.text_font->GetAscentHeight();
+    - look.text_font.GetCapitalHeight()
+    - look.text_font.GetAscentHeight();
 
   value_pos.x = 1;
   value_pos.y = rc.bottom - 1
-    - look.text_font->GetAscentHeight();
+    - look.text_font.GetAscentHeight();
 
   label_rect.left = label_pos.x;
   label_rect.top = label_pos.y
-    + look.text_font->GetAscentHeight()
-    - look.text_font->GetCapitalHeight();
+    + look.text_font.GetAscentHeight()
+    - look.text_font.GetCapitalHeight();
   value_rect.left = value_pos.x;
   value_rect.top = value_pos.y
-    + look.text_font->GetAscentHeight()
-    - look.text_font->GetCapitalHeight();
+    + look.text_font.GetAscentHeight()
+    - look.text_font.GetCapitalHeight();
 
-  tSize = look.text_font->TextSize(TEXT_BUG);
+  tSize = look.text_font.TextSize(TEXT_BUG);
 
   label_rect.right = label_rect.left + tSize.width;
   label_rect.bottom = label_rect.top
-    + look.text_font->GetCapitalHeight()
-    + look.text_font->GetHeight()
-    - look.text_font->GetAscentHeight();
+    + look.text_font.GetCapitalHeight()
+    + look.text_font.GetHeight()
+    - look.text_font.GetAscentHeight();
 
-  tSize = look.text_font->TextSize(_T("100%"));
+  tSize = look.text_font.TextSize(_T("100%"));
 
   value_rect.right = value_rect.left + tSize.width;
   value_rect.bottom = value_rect.top +
-    look.text_font->GetCapitalHeight();
+    look.text_font.GetCapitalHeight();
 }
 
 inline
-GaugeVario::LabelValueGeometry::LabelValueGeometry(const VarioLook &look,
+GaugeVario::LabelValueGeometry::LabelValueGeometry( VarioLook &look,
                                                    PixelPoint position) noexcept
-  :label_right(position.x),
+  :label_right(position.x - Layout::Scale(2)),
    label_top(position.y + Layout::Scale(1)),
-   label_bottom(label_top + look.text_font->GetCapitalHeight()),
-   label_y(label_top + look.text_font->GetCapitalHeight()
-           - look.text_font->GetAscentHeight()),
+   label_bottom(label_top + look.text_font.GetCapitalHeight()),
+   label_y(label_top + look.text_font.GetCapitalHeight()
+           - look.text_font.GetAscentHeight()),
    // TODO: update after units got reconfigured?
-   value_right(position.x - UnitSymbolRenderer::GetSize(look.unit_font,
-                                                        Units::current.vertical_speed_unit).width),
+   value_right(position.x - Layout::Scale(2)),
    value_top(label_bottom + Layout::Scale(2)),
    value_bottom(value_top + look.value_font.GetCapitalHeight()),
    value_y(value_top + look.value_font.GetCapitalHeight()
@@ -140,33 +139,49 @@ GaugeVario::LabelValueGeometry::LabelValueGeometry(const VarioLook &look,
 }
 
 inline unsigned
-GaugeVario::LabelValueGeometry::GetHeight(const VarioLook &look) noexcept
+GaugeVario::LabelValueGeometry::GetHeight( VarioLook &look) noexcept
 {
   return Layout::Scale(4) + look.value_font.GetCapitalHeight()
-    + look.text_font->GetCapitalHeight();
+    + look.text_font.GetCapitalHeight();
 }
 
 inline
-GaugeVario::Geometry::Geometry(const VarioLook &look, const PixelRect &rc) noexcept
+GaugeVario::Geometry::Geometry( VarioLook &look, const PixelRect &rc) noexcept
   :ballast(look, rc), bugs(look, rc)
 {
   nlength0 = Layout::Scale(30);
   nlength1 = Layout::Scale(12);
-  nwidth = Layout::Scale(8);
+  nwidth = Layout::Scale(4);
   nline = Layout::Scale(16);
+
+  v_width = rc.GetWidth();
+  v_height = rc.GetHeight();
 
   offset = rc.GetMiddleRight();
 
+  num_values =  (rc.GetHeight() >= 280) ? 5 
+              : (rc.GetWidth() >= 150) ? 4
+              : 0;
+  unsigned spacing = (num_values == 5) ? 5u : 10u;
+  unsigned font_height = ((rc.bottom - rc.top) * 60 / 100 - (4 * spacing)) / 5;
+  look.Resize(font_height);
+
   const PixelSize value_offset{0u, LabelValueGeometry::GetHeight(look)};
 
-  const PixelPoint gross_position = offset + value_offset / 2u;
-  gross = {look, gross_position};
-  average = {look, gross_position - value_offset};
-  mc = {look, gross_position + value_offset};
+  PixelPoint middle_position = (num_values == 4) ? offset : offset - value_offset / 2u;
+
+  PixelSize value_space = value_offset;
+  value_space.height += spacing;
+
+  value_a_pos = {look, middle_position - value_space * 2u};
+  value_b_pos = {look, middle_position - value_space};
+  value_c_pos = {look, middle_position};
+  value_d_pos = {look, middle_position + value_space};
+  value_e_pos = {look, middle_position + value_space * 2u};
 }
 
 GaugeVario::GaugeVario(const FullBlackboard &_blackboard,
-                       ContainerWindow &parent, const VarioLook &_look,
+                       ContainerWindow &parent,  VarioLook &_look,
                        PixelRect rc, const WindowStyle style) noexcept
   :blackboard(_blackboard), look(_look)
 {
@@ -186,24 +201,57 @@ GaugeVario::OnPaintBuffer(Canvas &canvas)
     background_dirty = false;
   }
 
-  if (Settings().show_average) {
+  auto calc = Calculated();
+  auto basic = Basic();
+
+  if (geometry.num_values > 0) {
     // JMW averager now displays netto average if not circling
-    RenderValue(canvas, geometry.average, average_di,
-                Units::ToUserVSpeed(Calculated().circling ? Calculated().average : Calculated().netto_average),
-                Calculated().circling ? _T("Avg") : _T("NetAvg"));
+    RenderValue(canvas, geometry.value_a_pos, value_a,
+                Units::ToUserVSpeed(calc.circling ? calc.average : calc.netto_average),
+                calc.circling ? _T("Avg") : _T("NetAvg"), 
+                true,
+                0);
+
+
+    RenderValue(canvas, geometry.value_b_pos, value_b,
+                Units::ToUserVSpeed(calc.current_thermal.lift_rate),
+                _T("Avg Th."), 
+                true,
+                0);
+
+    auto alt = (basic.baro_altitude_available) 
+              ? basic.baro_altitude 
+              : basic.gps_altitude;
+    auto alt_fl = (basic.pressure_altitude_available)
+              ? basic.pressure_altitude
+              : GetComputerSettings().pressure.QNHAltitudeToPressureAltitude(basic.gps_altitude);
+
+    /** 
+      TODO: Make Transition Altitude a setting
+    */
+    auto transition = Units::ToSysAltitude(10000);
+
+    RenderValue(canvas, geometry.value_c_pos, value_c,
+                Units::ToUserAltitude((alt > transition) ? alt_fl : alt),
+                (alt > transition) ? _T("Alt FL") : _T("Alt QNH"), 
+                false,
+                0);
+
+    RenderValue(canvas, geometry.value_d_pos, value_d,
+                calc.cruise_gr,
+                _T("GR Th."), 
+                (abs(calc.cruise_gr) < 20.),
+                999);
+
+    if (geometry.num_values > 4)
+      RenderValue(canvas, geometry.value_e_pos, value_e,
+                calc.gr,
+                _T("GR Cur."), 
+                (abs(calc.gr) < 20.),
+                999);
   }
 
-  if (Settings().show_mc) {
-    auto mc = Units::ToUserVSpeed(GetGlidePolar().GetMC());
-    RenderValue(canvas, geometry.mc, mc_di,
-                mc,
-                GetComputerSettings().task.auto_mc ? _T("Auto MC") : _T("MC"));
-  }
-
-  if (Settings().show_speed_to_fly)
-    RenderSpeedToFly(canvas, rc.right - 11, (rc.top + rc.bottom) / 2);
-  else
-    RenderClimb(canvas);
+  RenderClimb(canvas);
 
   if (Settings().show_ballast)
     RenderBallast(canvas);
@@ -214,70 +262,47 @@ GaugeVario::OnPaintBuffer(Canvas &canvas)
   dirty = false;
   int ival, sval, ival_av = 0;
   int ival_av_thermal = 0;
-  if (Settings().show_thermal_average_needle) {
-      ival_av_thermal = ValueToNeedlePos(Calculated().current_thermal.lift_rate);
-  }
+  ival_av_thermal = ValueToNeedlePos(calc.current_thermal.lift_rate);
 
-  auto vval = Basic().brutto_vario;
+  auto vval = basic.brutto_vario;
   ival = ValueToNeedlePos(vval);
-  sval = ValueToNeedlePos(Calculated().sink_rate);
-  if (Settings().show_average_needle) {
-    if (!Calculated().circling)
-      ival_av = ValueToNeedlePos(Calculated().netto_average);
-    else
-      ival_av = ValueToNeedlePos(Calculated().average);
-  }
+  sval = ValueToNeedlePos(calc.sink_rate);
+  if (!calc.circling)
+    ival_av = ValueToNeedlePos(calc.netto_average);
+  else
+    ival_av = ValueToNeedlePos(calc.average);
+
 
   // clear items first
-
-  if (Settings().show_average_needle) {
-    if (!IsPersistent() || ival_av != ival_last)
-      RenderNeedle(canvas, ival_last, true, true);
-
-    ival_last = ival_av;
-  }
-
-  if (!IsPersistent() || (sval != sval_last) || (ival != vval_last))
-    RenderVarioLine(canvas, vval_last, sval_last, true);
+  if (!IsPersistent() || ival_av != ival_last)
+    RenderNeedle(canvas, ival_last, 1, true);
+  ival_last = ival_av;
 
   sval_last = sval;
-  if (Settings().show_thermal_average_needle) {
-      if (!IsPersistent() || ival_av_thermal != ival_av_last)
-          RenderNeedle(canvas, ival_av_last, false, true);
+  if (!IsPersistent() || ival_av_thermal != ival_av_last)
+      RenderNeedle(canvas, ival_av_last, 2, true);
+  ival_av_last = ival_av_thermal;
 
-      ival_av_last = ival_av_thermal;
-  } else {
-      if (!IsPersistent() || ival != vval_last)
-        RenderNeedle(canvas, vval_last, false, true);
+  if (!IsPersistent() || ival != vval_last)
+    RenderNeedle(canvas, vval_last, 0, true);
+  vval_last = ival;
 
-      vval_last = ival;
-  }
+  //if (!IsPersistent() || (sval != sval_last) || (ival != vval_last))
+  //  RenderVarioLine(canvas, vval_last, sval_last, true);
 
   // now draw items
-  RenderVarioLine(canvas, ival, sval, false);
-  if (Settings().show_average_needle)
-    RenderNeedle(canvas, ival_av, true, false);
-
-  RenderNeedle(canvas,
-               Settings().show_thermal_average_needle ? ival_av_thermal : ival,
-               false, false);
-
-  if (Settings().show_gross) {
-    auto vvaldisplay = Clamp(Units::ToUserVSpeed(vval),
-                              -99.9, 99.9);
-
-    RenderValue(canvas, geometry.gross, gross_di,
-                vvaldisplay,
-                _T("Gross"));
-  }
+  //RenderVarioLine(canvas, ival, sval, false);
+  RenderNeedle(canvas, ival_av, 1, false);
+  RenderNeedle(canvas, ival_av_thermal, 2, false);
+  RenderNeedle(canvas, ival, 0, false);
 
   RenderZero(canvas);
 }
 
 static constexpr PixelPoint
-TransformRotatedPoint(IntPoint2D pt, IntPoint2D offset) noexcept
+TransformRotatedPoint(IntPoint2D pt, IntPoint2D offset, int ratio) noexcept
 {
-  return { pt.x + offset.x, (pt.y * 82 / 100) + offset.y + 1 };
+  return { pt.x + offset.x, (pt.y * ratio / 63) + offset.y + 1 };
 }
 
 void
@@ -289,14 +314,54 @@ GaugeVario::MakePolygon(const int i) noexcept
   const FastIntegerRotation r(Angle::Degrees(i));
 
   bit[0] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, geometry.nwidth}),
-                                 geometry.offset);
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
   bit[1] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, 0}),
-                                 geometry.offset);
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
   bit[2] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, -geometry.nwidth}),
-                                 geometry.offset);
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
 
   *bline = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nline, 0}),
-                                 geometry.offset);
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+}
+
+void
+GaugeVario::MakeAvePolygon(const int i) noexcept
+{
+  auto *bit = getAvePolygon(i);
+
+  const FastIntegerRotation r(Angle::Degrees(i));
+  int mid = (geometry.nlength0 - geometry.nlength1) / 2 + geometry.nlength1;
+
+  bit[0] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + mid, geometry.nwidth}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit[1] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, 0}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit[2] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + mid, -geometry.nwidth}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit[3] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, 0}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+
+  auto *bit_th = getThAvePolygon(i);
+  bit_th[0] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, 0}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit_th[1] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, 0}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit_th[2] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, -geometry.nwidth}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
+  bit_th[3] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, geometry.nwidth}),
+                                 geometry.offset, 
+                                 geometry.v_width * 100 / geometry.v_height);
 }
 
 inline BulkPixelPoint *
@@ -305,11 +370,26 @@ GaugeVario::getPolygon(int i) noexcept
   return polys + (i + gmax) * 3;
 }
 
+inline BulkPixelPoint *
+GaugeVario::getAvePolygon(int i) noexcept
+{
+  return ave_polys + (i + gmax) * 4;
+}
+
+inline BulkPixelPoint *
+GaugeVario::getThAvePolygon(int i) noexcept
+{
+  return th_ave_polys + (i + gmax) * 4;
+}
+
 inline void
 GaugeVario::MakeAllPolygons() noexcept
 {
   for (int i = gmin; i <= gmax; i++)
+  {
     MakePolygon(i);
+    MakeAvePolygon(i);
+  }
 }
 
 void
@@ -338,9 +418,13 @@ GaugeVario::RenderZero(Canvas &canvas) noexcept
     canvas.SelectBlackPen();
 
   canvas.DrawLine({0, geometry.offset.y},
-                  {Layout::Scale(17), geometry.offset.y});
+                  {Layout::Scale(34), geometry.offset.y});
   canvas.DrawLine({0, geometry.offset.y + 1},
-                  {Layout::Scale(17), geometry.offset.y + 1});
+                  {Layout::Scale(34), geometry.offset.y + 1});
+  canvas.DrawLine({0, geometry.offset.y + 2},
+                  {Layout::Scale(34), geometry.offset.y + 2});
+  canvas.DrawLine({0, geometry.offset.y + 3},
+                  {Layout::Scale(34), geometry.offset.y + 3});
 }
 
 int
@@ -394,7 +478,7 @@ GaugeVario::RenderVarioLine(Canvas &canvas, int i, int sink,
 }
 
 void
-GaugeVario::RenderNeedle(Canvas &canvas, int i, bool average,
+GaugeVario::RenderNeedle(Canvas &canvas, int i, int average,
                          bool clear) noexcept
 {
   dirty = true;
@@ -410,28 +494,52 @@ GaugeVario::RenderNeedle(Canvas &canvas, int i, bool average,
     canvas.SelectBlackPen();
   }
 
-  if (average)
-    canvas.DrawPolyline(getPolygon(i), 3);
+  if (average == 1)
+  {
+    if (!clear)
+    {
+      canvas.Select(look.ave_brush);
+      canvas.Select(look.ave_pen);
+    }
+    canvas.DrawPolygon(getAvePolygon(i), 4);
+  }
+  else if (average == 2)
+  {
+    if (!clear)
+    {
+      canvas.Select(look.th_ave_pen);
+    }
+    canvas.DrawPolyline(getThAvePolygon(i), 4);
+  }
   else
-    canvas.DrawTriangleFan(getPolygon(i), 3);
+  {
+    canvas.DrawPolygon(getPolygon(i), 3);
+  }
 }
 
 // TODO code: Optimise vario rendering, this is slow
 void
 GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
                         LabelValueDrawInfo &di,
-                        double value, const TCHAR *label) noexcept
+                        double value, const TCHAR *label, 
+                        bool frac, int infinity) noexcept
 {
   value = (double)iround(value * 10) / 10; // prevent the -0.0 case
+  bool is_infinite = false;
+  bool is_climb = false;
+  if (infinity > 0) {
+    is_infinite = abs(value) >= infinity;
+    is_climb = value < 0;
+  }
 
   canvas.SetBackgroundTransparent();
 
   if (!IsPersistent() || (dirty && !StringIsEqual(di.label.last_text, label))) {
     canvas.SetTextColor(look.dimmed_text_color);
-    canvas.Select(*look.text_font);
+    canvas.Select(look.text_font);
     const unsigned width = canvas.CalcTextSize(label).width;
 
-    const PixelPoint text_position{g.label_right - (int)width - 10, g.label_y};
+    const PixelPoint text_position{g.label_right - (int)width, g.label_y};
 
     if (IsPersistent()) {
       PixelRect rc;
@@ -453,7 +561,12 @@ GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
     TCHAR buffer[18];
     canvas.SetBackgroundColor(look.background_color);
     canvas.SetTextColor(look.text_color);
-    _stprintf(buffer, _T("%.1f"), (double)value);
+    if (is_infinite)
+      _stprintf(buffer, _T("∞ "));
+    else if (is_climb)
+      _stprintf(buffer, _T("+++"));
+    else
+      _stprintf(buffer, frac ? _T("%.1f") : _T("%.0f"), (double)value);
     canvas.Select(look.value_font);
     const unsigned width = canvas.CalcTextSize(buffer).width;
 
@@ -474,24 +587,6 @@ GaugeVario::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
       canvas.DrawText(text_position, buffer);
     }
   }
-
-  /*
-  if (!IsPersistent() ||
-      di.value.last_unit != Units::current.vertical_speed_unit) {
-    auto unit = di.value.last_unit = Units::current.vertical_speed_unit;
-
-    const int ascent_height = look.value_font.GetAscentHeight();
-    const int unit_height =
-      UnitSymbolRenderer::GetAscentHeight(look.unit_font, unit);
-
-    canvas.Select(look.unit_font);
-    canvas.SetTextColor(COLOR_GRAY);
-    UnitSymbolRenderer::Draw(canvas,
-                             PixelPoint(g.value_right,
-                                        g.value_y + ascent_height - unit_height),
-                             unit, look.unit_fraction_pen);
-  }
-  */
 }
 
 inline void
@@ -616,7 +711,7 @@ GaugeVario::RenderBallast(Canvas &canvas) noexcept
   if (!IsPersistent() || ballast != last_ballast) {
     // ballast hase been changed
 
-    canvas.Select(*look.text_font);
+    canvas.Select(look.text_font);
 
     if (IsPersistent())
       canvas.SetBackgroundColor(look.background_color);
@@ -662,7 +757,7 @@ GaugeVario::RenderBugs(Canvas &canvas) noexcept
   int bugs = iround((1 - GetComputerSettings().polar.bugs) * 100);
   if (!IsPersistent() || bugs != last_bugs) {
 
-    canvas.Select(*look.text_font);
+    canvas.Select(look.text_font);
 
     if (IsPersistent())
       canvas.SetBackgroundColor(look.background_color);
@@ -709,7 +804,9 @@ GaugeVario::OnResize(PixelSize new_size)
   background_dirty = true;
   needle_initialised = false;
 
-  average_di.Reset();
-  mc_di.Reset();
-  gross_di.Reset();
+  value_a.Reset();
+  value_b.Reset();
+  value_c.Reset();
+  value_d.Reset();
+  value_e.Reset();
 }

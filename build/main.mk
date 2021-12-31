@@ -360,6 +360,8 @@ XCSOAR_SOURCES := \
 	$(SRC)/Gauge/TrafficSettings.cpp \
 	$(SRC)/Gauge/GaugeVario.cpp \
 	$(SRC)/Gauge/GlueGaugeVario.cpp \
+	$(SRC)/Gauge/GaugeGlide.cpp \
+	$(SRC)/Gauge/GlueGaugeGlide.cpp \
 	$(SRC)/Gauge/TaskView.cpp \
 	$(SRC)/Gauge/LogoView.cpp \
 	\

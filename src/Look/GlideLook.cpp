@@ -21,7 +21,7 @@ Copyright_License {
 }
 */
 
-#include "VarioLook.hpp"
+#include "GlideLook.hpp"
 #include "FontDescription.hpp"
 #include "Screen/Layout.hpp"
 #include "Units/Units.hpp"
@@ -30,7 +30,7 @@ Copyright_License {
 #include <algorithm>
 
 void
-VarioLook::Initialise(bool _inverse, bool _colors,
+GlideLook::Initialise(bool _inverse, bool _colors,
                       const Font &_text_font)
 {
   inverse = _inverse;
@@ -39,45 +39,27 @@ VarioLook::Initialise(bool _inverse, bool _colors,
   if (inverse) {
     background_color = COLOR_BLACK;
     text_color = COLOR_WHITE;
-    dimmed_text_color = Color(0xa0, 0xa0, 0xa0);
-    sink_color = Color(0xc4, 0x80, 0x1e);
-    lift_color = Color(0x1e, 0xf1, 0x73);
   } else {
     background_color = COLOR_WHITE;
     text_color = COLOR_BLACK;
-    dimmed_text_color = Color((uint8_t)~0xa0, (uint8_t)~0xa0, (uint8_t)~0xa0);
-    sink_color = Color(0xeb,0x00,0x00);
-    lift_color = Color(0x19,0x94,0x03);
   }
 
-  sink_brush.Create(sink_color);
-  lift_brush.Create(lift_color);
+  border_brush.Create(text_color);
+  bad_brush.Create(Color(0xff, 0x20, 0x20));
+  good_brush.Create(Color(0x20, 0xee, 0x20));
 
-  ave_brush.Create(Color(0xff, 0x20, 0x20));
-  ave_pen.Create(Layout::Scale(2), Color(0xff, 0x20, 0x20));
-  th_ave_pen.Create(Layout::Scale(2), Color(0x23, 0xee, 0x30));
+  bad_pen.Create(Layout::Scale(1), Color(0xff, 0x20, 0x20));
+  good_pen.Create(Layout::Scale(1), Color(0x20, 0xee, 0x00));
 
-  thick_background_pen.Create(Layout::Scale(10), background_color);
-  thick_sink_pen.Create(Layout::Scale(10), sink_color);
-  thick_lift_pen.Create(Layout::Scale(10), lift_color);
+  border.Create(Layout::Scale(1), text_color);
 
-  background_bitmap.Load(Units::GetUserVerticalSpeedUnit() == Unit::KNOTS
-                         ? IDB_VARIOSCALEC : IDB_VARIOSCALEA);
-  background_x = inverse ? 58 : 0;
-
-  climb_bitmap.Load(inverse ? IDB_CLIMBSMALLINV : IDB_CLIMBSMALL);
-
-  const unsigned value_font_height = Layout::FontScale(24);
-  VarioLook::Resize(value_font_height);
-  unit_fraction_pen.Create(1, COLOR_GRAY);
+  const unsigned value_font_height = Layout::FontScale(30);
+  GlideLook::Resize(value_font_height);
 }
 
 void
-VarioLook::Resize(unsigned height)
+GlideLook::Resize(unsigned height)
 {
-  value_font.Load(FontDescription(height, true, false, true));
-  unsigned unit_font_height = std::max(height * 2u / 5u, 7u);
-  unit_font.Load(FontDescription(unit_font_height, false, false, false));
   unsigned text_font_height = std::max(height * 2u / 5u, 7u);
   text_font.Load(FontDescription(text_font_height, false, false, false));
 }

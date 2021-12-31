@@ -26,6 +26,8 @@ Copyright_License {
 #include "util/Macros.hpp"
 #include "util/Clamp.hpp"
 
+#include "LogFile.hpp"
+
 static constexpr double CONTROLHEIGHTRATIO = 7.4;
 
 /**
@@ -34,7 +36,7 @@ static constexpr double CONTROLHEIGHTRATIO = 7.4;
 static constexpr unsigned char geometry_counts[] = {
   8, 8, 8, 8, 8, 8,
   9, 5, 12, 24, 12,
-  12, 9, 8, 4, 4, 4, 4,
+  12, 8, 8, 4, 4, 4, 4,
   8, 16, 14, 10, 10, 10,
   12, // 3 rows X 4 boxes
 };
@@ -129,6 +131,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
   CalcInfoBoxSizes(layout, screen_size, geometry);
 
   layout.ClearVario();
+  layout.ClearGlide();
 
   unsigned right = rc.right;
 
@@ -219,15 +222,26 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
     break;
 
   case InfoBoxSettings::Geometry::LEFT_6_RIGHT_3_VARIO:
-    layout.vario.left = rc.right - layout.control_size.width;
+    layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
     layout.vario.top = 0;
-    layout.vario.bottom = layout.vario.top + layout.control_size.height * 3;
+    layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
 
+    // Info boxes under the vario
+    rc.right = MakeRightColumn(layout, layout.positions + 6, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 7, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+
+    layout.glide.top = 0;
+    layout.glide.bottom = rc.bottom;
+    layout.glide.right = rc.right;
+    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+    rc.right = layout.glide.left;
+
+    // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
-    rc.right = MakeRightColumn(layout, layout.positions + 6, 3, rc.right,
-                               rc.top + 3 * layout.control_size.height, rc.bottom);
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
@@ -242,8 +256,13 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
     rc.right = MakeRightColumn(layout, layout.positions + 13, 1, rc.right,
                                rc.top + 5 * layout.control_size.height, rc.bottom);
 
+    layout.glide.top = 0;
+    layout.glide.bottom = rc.bottom;
+    layout.glide.right = rc.right;
+    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+    rc.right = layout.glide.left;
+
     // Left hand info boxes
-    layout.control_size.width = layout.control_size.height * 1.3;
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
     rc.left = MakeLeftColumn(layout, layout.positions + 6, 6,
@@ -579,7 +598,7 @@ InfoBoxLayout::CalcInfoBoxSizes(Layout &layout, PixelSize screen_size,
     // calculate control dimensions
     layout.control_size.height = screen_size.height / 6;
     // preserve relative shape
-    layout.control_size.width = layout.control_size.height * 1.6;
+    layout.control_size.width = layout.control_size.height * 1.44;
     break;
 
   case InfoBoxSettings::Geometry::RIGHT_5:

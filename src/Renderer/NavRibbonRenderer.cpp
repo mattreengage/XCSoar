@@ -114,7 +114,7 @@ NavRibbonRenderer::Draw(Canvas &canvas, const PixelRect rc)
   canvas.DrawText(p, buffer);
 
   // Add the track arrow - centre bottom
-  int middle = (border.right - border.left) / 2;
+  int middle = (border.right + border.left) / 2;
   canvas.Select(Brush(COLOR_BLACK));
   BulkPixelPoint black_triangle[4] = { { 0, -10 }, { -4, 0}, { 4, 0}, { 0, -10 } };
   PixelPoint track_pos = PixelPoint(middle, border.bottom);

@@ -39,16 +39,16 @@ struct VarioLook {
 
   Color sink_color, lift_color;
 
-  Brush sink_brush, lift_brush;
+  Brush sink_brush, lift_brush, ave_brush;
 
-  Pen thick_background_pen, thick_sink_pen, thick_lift_pen;
+  Pen thick_background_pen, thick_sink_pen, thick_lift_pen, ave_pen, th_ave_pen;
 
   Bitmap background_bitmap;
   unsigned background_x;
 
   Bitmap climb_bitmap;
 
-  const Font *text_font;
+  Font text_font;
   Font value_font;
 
   Font unit_font;
@@ -56,6 +56,8 @@ struct VarioLook {
 
   void Initialise(bool inverse, bool colors,
                   const Font &text_font);
+
+  void Resize(unsigned height);
 };
 
 #endif

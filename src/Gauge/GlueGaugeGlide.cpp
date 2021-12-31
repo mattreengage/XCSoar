@@ -21,34 +21,39 @@ Copyright_License {
 }
 */
 
-#ifndef GLUE_GAUGE_VARIO_H
-#define GLUE_GAUGE_VARIO_H
+#include "Gauge/GlueGaugeGlide.hpp"
+#include "Gauge/GaugeGlide.hpp"
+#include "Blackboard/LiveBlackboard.hpp"
 
-#include "Widget/WindowWidget.hpp"
-#include "Blackboard/BlackboardListener.hpp"
+void
+GlueGaugeGlide::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
+{
+  WindowStyle style;
+  style.Hide();
+  style.Disable();
 
-struct VarioLook;
-class LiveBlackboard;
+  SetWindow(std::make_unique<GaugeGlide>(blackboard, parent, look,
+                                         rc, style));
+}
 
-/**
- * A variant of GaugeVario which auto-updates its data from the device
- * blackboard.
- */
-class GlueGaugeVario final
-  : public WindowWidget, private NullBlackboardListener {
-  LiveBlackboard &blackboard;
-  VarioLook &look;
+void
+GlueGaugeGlide::Show(const PixelRect &rc) noexcept
+{
+  WindowWidget::Show(rc);
 
-public:
-  GlueGaugeVario(LiveBlackboard &_blackboard,  VarioLook &_look) noexcept
-    :blackboard(_blackboard), look(_look) {}
+  blackboard.AddListener(*this);
+}
 
-  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
-  void Show(const PixelRect &rc) noexcept override;
-  void Hide() noexcept override;
+void
+GlueGaugeGlide::Hide() noexcept
+{
+  blackboard.RemoveListener(*this);
 
-private:
-  virtual void OnGPSUpdate(const MoreData &basic) override;
-};
+  WindowWidget::Hide();
+}
 
-#endif
+void
+GlueGaugeGlide::OnGPSUpdate(const MoreData &basic)
+{
+  ((GaugeGlide &)GetWindow()).Invalidate();
+}

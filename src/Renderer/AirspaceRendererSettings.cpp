@@ -43,6 +43,7 @@ AirspaceRendererSettings::SetDefaults()
   black_outline = false;
   altitude_mode = AirspaceDisplayMode::ALLON;
   clip_altitude = 1000;
+  transition_altitude = 10000;
 
 #if defined(HAVE_HATCHED_BRUSH) && defined(HAVE_ALPHA_BLEND)
   transparency = false;

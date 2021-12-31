@@ -21,34 +21,31 @@ Copyright_License {
 }
 */
 
-#ifndef GLUE_GAUGE_VARIO_H
-#define GLUE_GAUGE_VARIO_H
+#ifndef XCSOAR_GLIDELOOK_HPP
+#define XCSOAR_GLIDE_LOOK_HPP
 
-#include "Widget/WindowWidget.hpp"
-#include "Blackboard/BlackboardListener.hpp"
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Bitmap.hpp"
+#include "ui/canvas/Font.hpp"
 
-struct VarioLook;
-class LiveBlackboard;
+class Font;
 
-/**
- * A variant of GaugeVario which auto-updates its data from the device
- * blackboard.
- */
-class GlueGaugeVario final
-  : public WindowWidget, private NullBlackboardListener {
-  LiveBlackboard &blackboard;
-  VarioLook &look;
+struct GlideLook {
+  bool inverse, colors;
 
-public:
-  GlueGaugeVario(LiveBlackboard &_blackboard,  VarioLook &_look) noexcept
-    :blackboard(_blackboard), look(_look) {}
+  Color background_color, text_color;
 
-  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
-  void Show(const PixelRect &rc) noexcept override;
-  void Hide() noexcept override;
+  Brush border_brush, bad_brush, good_brush;
+  Pen border, good_pen, bad_pen;
 
-private:
-  virtual void OnGPSUpdate(const MoreData &basic) override;
+  Font text_font;
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(unsigned height);
 };
 
 #endif

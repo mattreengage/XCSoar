@@ -51,6 +51,16 @@ namespace InfoBoxLayout
     void ClearVario() {
       vario.left = vario.top = vario.right = vario.bottom = 0;
     }
+
+    PixelRect glide;
+    bool HasGlide() const {
+      return glide.right > glide.left && glide.bottom > glide.top;
+    }
+
+    void ClearGlide() {
+      glide.left = glide.top = glide.right = glide.bottom = 0;
+    }
+
   };
 
   gcc_pure

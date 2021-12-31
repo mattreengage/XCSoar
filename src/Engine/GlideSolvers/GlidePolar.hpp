@@ -59,6 +59,11 @@ class GlidePolar
   static constexpr double TOLERANCE_MIN_SINK = 0.01;
   static constexpr double TOLERANCE_BEST_LD = 0.000001;
 
+  /** Thermal sink factor from 1/cos(bank angle)
+      In this case, assuming a thermal bank angle of approximately 45 degrees
+   */
+  static constexpr double THERMAL_SINK_FACTOR = 1.4;
+
   /** MacCready ring setting (m/s) */
   double mc;
   /** Inverse of MC setting (s/m) */
@@ -87,6 +92,8 @@ class GlidePolar
   double Vmin;
   /** Minimum sink rate (m/s, positive down) */
   double Smin;
+  /** Minimum sink rate when thermalling (m/s, positive down) */
+  double TSmin;
 
   /** coefficients of glide polar empty/clean */
   PolarCoefficients ideal_polar;

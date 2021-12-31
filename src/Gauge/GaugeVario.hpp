@@ -43,7 +43,8 @@ class GaugeVario : public AntiFlickerWindow
   /** degrees total sweep */
   static constexpr int GAUGEVARIOSWEEP = 90;
 
-  static constexpr int gmax = GAUGEVARIOSWEEP + 2;
+  /** Max should be less than total to keep needles visible at all times */
+  static constexpr int gmax = GAUGEVARIOSWEEP - 2;
   static constexpr int gmin = -gmax;
 
   struct BallastGeometry {
@@ -51,7 +52,7 @@ class GaugeVario : public AntiFlickerWindow
     PixelPoint label_pos, value_pos;
 
     BallastGeometry() = default;
-    BallastGeometry(const VarioLook &look, const PixelRect &rc) noexcept;
+    BallastGeometry( VarioLook &look, const PixelRect &rc) noexcept;
   };
 
   struct BugsGeometry {
@@ -59,7 +60,7 @@ class GaugeVario : public AntiFlickerWindow
     PixelPoint label_pos, value_pos;
 
     BugsGeometry() = default;
-    BugsGeometry(const VarioLook &look, const PixelRect &rc) noexcept;
+    BugsGeometry( VarioLook &look, const PixelRect &rc) noexcept;
   };
 
   struct LabelValueGeometry {
@@ -67,23 +68,26 @@ class GaugeVario : public AntiFlickerWindow
     int value_right, value_top, value_bottom, value_y;
 
     LabelValueGeometry() = default;
-    LabelValueGeometry(const VarioLook &look, PixelPoint position) noexcept;
+    LabelValueGeometry( VarioLook &look, PixelPoint position) noexcept;
 
-    static unsigned GetHeight(const VarioLook &look) noexcept;
+    static unsigned GetHeight( VarioLook &look) noexcept;
   };
 
   struct Geometry {
     int nlength0, nlength1, nwidth, nline;
+    int v_width, v_height;
 
     PixelPoint offset;
 
-    LabelValueGeometry average, gross, mc;
+    unsigned num_values;
+
+    LabelValueGeometry value_a_pos, value_b_pos, value_c_pos, value_d_pos, value_e_pos;
 
     BallastGeometry ballast;
     BugsGeometry bugs;
 
     Geometry() = default;
-    Geometry(const VarioLook &look, const PixelRect &rc) noexcept;
+    Geometry( VarioLook &look, const PixelRect &rc) noexcept;
   } geometry;
 
   struct DrawInfo {
@@ -112,14 +116,14 @@ class GaugeVario : public AntiFlickerWindow
 
   const FullBlackboard &blackboard;
 
-  const VarioLook &look;
+  VarioLook &look;
 
   bool dirty = true;
 
   bool background_dirty = true;
   bool needle_initialised = false;
 
-  LabelValueDrawInfo average_di, mc_di, gross_di;
+  LabelValueDrawInfo value_a, value_b, value_c, value_d, value_e;
 
   int ival_av_last = 0;
   int vval_last = 0;
@@ -133,11 +137,13 @@ class GaugeVario : public AntiFlickerWindow
   int last_bugs = -1;
 
   BulkPixelPoint polys[(gmax * 2 + 1) * 3];
+  BulkPixelPoint ave_polys[(gmax * 2 + 1) * 4];
+  BulkPixelPoint th_ave_polys[(gmax * 2 + 1) * 4];
   BulkPixelPoint lines[gmax * 2 + 1];
 
 public:
   GaugeVario(const FullBlackboard &blackboard,
-             ContainerWindow &parent, const VarioLook &look,
+             ContainerWindow &parent, VarioLook &look,
              PixelRect rc, const WindowStyle style=WindowStyle()) noexcept;
 
 protected:
@@ -172,18 +178,22 @@ private:
   void RenderZero(Canvas &canvas) noexcept;
   void RenderValue(Canvas &canvas, const LabelValueGeometry &g,
                    LabelValueDrawInfo &di,
-                   double Value, const TCHAR *Label) noexcept;
+                   double Value, const TCHAR *Label, 
+                   bool frac, int infinity) noexcept;
   void RenderSpeedToFly(Canvas &canvas, int x, int y) noexcept;
   void RenderBallast(Canvas &canvas) noexcept;
   void RenderBugs(Canvas &canvas) noexcept;
   int  ValueToNeedlePos(double Value) noexcept;
-  void RenderNeedle(Canvas &canvas, int i, bool average, bool clear) noexcept;
+  void RenderNeedle(Canvas &canvas, int i, int average, bool clear) noexcept;
   void RenderVarioLine(Canvas &canvas, int i, int sink, bool clear) noexcept;
   void RenderClimb(Canvas &canvas) noexcept;
 
   void MakePolygon(const int i) noexcept;
+  void MakeAvePolygon(const int i) noexcept;
   void MakeAllPolygons() noexcept;
   BulkPixelPoint *getPolygon(const int i) noexcept;
+  BulkPixelPoint *getAvePolygon(const int i) noexcept;
+  BulkPixelPoint *getThAvePolygon(const int i) noexcept;
 };
 
 #endif
