@@ -54,28 +54,31 @@ GaugeGlide::OnPaintBuffer(Canvas &canvas)
   bool on_task = calc.task_stats.task_valid && calc.task_stats.current_leg.location_remaining.IsValid();
 
   // Draw Arrow for GR since last thermal
-  root_val = GetGlideRoot(calc.cruise_gr);
-  y = VertPos(rc, root_val);
+  if (calc.last_thermal.IsDefined())
+  {
+    root_val = GetGlideRoot(calc.cruise_gr);
+    y = VertPos(rc, root_val);
 
-  BulkPixelPoint gr_t[3];
-  gr_t[0].x = rc.left + (width / 2);
-  gr_t[0].y = y;
-  gr_t[1].x = rc.left;
-  gr_t[1].y = y - arrow_span;
-  gr_t[2].x = rc.left;
-  gr_t[2].y = y + arrow_span;
+    BulkPixelPoint gr_t[3];
+    gr_t[0].x = rc.left + (width / 2);
+    gr_t[0].y = y;
+    gr_t[1].x = rc.left;
+    gr_t[1].y = y - arrow_span;
+    gr_t[2].x = rc.left;
+    gr_t[2].y = y + arrow_span;
 
-  canvas.Select(!on_task ? look.border_brush 
-                : IsGood(calc.task_stats.glide_required, calc.cruise_gr) ? look.good_brush 
-                : look.bad_brush);
-  canvas.Select(!on_task ? look.border 
-                : IsGood(calc.task_stats.glide_required, calc.cruise_gr) ? look.good_pen
-                : look.bad_pen);
+    canvas.Select(!on_task ? look.border_brush 
+                  : IsGood(calc.task_stats.glide_required, calc.cruise_gr) ? look.good_brush 
+                  : look.bad_brush);
+    canvas.Select(!on_task ? look.border 
+                  : IsGood(calc.task_stats.glide_required, calc.cruise_gr) ? look.good_pen
+                  : look.bad_pen);
 
-  canvas.DrawTriangleFan(gr_t, 3);
+    canvas.DrawTriangleFan(gr_t, 3);
+  }
 
   // Only if cruising, show current GR
-  if (!calc.circling)
+  if (!calc.circling && calc.flight.IsGliding())
   {
     root_val = GetGlideRoot(calc.gr);
     y = VertPos(rc, root_val);
@@ -163,6 +166,8 @@ unsigned GaugeGlide::VertPos(PixelRect rc, double root_value)
     val = MAXGR_ROOT + 1.0;
   else if (val >= MAXGR_ROOT)
     val = MAXGR_ROOT;
+  else if (val < MINGR_ROOT)
+    val = MINGR_ROOT;
   return rc.bottom - (spacing * (val - MINGR_ROOT)) - (spacing / 2);
 }
 

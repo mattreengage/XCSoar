@@ -237,18 +237,24 @@ GaugeVario::OnPaintBuffer(Canvas &canvas)
                 false,
                 0);
 
-    RenderValue(canvas, geometry.value_d_pos, value_d,
-                calc.cruise_gr,
-                _T("GR Th."), 
-                (abs(calc.cruise_gr) < 20.),
-                999);
 
-    if (geometry.num_values > 4)
-      RenderValue(canvas, geometry.value_e_pos, value_e,
-                calc.gr,
-                _T("GR Cur."), 
-                (abs(calc.gr) < 20.),
-                999);
+    const TaskStats &task_stats = calc.task_stats;
+    if (task_stats.task_valid && task_stats.total.travelled.IsDefined()) 
+    {
+      RenderValue(canvas, geometry.value_d_pos, value_d,
+                  Units::ToUserTaskSpeed(task_stats.total.travelled.GetSpeed()),
+                  _T("V Task Avg"), 
+                  true,
+                  0);
+      if (geometry.num_values > 4)
+      {
+        RenderValue(canvas, geometry.value_e_pos, value_e,
+                  Units::ToUserTaskSpeed(task_stats.last_hour.speed),
+                  _T("V Task H"), 
+                  true,
+                  0);
+      }
+    }
   }
 
   RenderClimb(canvas);
