@@ -46,7 +46,7 @@ struct NavLook {
   PixelRect old_rc;
   unsigned middle;
 
-  const TCHAR no_target_msg[22] = _T("No navigation target");
+  const TCHAR no_target_msg[22] = _T("No Navigation Target");
 
   void Initialise(bool inverse, bool colors,
                   const Font &text_font);

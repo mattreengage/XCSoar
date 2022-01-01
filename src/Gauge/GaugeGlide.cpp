@@ -38,6 +38,10 @@ void
 GaugeGlide::OnPaintBuffer(Canvas &canvas)
 {
   const PixelRect rc = GetClientRect();
+
+  if (!look.fonts_valid || look.HasChanged(rc))
+    look.Resize(canvas, rc);
+
   spacing = rc.GetHeight() / SEGMENTS;
   const unsigned width = rc.GetWidth();
 
@@ -115,10 +119,10 @@ GaugeGlide::OnPaintBuffer(Canvas &canvas)
   TCHAR buffer[3];
   for (i = MINGR_ROOT; i < MAXGR_ROOT; i++) {
     _stprintf(buffer, _T("%d"), i * i);
-    RenderScale(canvas, rc, i, buffer);
+    RenderScale(canvas, rc, i, buffer, false);
   }
-  RenderScale(canvas, rc, i, _T("∞"));
-  RenderScale(canvas, rc, ++i, _T("++"));
+  RenderScale(canvas, rc, i, _T("∞"), true);
+  RenderScale(canvas, rc, ++i, _T("++"), false);
 }
 
 bool 
@@ -143,17 +147,22 @@ GaugeGlide::GetGlideRoot(double val)
 }
 
 void
-GaugeGlide::RenderScale(Canvas &canvas, PixelRect rc, unsigned root_value, const TCHAR *label) noexcept
+GaugeGlide::RenderScale(Canvas &canvas, PixelRect rc, unsigned root_value, const TCHAR *label, bool inf) noexcept
 {
-  PixelSize text_size = canvas.CalcTextSize(label);
-  const unsigned width = text_size.width;
-  const int y = VertPos(rc, (root_value <= MAXGR_ROOT) ? root_value : -1.0 ) - (text_size.height / 2);
-
   canvas.SetBackgroundColor(look.background_color);
   canvas.SetTextColor(look.text_color);
-  canvas.Select(look.text_font);
+  canvas.Select(inf ? look.inf_font : look.text_font);
 
-  const int left = (rc.GetWidth() - width) / 2;
+  const PixelSize text_size = canvas.CalcTextSize(label);
+  unsigned text_width = text_size.width;
+  if (text_width > rc.GetWidth() / 2)
+    text_width = rc.GetWidth() / 2;
+
+  const unsigned half_text_height = text_size.height / 2;
+  const double effective = (root_value <= MAXGR_ROOT) ? root_value : -1.0;
+  int y = VertPos(rc, effective) - half_text_height;
+
+  const int left = (rc.GetWidth() - text_width) / 2;
 
   const PixelPoint text_position{left, y};
   canvas.DrawText(text_position, label);
@@ -164,11 +173,13 @@ unsigned GaugeGlide::VertPos(PixelRect rc, double root_value)
   double val = root_value;
   if (val < 0)
     val = MAXGR_ROOT + 1.0;
-  else if (val >= MAXGR_ROOT)
+  else if (val > MAXGR_ROOT)
     val = MAXGR_ROOT;
-  else if (val < MINGR_ROOT)
-    val = MINGR_ROOT;
-  return rc.bottom - (spacing * (val - MINGR_ROOT)) - (spacing / 2);
+  unsigned offset = spacing * (val - MINGR_ROOT);
+  unsigned vpos = rc.bottom - (spacing / 2) - offset;
+  if (vpos > (rc.bottom - 5u))
+    vpos = rc.bottom - 5;
+  return vpos;
 }
 
 void

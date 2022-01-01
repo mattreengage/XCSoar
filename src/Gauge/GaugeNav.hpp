@@ -42,8 +42,6 @@ class GaugeNav : public AntiFlickerWindow
 
   NavLook &look;
 
-  unsigned spacing;
-
 public:
   GaugeNav(const FullBlackboard &blackboard,
              ContainerWindow &parent, NavLook &look,

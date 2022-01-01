@@ -54,13 +54,35 @@ GlideLook::Initialise(bool _inverse, bool _colors,
   border.Create(1, text_color);
   require_pen.Create(Layout::Scale(2), text_color);
 
-  const unsigned value_font_height = Layout::FontScale(30);
-  GlideLook::Resize(value_font_height);
+  fonts_valid = false;
 }
 
 void
-GlideLook::Resize(unsigned height)
+GlideLook::Resize(Canvas &canvas, PixelRect rc)
 {
-  unsigned text_font_height = std::max(height * 2u / 5u, 7u);
-  text_font.Load(FontDescription(text_font_height, false, false, false));
+  const unsigned height = rc.GetWidth();
+  text_font.Load(FontDescription(height, false, false, false));
+  inf_font.Load(FontDescription(height, false, false, false));
+
+  PixelSize text_size;
+
+  canvas.Select(text_font);
+  text_size = canvas.CalcTextSize(_T("++"));
+  text_font.Load(FontDescription(height * rc.GetWidth() / text_size.width / 2, false, false, false));
+
+  canvas.Select(inf_font);
+  text_size = canvas.CalcTextSize(_T("∞"));
+  inf_font.Load(FontDescription(height * rc.GetWidth() / text_size.width / 2, false, false, false));
+
+  fonts_valid = true;
+  old_rc = rc;
+}
+
+bool
+GlideLook::HasChanged(PixelRect rc)
+{
+  return (rc.right != old_rc.right || 
+    rc.bottom !=old_rc.bottom ||
+    rc.top != old_rc.top ||
+    rc.left != old_rc.left);
 }

@@ -78,7 +78,7 @@ protected:
   virtual void OnPaintBuffer(Canvas &canvas) override;
 
 private:
-  void RenderScale(Canvas &canvas, PixelRect rc, unsigned root_value, const TCHAR *label) noexcept;
+  void RenderScale(Canvas &canvas, PixelRect rc, unsigned root_value, const TCHAR *label, bool inf) noexcept;
   unsigned VertPos(PixelRect rc, double value);
   double GetGlideRoot(double val);
   bool IsGood(double required, double actual);
