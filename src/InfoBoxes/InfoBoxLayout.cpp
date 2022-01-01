@@ -25,6 +25,8 @@ Copyright_License {
 #include "Border.hpp"
 #include "util/Macros.hpp"
 #include "util/Clamp.hpp"
+#include "MapSettings.hpp"
+#include "Interface.hpp"
 
 #include "LogFile.hpp"
 
@@ -40,6 +42,8 @@ static constexpr unsigned char geometry_counts[] = {
   8, 16, 14, 10, 10, 10,
   12, // 3 rows X 4 boxes
 };
+
+using namespace CommonInterface;
 
 namespace InfoBoxLayout
 {
@@ -132,6 +136,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
 
   layout.ClearVario();
   layout.ClearGlide();
+  layout.ClearNav();
 
   unsigned right = rc.right;
 
@@ -233,12 +238,6 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
     rc.right = MakeRightColumn(layout, layout.positions + 7, 1, rc.right,
                                rc.top + 5 * layout.control_size.height, rc.bottom);
 
-    layout.glide.top = 0;
-    layout.glide.bottom = rc.bottom;
-    layout.glide.right = rc.right;
-    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
-    rc.right = layout.glide.left;
-
     // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
@@ -255,12 +254,6 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
                                rc.top + 5 * layout.control_size.height, rc.bottom);
     rc.right = MakeRightColumn(layout, layout.positions + 13, 1, rc.right,
                                rc.top + 5 * layout.control_size.height, rc.bottom);
-
-    layout.glide.top = 0;
-    layout.glide.bottom = rc.bottom;
-    layout.glide.right = rc.right;
-    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
-    rc.right = layout.glide.left;
 
     // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
@@ -400,6 +393,28 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
                                 rc.left, rc.right, rc.bottom);
     break;
   };
+
+  const MapSettings &map_settings = CommonInterface::GetMapSettings();
+  // Add the navigation ribbon if required
+  if (map_settings.nav_ribbon_enabled)
+  {
+    layout.nav.top = rc.top;
+    layout.nav.bottom = rc.top + layout.control_size.height / 2;
+    layout.nav.right = rc.right;
+    layout.nav.left = rc.left;
+    rc.top = layout.nav.bottom;
+  }
+
+
+  // Add the glide ratio ribbon if required
+  if (map_settings.glide_ribbon_enabled)
+  {
+    layout.glide.top = rc.top;
+    layout.glide.bottom = rc.bottom;
+    layout.glide.right = rc.right;
+    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+    rc.right = layout.glide.left;
+  }
 
   layout.remaining = rc;
   return layout;

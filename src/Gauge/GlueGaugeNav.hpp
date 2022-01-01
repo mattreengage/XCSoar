@@ -21,23 +21,34 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_COMPASS_RENDERER_HPP
-#define XCSOAR_COMPASS_RENDERER_HPP
+#ifndef GLUE_GAUGE_NAV_H
+#define GLUE_GAUGE_NAV_H
 
-struct PixelPoint;
-struct PixelRect;
-struct MapLook;
-class Canvas;
-class Angle;
+#include "Widget/WindowWidget.hpp"
+#include "Blackboard/BlackboardListener.hpp"
 
-class CompassRenderer {
-  const MapLook &look;
+struct NavLook;
+class LiveBlackboard;
+
+/**
+ * A variant of GaugeVario which auto-updates its data from the device
+ * blackboard.
+ */
+class GlueGaugeNav final
+  : public WindowWidget, private NullBlackboardListener {
+  LiveBlackboard &blackboard;
+  NavLook &look;
 
 public:
-  CompassRenderer(const MapLook &_look):look(_look) {}
+  GlueGaugeNav(LiveBlackboard &_blackboard,  NavLook &_look) noexcept
+    :blackboard(_blackboard), look(_look) {}
 
-  void Draw(Canvas &canvas, Angle screen_angle, PixelPoint pos);
-  void Draw(Canvas &canvas, Angle screen_angle, PixelRect rc);
+  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
+  void Show(const PixelRect &rc) noexcept override;
+  void Hide() noexcept override;
+
+private:
+  virtual void OnGPSUpdate(const MoreData &basic) override;
 };
 
 #endif

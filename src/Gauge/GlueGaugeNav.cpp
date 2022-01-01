@@ -21,23 +21,39 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_COMPASS_RENDERER_HPP
-#define XCSOAR_COMPASS_RENDERER_HPP
+#include "Gauge/GlueGaugeNav.hpp"
+#include "Gauge/GaugeNav.hpp"
+#include "Blackboard/LiveBlackboard.hpp"
 
-struct PixelPoint;
-struct PixelRect;
-struct MapLook;
-class Canvas;
-class Angle;
+void
+GlueGaugeNav::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
+{
+  WindowStyle style;
+  style.Hide();
+  style.Disable();
 
-class CompassRenderer {
-  const MapLook &look;
+  SetWindow(std::make_unique<GaugeNav>(blackboard, parent, look,
+                                         rc, style));
+}
 
-public:
-  CompassRenderer(const MapLook &_look):look(_look) {}
+void
+GlueGaugeNav::Show(const PixelRect &rc) noexcept
+{
+  WindowWidget::Show(rc);
 
-  void Draw(Canvas &canvas, Angle screen_angle, PixelPoint pos);
-  void Draw(Canvas &canvas, Angle screen_angle, PixelRect rc);
-};
+  blackboard.AddListener(*this);
+}
 
-#endif
+void
+GlueGaugeNav::Hide() noexcept
+{
+  blackboard.RemoveListener(*this);
+
+  WindowWidget::Hide();
+}
+
+void
+GlueGaugeNav::OnGPSUpdate(const MoreData &basic)
+{
+  ((GaugeNav &)GetWindow()).Invalidate();
+}

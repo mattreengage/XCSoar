@@ -52,6 +52,15 @@ namespace InfoBoxLayout
       vario.left = vario.top = vario.right = vario.bottom = 0;
     }
 
+    PixelRect nav;
+    bool HasNav() const {
+      return nav.right > nav.left && nav.bottom > nav.top;
+    }
+
+    void ClearNav() {
+      nav.left = nav.top = nav.right = nav.bottom = 0;
+    }
+
     PixelRect glide;
     bool HasGlide() const {
       return glide.right > glide.left && glide.bottom > glide.top;

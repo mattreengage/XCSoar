@@ -362,6 +362,8 @@ XCSOAR_SOURCES := \
 	$(SRC)/Gauge/GlueGaugeVario.cpp \
 	$(SRC)/Gauge/GaugeGlide.cpp \
 	$(SRC)/Gauge/GlueGaugeGlide.cpp \
+	$(SRC)/Gauge/GaugeNav.cpp \
+	$(SRC)/Gauge/GlueGaugeNav.cpp \
 	$(SRC)/Gauge/TaskView.cpp \
 	$(SRC)/Gauge/LogoView.cpp \
 	\
@@ -456,7 +458,6 @@ XCSOAR_SOURCES := \
 	$(SRC)/Renderer/AirspacePreviewRenderer.cpp \
 	$(SRC)/Renderer/BestCruiseArrowRenderer.cpp \
 	$(SRC)/Renderer/CompassRenderer.cpp \
-	$(SRC)/Renderer/NavRibbonRenderer.cpp \
 	$(SRC)/Renderer/FinalGlideBarRenderer.cpp \
 	$(SRC)/Renderer/VarioBarRenderer.cpp \
 	$(SRC)/Renderer/MapItemListRenderer.cpp \

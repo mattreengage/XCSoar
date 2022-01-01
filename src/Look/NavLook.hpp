@@ -21,31 +21,38 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_NAV_RIBBON_RENDERER_HPP
-#define XCSOAR_NAV_RIBBON_RENDERER_HPP
+#ifndef XCSOAR_NAV_LOOK_HPP
+#define XCSOAR_NAV_LOOK_HPP
 
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Font.hpp"
 #include "ui/canvas/Canvas.hpp"
-#include "Screen/Layout.hpp"
-#include "Look/FontDescription.hpp"
 
-struct PixelRect;
-struct MapLook;
-class Canvas;
 class Font;
-class FontDescription;
 
-class NavRibbonRenderer {
-  Font font;
-  bool is_dirty = true;
+struct NavLook {
+  bool inverse, colors;
 
-public:
-  bool is_visible = false;
-  void Draw(Canvas &canvas, PixelRect rc);
-  void MakeDirty();
-  void Hide();
+  Color background_color, text_color;
 
-private:
-  void Initialise(const PixelRect rc);
+  Brush goal_brush, track_brush;
+  Pen border_pen, goal_pen, track_pen;
+
+  bool fonts_valid;
+  Font text_font, error_font;
+
+  PixelRect old_rc;
+  unsigned middle;
+
+  const TCHAR no_target_msg[22] = _T("No navigation target");
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
 };
 
 #endif

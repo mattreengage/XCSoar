@@ -106,7 +106,7 @@ GaugeGlide::OnPaintBuffer(Canvas &canvas)
   {
     root_val = GetGlideRoot(calc.task_stats.glide_required);
     y = VertPos(rc, root_val);
-    canvas.Select(look.border);
+    canvas.Select(look.require_pen);
     canvas.DrawLine({rc.left, y}, {rc.right, y});
   }
 

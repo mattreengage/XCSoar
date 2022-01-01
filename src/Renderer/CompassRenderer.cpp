@@ -35,10 +35,10 @@ Copyright_License {
 
 void
 CompassRenderer::Draw(Canvas &canvas, const Angle screen_angle,
-                      const PixelRect rc, bool offset)
+                      const PixelRect rc)
 {
   PixelPoint pos(rc.right - Layout::Scale(19),
-                 Layout::Scale(19) + rc.top + (offset ? Layout::Scale(19) : 0));
+                 Layout::Scale(19) + rc.top);
   Draw(canvas, screen_angle, pos);
 }
 

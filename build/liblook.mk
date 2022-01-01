@@ -11,6 +11,7 @@ LOOK_SOURCES := \
 	$(SRC)/Look/TerminalLook.cpp \
 	$(SRC)/Look/VarioLook.cpp \
 	$(SRC)/Look/GlideLook.cpp \
+	$(SRC)/Look/NavLook.cpp \
 	$(SRC)/Look/ChartLook.cpp \
 	$(SRC)/Look/MapLook.cpp \
 	$(SRC)/Look/OverlayLook.cpp \

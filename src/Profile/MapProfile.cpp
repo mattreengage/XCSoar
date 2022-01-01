@@ -149,6 +149,9 @@ Profile::Load(const ProfileMap &map, MapSettings &settings)
   map.Get(ProfileKeys::EnableNavRibbon,
           settings.nav_ribbon_enabled);
 
+  map.Get(ProfileKeys::EnableGlideRibbon,
+          settings.glide_ribbon_enabled);
+
   Load(map, settings.trail);
   Load(map, settings.item_list);
 }

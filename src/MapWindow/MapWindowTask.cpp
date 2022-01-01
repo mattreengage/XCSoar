@@ -28,7 +28,6 @@ Copyright_License {
 #include "Engine/Task/Ordered/OrderedTask.hpp"
 #include "Renderer/TaskRenderer.hpp"
 #include "Renderer/TaskPointRenderer.hpp"
-#include "Renderer/NavRibbonRenderer.hpp"
 #include "Renderer/OZRenderer.hpp"
 #include "Screen/Layout.hpp"
 #include "Math/Screen.hpp"
@@ -157,18 +156,5 @@ MapWindow::DrawTaskOffTrackIndicator(Canvas &canvas)
       canvas.DrawText(sc - tsize / 2u, Buffer);
       ilast = idist;
     }
-  }
-}
-
-void
-MapWindow::DrawNavRibbon(Canvas &canvas, const PixelRect &rc)
-{
-  if (!settings_map.nav_ribbon_enabled) 
-  {
-    this->nav_ribbon_renderer.Hide();
-  }
-  else
-  {
-    this->nav_ribbon_renderer.Draw(canvas, rc);
   }
 }

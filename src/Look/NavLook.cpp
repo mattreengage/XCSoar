@@ -21,7 +21,7 @@ Copyright_License {
 }
 */
 
-#include "GlideLook.hpp"
+#include "NavLook.hpp"
 #include "FontDescription.hpp"
 #include "Screen/Layout.hpp"
 #include "Units/Units.hpp"
@@ -30,7 +30,7 @@ Copyright_License {
 #include <algorithm>
 
 void
-GlideLook::Initialise(bool _inverse, bool _colors,
+NavLook::Initialise(bool _inverse, bool _colors,
                       const Font &_text_font)
 {
   inverse = _inverse;
@@ -44,23 +44,42 @@ GlideLook::Initialise(bool _inverse, bool _colors,
     text_color = COLOR_BLACK;
   }
 
-  border_brush.Create(text_color);
-  bad_brush.Create(Color(0xff, 0x20, 0x20));
-  good_brush.Create(Color(0x20, 0xee, 0x20));
+  goal_brush.Create(Color(0x20, 0x20, 0xff));
+  track_brush.Create(text_color);
 
-  bad_pen.Create(Layout::Scale(1), Color(0xff, 0x20, 0x20));
-  good_pen.Create(Layout::Scale(1), Color(0x20, 0xee, 0x00));
+  goal_pen.Create(Layout::Scale(1), Color(0x20, 0x20, 0xff));
+  track_pen.Create(3, text_color);
 
-  border.Create(1, text_color);
-  require_pen.Create(Layout::Scale(2), text_color);
+  border_pen.Create(1, text_color);
 
-  const unsigned value_font_height = Layout::FontScale(30);
-  GlideLook::Resize(value_font_height);
+  fonts_valid = false;
 }
 
 void
-GlideLook::Resize(unsigned height)
+NavLook::Resize(Canvas &canvas, PixelRect rc)
 {
-  unsigned text_font_height = std::max(height * 2u / 5u, 7u);
-  text_font.Load(FontDescription(text_font_height, false, false, false));
+  const unsigned height = rc.GetHeight() - 9;
+  text_font.Load(FontDescription(height * 2 / 3, true, false, false));
+
+  // First attempt is to make error text the full height available
+  error_font.Load(FontDescription(height, false, false, false));
+
+  // If the text is wider than available, scale down accordingly
+  canvas.Select(error_font);
+  PixelSize text_size = canvas.CalcTextSize(no_target_msg);
+  if (text_size.width > rc.GetWidth())
+    error_font.Load(FontDescription(height * rc.GetWidth() / text_size.width, false, false, false));
+
+  middle = rc.GetWidth() / 2 + rc.left;
+  fonts_valid = true;
+  old_rc = rc;
+}
+
+bool
+NavLook::HasChanged(PixelRect rc)
+{
+  return (rc.right != old_rc.right || 
+    rc.bottom !=old_rc.bottom ||
+    rc.top != old_rc.top ||
+    rc.left != old_rc.left);
 }

@@ -285,9 +285,6 @@ MapWindow::Render(Canvas &canvas, const PixelRect &rc)
   // Render compass
   DrawCompass(canvas, rc);
 
-  // Draw Nav Ribbon
-  DrawNavRibbon(canvas, rc);
-
   //////////////////////////////////////////////// traffic
   // Draw traffic
 

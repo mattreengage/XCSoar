@@ -29,6 +29,7 @@ Copyright_License {
 #include "TerminalLook.hpp"
 #include "VarioLook.hpp"
 #include "GlideLook.hpp"
+#include "NavLook.hpp"
 #include "ChartLook.hpp"
 #include "ThermalBandLook.hpp"
 #include "TraceHistoryLook.hpp"
@@ -53,6 +54,7 @@ struct Look {
   TerminalLook terminal;
   VarioLook vario;
   GlideLook glide;
+  NavLook nav;
   ChartLook chart;
   ThermalBandLook thermal_band;
   TraceHistoryLook trace_history;

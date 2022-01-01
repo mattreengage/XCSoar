@@ -191,6 +191,9 @@ struct MapSettings {
   /** Show Navigation Ribbon */
   bool nav_ribbon_enabled;
 
+  /** Show Glide Ratio Ribbon */
+  bool glide_ribbon_enabled;
+
   /**
    * Overlay FAI triangle areas on the map while flying?
    */

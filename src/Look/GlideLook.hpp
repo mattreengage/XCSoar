@@ -21,7 +21,7 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_GLIDELOOK_HPP
+#ifndef XCSOAR_GLIDE_LOOK_HPP
 #define XCSOAR_GLIDE_LOOK_HPP
 
 #include "ui/canvas/Color.hpp"
@@ -38,7 +38,7 @@ struct GlideLook {
   Color background_color, text_color;
 
   Brush border_brush, bad_brush, good_brush;
-  Pen border, good_pen, bad_pen;
+  Pen border, good_pen, bad_pen, require_pen;
 
   Font text_font;
 

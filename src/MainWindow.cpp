@@ -40,6 +40,7 @@ Copyright_License {
 #include "Gauge/GaugeThermalAssistant.hpp"
 #include "Gauge/GlueGaugeVario.hpp"
 #include "Gauge/GlueGaugeGlide.hpp"
+#include "Gauge/GlueGaugeNav.hpp"
 #include "Form/Form.hpp"
 #include "Widget/Widget.hpp"
 #include "UtilsSystem.hpp"
@@ -217,6 +218,8 @@ MainWindow::InitialiseConfigured()
 
   ReinitialiseLayout_glide(ib_layout);
 
+  ReinitialiseLayout_nav(ib_layout);
+
   ReinitialiseLayoutTA(rc, ib_layout);
 
   WindowStyle hidden_border;
@@ -266,6 +269,7 @@ MainWindow::Deinitialise()
 
   vario.Clear();
   glide.Clear();
+  nav.Clear();
   traffic_gauge.Clear();
   thermal_assistant.Clear();
 
@@ -305,6 +309,22 @@ MainWindow::ReinitialiseLayout_glide(const InfoBoxLayout::Layout &layout)
 
   glide.Move(layout.glide);
   glide.Show();
+}
+
+void
+MainWindow::ReinitialiseLayout_nav(const InfoBoxLayout::Layout &layout)
+{
+  if (!layout.HasNav()) {
+    nav.Clear();
+    return;
+  }
+
+  if (!nav.IsDefined())
+    nav.Set(new GlueGaugeNav(CommonInterface::GetLiveBlackboard(),
+                                 look->nav));
+
+  nav.Move(layout.nav);
+  nav.Show();
 }
 
 void
@@ -373,6 +393,8 @@ MainWindow::ReinitialiseLayout()
   ReinitialiseLayout_vario(ib_layout);
 
   ReinitialiseLayout_glide(ib_layout);
+
+  ReinitialiseLayout_nav(ib_layout);
 
   ReinitialiseLayout_flarm(rc, ib_layout);
 
