@@ -127,6 +127,18 @@ enum class WindArrowStyle: uint8_t {
   NO_ARROW,
 };
 
+enum class NavRibbonType : uint8_t {
+  NONE,
+  TOP,
+  BOTTOM,
+};
+
+enum class GlideRibbonType : uint8_t {
+  NONE,
+  LEFT,
+  RIGHT,
+};
+
 struct MapSettings {
   /** Map zooms in on circling */
   bool circle_zoom_enabled;
@@ -189,10 +201,10 @@ struct MapSettings {
   bool vario_bar_enabled;
 
   /** Show Navigation Ribbon */
-  bool nav_ribbon_enabled;
+  NavRibbonType nav_ribbon_mode;
 
   /** Show Glide Ratio Ribbon */
-  bool glide_ribbon_enabled;
+  GlideRibbonType glide_ribbon_mode;
 
   /**
    * Overlay FAI triangle areas on the map while flying?

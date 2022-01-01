@@ -72,6 +72,25 @@ static constexpr StaticEnumChoice thermal_assistant_position_list[] = {
   { 0 }
 };
 
+static constexpr StaticEnumChoice nav_ribbon_type_list[] = {
+  { (unsigned)NavRibbonType::NONE, N_("Off"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)NavRibbonType::TOP, N_("Top"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)NavRibbonType::BOTTOM, N_("Bottom"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
+
+static constexpr StaticEnumChoice glide_ribbon_type_list[] = {
+  { (unsigned)GlideRibbonType::NONE, N_("Off"),
+    N_("Disable glide ratio ribbon.") },
+  { (unsigned)GlideRibbonType::LEFT, N_("Left"),
+    N_("Show glide ratio ribbon left of map") },
+  { (unsigned)GlideRibbonType::RIGHT, N_("Right"),
+    N_("how glide ratio ribbon right of map") },
+  { 0 }
+};
 
 class GaugesConfigPanel final : public RowFormWidget, DataFieldListener {
 public:
@@ -147,13 +166,18 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
 
   SetExpertRow(EnableVarioBar);
 
-  AddBoolean(_("Navigation Ribbon"),
+  AddEnum(_("Navigation Ribbon"),
              _("If set to ON the Navigation Ribbon will be shown"),
-             map_settings.nav_ribbon_enabled);
+             nav_ribbon_type_list,
+             (unsigned)map_settings.nav_ribbon_mode,
+             this);
 
-  AddBoolean(_("Glide Ratio Ribbon"),
+
+  AddEnum(_("Glide Ratio Ribbon"),
              _("If set to ON the Glide Ratio Ribbon will be shown"),
-             map_settings.glide_ribbon_enabled);
+             glide_ribbon_type_list,
+             (unsigned)map_settings.glide_ribbon_mode,
+             this);
 }
 
 bool
@@ -187,13 +211,19 @@ GaugesConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(EnableVarioBar, ProfileKeys::EnableVarioBar,
                        map_settings.vario_bar_enabled);
 
-  changed |= SaveValue(EnableNavRibbon, ProfileKeys::EnableNavRibbon,
-                       map_settings.nav_ribbon_enabled);
+  bool ribbon_geometry_changed = false;
+  ribbon_geometry_changed |= SaveValueEnum(EnableNavRibbon, ProfileKeys::EnableNavRibbon,
+                       map_settings.nav_ribbon_mode);
 
-  changed |= SaveValue(EnableGlideRibbon, ProfileKeys::EnableGlideRibbon,
-                       map_settings.glide_ribbon_enabled);
+  ribbon_geometry_changed |= SaveValueEnum(EnableGlideRibbon, ProfileKeys::EnableGlideRibbon,
+                       map_settings.glide_ribbon_mode);
+
+  changed |= ribbon_geometry_changed;
 
   _changed |= changed;
+
+  if (ribbon_geometry_changed)
+    CommonInterface::main_window->ReinitialiseLayout();
 
   return true;
 }

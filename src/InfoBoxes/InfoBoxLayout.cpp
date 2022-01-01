@@ -396,24 +396,44 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry)
 
   const MapSettings &map_settings = CommonInterface::GetMapSettings();
   // Add the navigation ribbon if required
-  if (map_settings.nav_ribbon_enabled)
+  if (map_settings.nav_ribbon_mode != NavRibbonType::NONE)
   {
-    layout.nav.top = rc.top;
-    layout.nav.bottom = rc.top + layout.control_size.height / 2;
     layout.nav.right = rc.right;
     layout.nav.left = rc.left;
-    rc.top = layout.nav.bottom;
+
+    if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
+    {
+      layout.nav.top = rc.top;
+      layout.nav.bottom = rc.top + layout.control_size.height / 2;
+      rc.top = layout.nav.bottom;
+    }
+    else
+    {
+      layout.nav.bottom = rc.bottom;
+      layout.nav.top = rc.bottom - layout.control_size.height / 2;
+      rc.bottom = layout.nav.top;
+    }
   }
 
 
   // Add the glide ratio ribbon if required
-  if (map_settings.glide_ribbon_enabled)
+  if (map_settings.glide_ribbon_mode != GlideRibbonType::NONE)
   {
     layout.glide.top = rc.top;
     layout.glide.bottom = rc.bottom;
-    layout.glide.right = rc.right;
-    layout.glide.left = layout.glide.right - layout.control_size.width / 2;
-    rc.right = layout.glide.left;
+
+    if (map_settings.glide_ribbon_mode == GlideRibbonType::RIGHT)
+    {
+      layout.glide.right = rc.right;
+      layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+      rc.right = layout.glide.left;
+    }
+    else
+    {
+      layout.glide.left = rc.left;
+      layout.glide.right = layout.glide.left + layout.control_size.width / 2;
+      rc.left = layout.glide.right;
+    }
   }
 
   layout.remaining = rc;
