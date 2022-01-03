@@ -48,6 +48,11 @@ l_settings_index(lua_State *L)
         CommonInterface::GetComputerSettings();
     
       Lua::Push(L, settings_computer.polar.bugs);
+  } else if (StringIsEqual(name, "variorange")) {
+    const ComputerSettings &settings_computer =
+      CommonInterface::GetComputerSettings();
+    
+    Lua::Push(L, (int)settings_computer.vario_range);
   } else if (StringIsEqual(name, "wingload")) {
       /* Current used wingload */
       const ComputerSettings &settings_computer =
@@ -133,6 +138,16 @@ l_settings_setmc(lua_State *L)
 }
 
 static int
+l_settings_setvariorange(lua_State *L)
+{
+  if (lua_gettop(L) != 1)
+    return luaL_error(L, "Invalid parameters");
+
+  ActionInterface::SetVarioRange(luaL_checknumber(L, 1));
+  return 0;
+}
+
+static int
 l_settings_setbugs(lua_State *L)
 {
   if (lua_gettop(L) != 1)
@@ -183,6 +198,7 @@ static constexpr struct luaL_Reg settings_funcs[] = {
   {"setqnh", l_settings_setqnh},
   {"setballast", l_settings_setballast},
   {"setmaxtemp", l_settings_setmaxtemp},
+  {"setvariorange", l_settings_setvariorange},
   {nullptr, nullptr}
 };
 

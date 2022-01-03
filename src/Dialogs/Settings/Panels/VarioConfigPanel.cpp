@@ -26,19 +26,47 @@ Copyright_License {
 #include "Language/Language.hpp"
 #include "Interface.hpp"
 #include "Widget/RowFormWidget.hpp"
+#include "Form/DataField/Enum.hpp"
+#include "Form/DataField/Listener.hpp"
 #include "UIGlobals.hpp"
 
 enum ControlIndex {
-  AppGaugeVarioSpeedToFly,
-  AppGaugeVarioAvgText,
-  AppGaugeVarioMc,
+  AppGaugeVarioRange,
   AppGaugeVarioBugs,
   AppGaugeVarioBallast,
-  AppGaugeVarioGross,
   AppAveNeedle,
   AppAveThermalNeedle,
 };
 
+static constexpr StaticEnumChoice vario_range_ms[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("2.5 m/s"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("5 m/s"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("10 m/s"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
+
+static constexpr StaticEnumChoice vario_range_kt[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("5 knots"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("10 knots"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("20 knots"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
+
+static constexpr StaticEnumChoice vario_range_ft[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("500 fpm"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("1000 fpm"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("2000 fpm"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
 
 class VarioConfigPanel final : public RowFormWidget {
 public:
@@ -55,23 +83,16 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
                           const PixelRect &rc) noexcept
 {
   const VarioSettings &settings = CommonInterface::GetUISettings().vario;
+  const UnitSetting &units = CommonInterface::GetUISettings().format.units;
 
   RowFormWidget::Prepare(parent, rc);
 
-  AddBoolean(_("Speed arrows"),
-             _("Whether to show speed command arrows on the vario gauge.  When shown, in cruise mode, "
-                 "arrows point up to command slow down; arrows point down to command speed up."),
-             settings.show_speed_to_fly);
-  SetExpertRow(AppGaugeVarioSpeedToFly);
-
-  AddBoolean(_("Show average"),
-             _("Whether to show the average climb rate.  In cruise mode, this switches to showing the "
-                 "average netto airmass rate."),
-             settings.show_average);
-  SetExpertRow(AppGaugeVarioAvgText);
-
-  AddBoolean(_("Show MacReady"), _("Whether to show the MacCready setting."), settings.show_mc);
-  SetExpertRow(AppGaugeVarioMc);
+  AddEnum(_("Vario Range"),
+             _("Maximum range for the vario display"),
+                (units.vertical_speed_unit == Unit::METER_PER_SECOND) ? vario_range_ms :
+                (units.vertical_speed_unit == Unit::KNOTS) ? vario_range_kt :
+                vario_range_ft,
+             (unsigned)settings.vario_range);
 
   AddBoolean(_("Show bugs"), _("Whether to show the bugs percentage."), settings.show_bugs);
   SetExpertRow(AppGaugeVarioBugs);
@@ -79,18 +100,15 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
   AddBoolean(_("Show ballast"), _("Whether to show the ballast percentage."), settings.show_ballast);
   SetExpertRow(AppGaugeVarioBallast);
 
-  AddBoolean(_("Show gross"), _("Whether to show the gross climb rate."), settings.show_gross);
-  SetExpertRow(AppGaugeVarioGross);
-
   AddBoolean(_("Averager needle"),
-             _("If true, the vario gauge will display a hollow averager needle.  During cruise, this "
+             _("If true, the vario gauge will display a red diamond averager needle.  During cruise, this "
                  "needle displays the average netto value.  During circling, this needle displays the "
                  "average gross value."),
              settings.show_average_needle);
   SetExpertRow(AppAveNeedle);
 
   AddBoolean(_("Thermal Averager needle"),
-             _("If true, the vario gauge will display a thermal averager needle instead of current climb rate needle.  During cruise, this "
+             _("If true, the vario gauge will display a  green T thermal averager needle.  During cruise, this "
                "needle displays the last thermal average netto value.  During circling, this needle displays the "
                "average net value."),
              settings.show_thermal_average_needle);
@@ -104,17 +122,19 @@ VarioConfigPanel::Save(bool &_changed) noexcept
 
   VarioSettings &settings = CommonInterface::SetUISettings().vario;
 
-  changed |= SaveValue(AppGaugeVarioSpeedToFly, ProfileKeys::AppGaugeVarioSpeedToFly, settings.show_speed_to_fly);
+  changed |= SaveValueEnum(AppGaugeVarioRange,
+                           ProfileKeys::AppGaugeVarioRange,
+                           settings.vario_range);
 
-  changed |= SaveValue(AppGaugeVarioAvgText, ProfileKeys::AppGaugeVarioAvgText, settings.show_average);
-
-  changed |= SaveValue(AppGaugeVarioMc, ProfileKeys::AppGaugeVarioMc, settings.show_mc);
+  if (changed)
+  {
+    ComputerSettings &comp = CommonInterface::SetComputerSettings();
+    comp.vario_range = settings.vario_range;
+  }
 
   changed |= SaveValue(AppGaugeVarioBugs, ProfileKeys::AppGaugeVarioBugs, settings.show_bugs);
 
   changed |= SaveValue(AppGaugeVarioBallast, ProfileKeys::AppGaugeVarioBallast, settings.show_ballast);
-
-  changed |= SaveValue(AppGaugeVarioGross, ProfileKeys::AppGaugeVarioGross, settings.show_gross);
 
   changed |= SaveValue(AppAveNeedle, ProfileKeys::AppAveNeedle, settings.show_average_needle);
 

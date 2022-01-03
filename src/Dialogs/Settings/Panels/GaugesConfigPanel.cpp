@@ -78,7 +78,7 @@ static constexpr StaticEnumChoice nav_ribbon_type_list[] = {
   { (unsigned)NavRibbonType::TOP, N_("Top"),
     N_("Show navigation ribbon above map") },
   { (unsigned)NavRibbonType::BOTTOM, N_("Bottom"),
-    N_("how navigation ribbon below map") },
+    N_("Show navigation ribbon below map") },
   { 0 }
 };
 

@@ -37,8 +37,7 @@ class GaugeVario : public AntiFlickerWindow
   static constexpr unsigned NARROWS = 3;
   static constexpr int YOFFSET = 36;
 
-  /** 5 m/s */
-  static constexpr int GAUGEVARIORANGE = 5;
+  static constexpr double GAUGEVARIORANGE[]= {2.5, 5.0, 10.0};
 
   /** degrees total sweep */
   static constexpr int GAUGEVARIOSWEEP = 90;

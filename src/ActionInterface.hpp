@@ -73,6 +73,13 @@ namespace ActionInterface {
   void OffsetManualMacCready(double offset, bool to_devices=true);
 
   /**
+   * Change the Vario Range in #ComputerSettings, but
+   * not in the configuration.
+   *
+   */
+  void SetVarioRange(unsigned range);
+
+  /**
    * Call this after MapSettings has been modified with
    * SetMapSettings().  It sends the new values to all sub systems,
    * and optionally forces a redraw.

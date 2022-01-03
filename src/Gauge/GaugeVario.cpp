@@ -33,8 +33,7 @@ Copyright_License {
 #include "Formatter/Units.hpp"
 #include "Units/System.hpp"
 #include "Units/Descriptor.hpp"
-
-#include "LogFile.hpp"
+#include "Interface.hpp"
 
 #define DELTA_V_STEP 4.
 #define DELTA_V_LIMIT 16.
@@ -122,6 +121,10 @@ GaugeVario::GaugeVario(const FullBlackboard &_blackboard,
   :blackboard(_blackboard), look(_look)
 {
   Create(parent, rc, style);
+
+  // Initialise from the settings
+  ComputerSettings &comp = CommonInterface::SetComputerSettings();
+  comp.vario_range = Settings().vario_range;
 }
 
 void
@@ -267,16 +270,16 @@ GaugeVario::MakeAvePolygon(const int i) noexcept
                                  geometry.v_width * 100 / geometry.v_height);
 
   auto *bit_th = getThAvePolygon(i);
-  bit_th[0] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, 0}),
+  bit_th[0] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, 0}),
                                  geometry.offset, 
                                  geometry.v_width * 100 / geometry.v_height);
-  bit_th[1] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, 0}),
+  bit_th[1] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, 0}),
                                  geometry.offset, 
                                  geometry.v_width * 100 / geometry.v_height);
-  bit_th[2] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, -geometry.nwidth}),
+  bit_th[2] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, -geometry.nwidth}),
                                  geometry.offset, 
                                  geometry.v_width * 100 / geometry.v_height);
-  bit_th[3] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength0, geometry.nwidth}),
+  bit_th[3] = TransformRotatedPoint(r.Rotate({-geometry.offset.x + geometry.nlength1, geometry.nwidth}),
                                  geometry.offset, 
                                  geometry.v_width * 100 / geometry.v_height);
 }
@@ -321,6 +324,8 @@ GaugeVario::RenderBase(Canvas &canvas, PixelRect rc) noexcept
   canvas.DrawPolyline(lines1, ARRAY_SIZE(lines1));
 
   // The marks on the ring
+  double range = GAUGEVARIORANGE[(int)GetComputerSettings().vario_range];
+
   canvas.Select(look.border_pen);
   for (int i = -4; i <= 4; i++)
   {
@@ -328,7 +333,8 @@ GaugeVario::RenderBase(Canvas &canvas, PixelRect rc) noexcept
         To do that, convert the m/s to user units and round, then convert
         back to system units (m/s) not rounded and then get the arc position
         for that. This results in accurate placement of the marks */
-    const int val = iround(Units::ToUserVSpeed(i));
+    const double internal = range * i / 5;
+    const int val = iround(Units::ToUserVSpeed(internal));
     const double act = Units::ToSysVSpeed(val);
     const int pos = ValueToNeedlePos(act);
     const FastIntegerRotation r(Angle::Degrees(pos));
@@ -387,8 +393,8 @@ GaugeVario::RenderBase(Canvas &canvas, PixelRect rc) noexcept
 int
 GaugeVario::ValueToNeedlePos(double Value) noexcept
 {
-  constexpr double degrees_per_unit =
-    double(GAUGEVARIOSWEEP) / GAUGEVARIORANGE;
+  double degrees_per_unit =
+    double(GAUGEVARIOSWEEP) / GAUGEVARIORANGE[(int)GetComputerSettings().vario_range];
 
   int i;
 
@@ -396,7 +402,6 @@ GaugeVario::ValueToNeedlePos(double Value) noexcept
     MakeAllPolygons();
     needle_initialised = true;
   }
-
 
   i = iround(Value * degrees_per_unit);
   i = Clamp(i, int(gmin), int(gmax));
@@ -406,11 +411,18 @@ GaugeVario::ValueToNeedlePos(double Value) noexcept
 void
 GaugeVario::RenderNeedles(Canvas &canvas, int var, int avg, int th) noexcept
 {
-  canvas.Select(look.ave_brush);
-  canvas.Select(look.ave_pen);
-  canvas.DrawPolygon(getAvePolygon(Clamp(avg, int(gmin) + 2, int(gmax) - 2)), 4);
-  canvas.Select(look.th_ave_pen);
-  canvas.DrawPolyline(getThAvePolygon(Clamp(th, int(gmin) + 2, int(gmax) - 2)), 4);
+  if (Settings().show_average_needle)
+  {
+    canvas.Select(look.ave_brush);
+    canvas.Select(look.ave_pen);
+    canvas.DrawPolygon(getAvePolygon(Clamp(avg, int(gmin) + 2, int(gmax) - 2)), 4);
+  }
+
+  if (Settings().show_thermal_average_needle)
+  {
+    canvas.Select(look.th_ave_pen);
+    canvas.DrawPolyline(getThAvePolygon(Clamp(th, int(gmin) + 2, int(gmax) - 2)), 4);
+  }
 
   canvas.SelectNullPen();
   // legacy behaviour

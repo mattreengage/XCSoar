@@ -40,6 +40,7 @@ Copyright_License {
 #include "Wind/Settings.hpp"
 #include "WaveSettings.hpp"
 #include "RadioFrequency.hpp"
+#include "Gauge/VarioSettings.hpp"
 
 #include <cstdint>
 #include <type_traits>
@@ -234,6 +235,8 @@ struct ComputerSettings {
   WeatherSettings weather;
 
   RadioSettings radio;
+
+  VarioRange vario_range;
 
   void SetDefaults();
 };
