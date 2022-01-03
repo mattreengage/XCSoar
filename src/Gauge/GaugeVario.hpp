@@ -44,20 +44,18 @@ class GaugeVario : public AntiFlickerWindow
   static constexpr int GAUGEVARIOSWEEP = 90;
 
   /** Max should be less than total to keep needles visible at all times */
-  static constexpr int gmax = GAUGEVARIOSWEEP - 2;
+  static constexpr int gmax = GAUGEVARIOSWEEP;
   static constexpr int gmin = -gmax;
 
   struct BallastGeometry {
-    PixelRect label_rect, value_rect;
-    PixelPoint label_pos, value_pos;
+    PixelPoint value_pos;
 
     BallastGeometry() = default;
     BallastGeometry( VarioLook &look, const PixelRect &rc) noexcept;
   };
 
   struct BugsGeometry {
-    PixelRect label_rect, value_rect;
-    PixelPoint label_pos, value_pos;
+    PixelPoint value_pos, label_pos;
 
     BugsGeometry() = default;
     BugsGeometry( VarioLook &look, const PixelRect &rc) noexcept;
@@ -118,28 +116,14 @@ class GaugeVario : public AntiFlickerWindow
 
   VarioLook &look;
 
-  bool dirty = true;
-
-  bool background_dirty = true;
   bool needle_initialised = false;
 
   LabelValueDrawInfo value_a, value_b, value_c, value_d, value_e;
 
-  int ival_av_last = 0;
-  int vval_last = 0;
-  int sval_last = 0;
-  int ival_last = 0;
-
-  double last_v_diff = 0;
-
-  int last_ballast = -1;
-
-  int last_bugs = -1;
-
   BulkPixelPoint polys[(gmax * 2 + 1) * 3];
   BulkPixelPoint ave_polys[(gmax * 2 + 1) * 4];
   BulkPixelPoint th_ave_polys[(gmax * 2 + 1) * 4];
-  BulkPixelPoint lines[gmax * 2 + 1];
+  BulkPixelPoint lines[gmax * 2 + 1], lines1[gmax * 2 + 1];
 
 public:
   GaugeVario(const FullBlackboard &blackboard,
@@ -175,18 +159,15 @@ protected:
   virtual void OnPaintBuffer(Canvas &canvas) override;
 
 private:
-  void RenderZero(Canvas &canvas) noexcept;
+  void RenderBase(Canvas &canvas, PixelRect rc) noexcept;
   void RenderValue(Canvas &canvas, const LabelValueGeometry &g,
                    LabelValueDrawInfo &di,
                    double Value, const TCHAR *Label, 
                    bool frac, int infinity) noexcept;
-  void RenderSpeedToFly(Canvas &canvas, int x, int y) noexcept;
   void RenderBallast(Canvas &canvas) noexcept;
   void RenderBugs(Canvas &canvas) noexcept;
   int  ValueToNeedlePos(double Value) noexcept;
-  void RenderNeedle(Canvas &canvas, int i, int average, bool clear) noexcept;
-  void RenderVarioLine(Canvas &canvas, int i, int sink, bool clear) noexcept;
-  void RenderClimb(Canvas &canvas) noexcept;
+  void RenderNeedles(Canvas &canvas, int var, int avg, int th) noexcept;
 
   void MakePolygon(const int i) noexcept;
   void MakeAvePolygon(const int i) noexcept;

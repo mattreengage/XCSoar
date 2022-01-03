@@ -26,6 +26,7 @@ Copyright_License {
 #include "Screen/Layout.hpp"
 #include "Units/Units.hpp"
 #include "Resources.hpp"
+#include "LogFile.hpp"
 
 #include <algorithm>
 
@@ -61,23 +62,62 @@ VarioLook::Initialise(bool _inverse, bool _colors,
   thick_sink_pen.Create(Layout::Scale(10), sink_color);
   thick_lift_pen.Create(Layout::Scale(10), lift_color);
 
-  background_bitmap.Load(Units::GetUserVerticalSpeedUnit() == Unit::KNOTS
-                         ? IDB_VARIOSCALEC : IDB_VARIOSCALEA);
-  background_x = inverse ? 58 : 0;
+  markings_pen.Create(Layout::Scale(2), text_color);
+  border_pen.Create(Layout::Scale(1), text_color);
 
-  climb_bitmap.Load(inverse ? IDB_CLIMBSMALLINV : IDB_CLIMBSMALL);
+  fonts_valid = false;
 
-  const unsigned value_font_height = Layout::FontScale(24);
-  VarioLook::Resize(value_font_height);
-  unit_fraction_pen.Create(1, COLOR_GRAY);
+  info_height = 0;
+  value_font.Load(FontDescription(10u, true, false, true));
+  text_font.Load(FontDescription(10u, false, false, false));
+  corner_font.Load(FontDescription(10u, false, false, false));
 }
+
 
 void
-VarioLook::Resize(unsigned height)
+VarioLook::Resize(Canvas &canvas, PixelRect rc)
 {
-  value_font.Load(FontDescription(height, true, false, true));
-  unsigned unit_font_height = std::max(height * 2u / 5u, 7u);
-  unit_font.Load(FontDescription(unit_font_height, false, false, false));
-  unsigned text_font_height = std::max(height * 2u / 5u, 7u);
-  text_font.Load(FontDescription(text_font_height, false, false, false));
+  const unsigned box_height = rc.GetHeight() * 2u / 3u;
+  const unsigned mid_height = rc.top + (rc.GetHeight() / 2);
+
+  info_box.top = mid_height - (box_height / 2);
+  info_box.bottom = mid_height + (box_height / 2);
+  info_box.right = rc.right; 
+
+  num_info_box = (box_height >= 160) ? 5 : (box_height >= 128) ? 4 : 0;
+  if (num_info_box > 0) {
+    info_height = box_height / num_info_box;
+    const unsigned height = info_height * 5u / 8u;
+
+    value_font.Load(FontDescription(height, true, false, false));
+    text_font.Load(FontDescription(height * 2u / 5u, false, false, false));
+    corner_font.Load(FontDescription(height * 3u / 5u, false, false, false));
+  }
+  else {
+    // Defaults that will never be used
+    info_height = 0;
+    value_font.Load(FontDescription(10u, true, false, false));
+    text_font.Load(FontDescription(10u, false, false, false));
+    corner_font.Load(FontDescription(10u, false, false, false));
+  }
+
+  canvas.Select(value_font);
+  PixelSize text_size = canvas.CalcTextSize(_T("29999"));
+
+  info_box.left = rc.right - text_size.width; 
+
+  fonts_valid = true;
+  old_rc = rc;
+
+
 }
+
+bool
+VarioLook::HasChanged(PixelRect rc)
+{
+  return (rc.right != old_rc.right || 
+    rc.bottom !=old_rc.bottom ||
+    rc.top != old_rc.top ||
+    rc.left != old_rc.left);
+}
+
