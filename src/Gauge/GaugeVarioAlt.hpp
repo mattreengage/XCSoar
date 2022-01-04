@@ -71,7 +71,7 @@ class GaugeVarioAlt : public AntiFlickerWindow
   };
 
   struct Geometry {
-    int nlength0, nlength1, nwidth, nline;
+    int nlength0, nlength1, nwidth;
     int v_width, v_height;
 
     PixelPoint offset;

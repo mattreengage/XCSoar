@@ -90,10 +90,9 @@ inline
 GaugeVarioAlt::Geometry::Geometry( VarioAltLook &look, const PixelRect &rc) noexcept
   :ballast(look, rc), bugs(look, rc)
 {
-  nlength0 = Layout::Scale(17);
+  nlength0 = Layout::Scale(22);
   nlength1 = Layout::Scale(1);
   nwidth = Layout::Scale(4);
-  nline = Layout::Scale(16);
 
   v_width = rc.GetWidth();
   v_height = rc.GetHeight();
