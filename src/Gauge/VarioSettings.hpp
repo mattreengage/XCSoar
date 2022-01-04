@@ -34,8 +34,10 @@ enum class VarioRange : uint8_t {
 
 struct VarioSettings {
   VarioRange vario_range;
+  bool show_alt_vario;
   bool show_average;
   bool show_mc;
+  bool show_speed_to_fly;
   bool show_ballast;
   bool show_bugs;
   bool show_gross;

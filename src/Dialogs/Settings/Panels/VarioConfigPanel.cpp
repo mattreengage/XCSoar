@@ -25,17 +25,23 @@ Copyright_License {
 #include "Profile/ProfileKeys.hpp"
 #include "Language/Language.hpp"
 #include "Interface.hpp"
+#include "MainWindow.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Form/DataField/Listener.hpp"
 #include "UIGlobals.hpp"
 
 enum ControlIndex {
-  AppGaugeVarioRange,
+  AppGaugeVarioSpeedToFly,
+  AppGaugeVarioAvgText,
+  AppGaugeVarioMc,
   AppGaugeVarioBugs,
   AppGaugeVarioBallast,
+  AppGaugeVarioGross,
   AppAveNeedle,
   AppAveThermalNeedle,
+  AppGaugeVarioAlternate,
+  AppGaugeVarioRange,
 };
 
 static constexpr StaticEnumChoice vario_range_ms[] = {
@@ -87,12 +93,20 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
 
   RowFormWidget::Prepare(parent, rc);
 
-  AddEnum(_("Vario Range"),
-             _("Maximum range for the vario display"),
-                (units.vertical_speed_unit == Unit::METER_PER_SECOND) ? vario_range_ms :
-                (units.vertical_speed_unit == Unit::KNOTS) ? vario_range_kt :
-                vario_range_ft,
-             (unsigned)settings.vario_range);
+  AddBoolean(_("Speed arrows"),
+             _("Whether to show speed command arrows on the vario gauge.  When shown, in cruise mode, "
+                 "arrows point up to command slow down; arrows point down to command speed up."),
+             settings.show_speed_to_fly);
+  SetExpertRow(AppGaugeVarioSpeedToFly);
+
+  AddBoolean(_("Show average"),
+             _("Whether to show the average climb rate.  In cruise mode, this switches to showing the "
+                 "average netto airmass rate."),
+             settings.show_average);
+  SetExpertRow(AppGaugeVarioAvgText);
+
+  AddBoolean(_("Show MacReady"), _("Whether to show the MacCready setting."), settings.show_mc);
+  SetExpertRow(AppGaugeVarioMc);
 
   AddBoolean(_("Show bugs"), _("Whether to show the bugs percentage."), settings.show_bugs);
   SetExpertRow(AppGaugeVarioBugs);
@@ -100,47 +114,86 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
   AddBoolean(_("Show ballast"), _("Whether to show the ballast percentage."), settings.show_ballast);
   SetExpertRow(AppGaugeVarioBallast);
 
+  AddBoolean(_("Show gross"), _("Whether to show the gross climb rate."), settings.show_gross);
+  SetExpertRow(AppGaugeVarioGross);
+
   AddBoolean(_("Averager needle"),
-             _("If true, the vario gauge will display a red diamond averager needle.  During cruise, this "
+             _("If true, the vario gauge will display a hollow averager needle.  During cruise, this "
                  "needle displays the average netto value.  During circling, this needle displays the "
                  "average gross value."),
              settings.show_average_needle);
   SetExpertRow(AppAveNeedle);
 
   AddBoolean(_("Thermal Averager needle"),
-             _("If true, the vario gauge will display a  green T thermal averager needle.  During cruise, this "
+             _("If true, the vario gauge will display a thermal averager needle instead of current climb rate needle.  During cruise, this "
                "needle displays the last thermal average netto value.  During circling, this needle displays the "
                "average net value."),
              settings.show_thermal_average_needle);
   SetExpertRow(AppAveThermalNeedle);
+
+  AddBoolean(_("Use Alternate Vario"),
+             _("If true, the vario gauge will use a dynamic vario display. "
+               "The face is dynamically rendered and offers a changeable scale "
+               "but requires a fast device to run on"),
+             settings.show_alt_vario);
+  SetExpertRow(AppGaugeVarioAlternate);
+
+  AddEnum(_("Vario Range"),
+             _("Maximum range for the alternate vario display"),
+                (units.vertical_speed_unit == Unit::METER_PER_SECOND) ? vario_range_ms :
+                (units.vertical_speed_unit == Unit::KNOTS) ? vario_range_kt :
+                vario_range_ft,
+             (unsigned)settings.vario_range);
+  SetExpertRow(AppGaugeVarioRange);
 }
 
 bool
 VarioConfigPanel::Save(bool &_changed) noexcept
 {
   bool changed = false;
+  bool range_changed = false;;
+  bool type_changed = false;;
 
   VarioSettings &settings = CommonInterface::SetUISettings().vario;
 
-  changed |= SaveValueEnum(AppGaugeVarioRange,
+  range_changed |= SaveValueEnum(AppGaugeVarioRange,
                            ProfileKeys::AppGaugeVarioRange,
                            settings.vario_range);
+  changed |= range_changed;
 
-  if (changed)
-  {
-    ComputerSettings &comp = CommonInterface::SetComputerSettings();
-    comp.vario_range = settings.vario_range;
-  }
+  type_changed |= SaveValue(AppGaugeVarioAlternate, ProfileKeys::AppGaugeVarioAlternate, settings.show_alt_vario);
+
+  changed |= type_changed;
+
+  changed |= SaveValue(AppGaugeVarioSpeedToFly, ProfileKeys::AppGaugeVarioSpeedToFly, settings.show_speed_to_fly);
+
+  changed |= SaveValue(AppGaugeVarioAvgText, ProfileKeys::AppGaugeVarioAvgText, settings.show_average);
+
+  changed |= SaveValue(AppGaugeVarioMc, ProfileKeys::AppGaugeVarioMc, settings.show_mc);
 
   changed |= SaveValue(AppGaugeVarioBugs, ProfileKeys::AppGaugeVarioBugs, settings.show_bugs);
 
   changed |= SaveValue(AppGaugeVarioBallast, ProfileKeys::AppGaugeVarioBallast, settings.show_ballast);
+
+  changed |= SaveValue(AppGaugeVarioGross, ProfileKeys::AppGaugeVarioGross, settings.show_gross);
 
   changed |= SaveValue(AppAveNeedle, ProfileKeys::AppAveNeedle, settings.show_average_needle);
 
   changed |= SaveValue(AppAveThermalNeedle, ProfileKeys::AppAveThermalNeedle, settings.show_thermal_average_needle);
 
   _changed |= changed;
+
+
+  if (range_changed)
+  {
+    ComputerSettings &comp = CommonInterface::SetComputerSettings();
+    comp.vario_range = settings.vario_range;
+  }
+
+  /* Need a good way to re-initialise the vario if the type changes
+  if (type_changed)
+    CommonInterface::main_window->ResetVario();
+    */
 
   return true;
 }

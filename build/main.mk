@@ -359,7 +359,9 @@ XCSOAR_SOURCES := \
 	$(SRC)/Gauge/VarioSettings.cpp \
 	$(SRC)/Gauge/TrafficSettings.cpp \
 	$(SRC)/Gauge/GaugeVario.cpp \
+	$(SRC)/Gauge/GaugeVarioAlt.cpp \
 	$(SRC)/Gauge/GlueGaugeVario.cpp \
+	$(SRC)/Gauge/GlueGaugeVarioAlt.cpp \
 	$(SRC)/Gauge/GaugeGlide.cpp \
 	$(SRC)/Gauge/GlueGaugeGlide.cpp \
 	$(SRC)/Gauge/GaugeNav.cpp \

@@ -21,34 +21,42 @@ Copyright_License {
 }
 */
 
-#ifndef GLUE_GAUGE_VARIO_H
-#define GLUE_GAUGE_VARIO_H
+#ifndef XCSOAR_VARIO_ALT_LOOK_HPP
+#define XCSOAR_VARIO_ALT_LOOK_HPP
 
-#include "Widget/WindowWidget.hpp"
-#include "Blackboard/BlackboardListener.hpp"
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Bitmap.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
 
-struct VarioLook;
-class LiveBlackboard;
+class Font;
 
-/**
- * A variant of GaugeVario which auto-updates its data from the device
- * blackboard.
- */
-class GlueGaugeVario final
-  : public WindowWidget, private NullBlackboardListener {
-  LiveBlackboard &blackboard;
-  const VarioLook &look;
+struct VarioAltLook {
+  bool inverse, colors;
 
-public:
-  GlueGaugeVario(LiveBlackboard &_blackboard, const VarioLook &_look) noexcept
-    :blackboard(_blackboard), look(_look) {}
+  Color background_color, text_color, dimmed_text_color;
 
-  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
-  void Show(const PixelRect &rc) noexcept override;
-  void Hide() noexcept override;
+  Color sink_color, lift_color;
 
-private:
-  virtual void OnGPSUpdate(const MoreData &basic) override;
+  Brush sink_brush, lift_brush, ave_brush;
+
+  Pen thick_background_pen, thick_sink_pen, thick_lift_pen, ave_pen, th_ave_pen;
+
+  Pen markings_pen, border_pen;
+
+  Font text_font, value_font, corner_font;
+
+  bool fonts_valid;
+  PixelRect info_box, old_rc;
+  unsigned num_info_box, info_height;
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
 };
 
 #endif

@@ -26,7 +26,6 @@ Copyright_License {
 #include "Screen/Layout.hpp"
 #include "Units/Units.hpp"
 #include "Resources.hpp"
-#include "LogFile.hpp"
 
 #include <algorithm>
 
@@ -47,77 +46,29 @@ VarioLook::Initialise(bool _inverse, bool _colors,
     background_color = COLOR_WHITE;
     text_color = COLOR_BLACK;
     dimmed_text_color = Color((uint8_t)~0xa0, (uint8_t)~0xa0, (uint8_t)~0xa0);
-    sink_color = Color(0xeb,0x00,0x00);
+    sink_color = Color(0xa3,0x69,0x0d);
     lift_color = Color(0x19,0x94,0x03);
   }
 
   sink_brush.Create(sink_color);
   lift_brush.Create(lift_color);
 
-  ave_brush.Create(Color(0xff, 0x20, 0x20));
-  ave_pen.Create(Layout::Scale(2), Color(0xff, 0x20, 0x20));
-  th_ave_pen.Create(Layout::Scale(2), Color(0x23, 0xee, 0x30));
+  thick_background_pen.Create(Layout::Scale(5), background_color);
+  thick_sink_pen.Create(Layout::Scale(5), sink_color);
+  thick_lift_pen.Create(Layout::Scale(5), lift_color);
 
-  thick_background_pen.Create(Layout::Scale(10), background_color);
-  thick_sink_pen.Create(Layout::Scale(10), sink_color);
-  thick_lift_pen.Create(Layout::Scale(10), lift_color);
+  background_bitmap.Load(Units::GetUserVerticalSpeedUnit() == Unit::KNOTS
+                         ? IDB_VARIOSCALEC : IDB_VARIOSCALEA);
+  background_x = inverse ? 58 : 0;
 
-  markings_pen.Create(Layout::Scale(2), text_color);
-  border_pen.Create(Layout::Scale(1), text_color);
+  climb_bitmap.Load(inverse ? IDB_CLIMBSMALLINV : IDB_CLIMBSMALL);
 
-  fonts_valid = false;
+  text_font = &_text_font;
 
-  info_height = 0;
-  value_font.Load(FontDescription(10u, true, false, true));
-  text_font.Load(FontDescription(10u, false, false, false));
-  corner_font.Load(FontDescription(10u, false, false, false));
+  const unsigned value_font_height = Layout::FontScale(10);
+  value_font.Load(FontDescription(value_font_height, false, false, true));
+
+  unsigned unit_font_height = std::max(value_font_height * 2u / 5u, 7u);
+  unit_font.Load(FontDescription(unit_font_height));
+  unit_fraction_pen.Create(1, COLOR_GRAY);
 }
-
-
-void
-VarioLook::Resize(Canvas &canvas, PixelRect rc)
-{
-  const unsigned box_height = rc.GetHeight() * 2u / 3u;
-  const unsigned mid_height = rc.top + (rc.GetHeight() / 2);
-
-  info_box.top = mid_height - (box_height / 2);
-  info_box.bottom = mid_height + (box_height / 2);
-  info_box.right = rc.right; 
-
-  num_info_box = (box_height >= 160) ? 5 : (box_height >= 128) ? 4 : 0;
-  if (num_info_box > 0) {
-    info_height = box_height / num_info_box;
-    const unsigned height = info_height * 5u / 8u;
-
-    value_font.Load(FontDescription(height, true, false, false));
-    text_font.Load(FontDescription(height * 2u / 5u, false, false, false));
-    corner_font.Load(FontDescription(height * 3u / 5u, false, false, false));
-  }
-  else {
-    // Defaults that will never be used
-    info_height = 0;
-    value_font.Load(FontDescription(10u, true, false, false));
-    text_font.Load(FontDescription(10u, false, false, false));
-    corner_font.Load(FontDescription(10u, false, false, false));
-  }
-
-  canvas.Select(value_font);
-  PixelSize text_size = canvas.CalcTextSize(_T("29999"));
-
-  info_box.left = rc.right - text_size.width; 
-
-  fonts_valid = true;
-  old_rc = rc;
-
-
-}
-
-bool
-VarioLook::HasChanged(PixelRect rc)
-{
-  return (rc.right != old_rc.right || 
-    rc.bottom !=old_rc.bottom ||
-    rc.top != old_rc.top ||
-    rc.left != old_rc.left);
-}
-

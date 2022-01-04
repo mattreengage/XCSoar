@@ -347,6 +347,7 @@ public:
 private:
   void UpdateVarioGaugeVisibility();
   void UpdateTrafficGaugeVisibility();
+  void UpdateRibbonVisibility();
 
   void StopDragging();
 

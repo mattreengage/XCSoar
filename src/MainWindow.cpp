@@ -39,6 +39,7 @@ Copyright_License {
 #include "Gauge/GaugeFLARM.hpp"
 #include "Gauge/GaugeThermalAssistant.hpp"
 #include "Gauge/GlueGaugeVario.hpp"
+#include "Gauge/GlueGaugeVarioAlt.hpp"
 #include "Gauge/GlueGaugeGlide.hpp"
 #include "Gauge/GlueGaugeNav.hpp"
 #include "Form/Form.hpp"
@@ -286,8 +287,14 @@ MainWindow::ReinitialiseLayout_vario(const InfoBoxLayout::Layout &layout)
   }
 
   if (!vario.IsDefined())
-    vario.Set(new GlueGaugeVario(CommonInterface::GetLiveBlackboard(),
+  {
+    if (CommonInterface::GetUISettings().vario.show_alt_vario)
+      vario.Set(new GlueGaugeVarioAlt(CommonInterface::GetLiveBlackboard(),
+                                 look->vario_alt));
+    else
+      vario.Set(new GlueGaugeVario(CommonInterface::GetLiveBlackboard(),
                                  look->vario));
+  }
 
   vario.Move(layout.vario);
   vario.Show();
@@ -987,6 +994,10 @@ MainWindow::UpdateVarioGaugeVisibility()
 
   vario.SetVisible(!full_screen &&
                    !CommonInterface::GetUIState().screen_blanked);
+  glide.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
+  nav.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
 }
 
 void
@@ -994,6 +1005,18 @@ MainWindow::UpdateGaugeVisibility()
 {
   UpdateVarioGaugeVisibility();
   UpdateTrafficGaugeVisibility();
+  UpdateRibbonVisibility();
+}
+
+void
+MainWindow::UpdateRibbonVisibility()
+{
+  bool full_screen = GetFullScreen();
+
+  glide.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
+  nav.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
 }
 
 void

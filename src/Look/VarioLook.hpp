@@ -29,7 +29,6 @@ Copyright_License {
 #include "ui/canvas/Pen.hpp"
 #include "ui/canvas/Bitmap.hpp"
 #include "ui/canvas/Font.hpp"
-#include "ui/canvas/Canvas.hpp"
 
 class Font;
 
@@ -40,23 +39,23 @@ struct VarioLook {
 
   Color sink_color, lift_color;
 
-  Brush sink_brush, lift_brush, ave_brush;
+  Brush sink_brush, lift_brush;
 
-  Pen thick_background_pen, thick_sink_pen, thick_lift_pen, ave_pen, th_ave_pen;
+  Pen thick_background_pen, thick_sink_pen, thick_lift_pen;
 
-  Pen markings_pen, border_pen;
+  Bitmap background_bitmap;
+  unsigned background_x;
 
-  Font text_font, value_font, corner_font;
+  Bitmap climb_bitmap;
 
-  bool fonts_valid;
-  PixelRect info_box, old_rc;
-  unsigned num_info_box, info_height;
+  const Font *text_font;
+  Font value_font;
+
+  Font unit_font;
+  Pen unit_fraction_pen;
 
   void Initialise(bool inverse, bool colors,
                   const Font &text_font);
-
-  void Resize(Canvas &canvas, PixelRect rc);
-  bool HasChanged(PixelRect rc);
 };
 
 #endif

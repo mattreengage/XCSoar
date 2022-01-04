@@ -28,6 +28,7 @@ Copyright_License {
 #include "GestureLook.hpp"
 #include "TerminalLook.hpp"
 #include "VarioLook.hpp"
+#include "VarioAltLook.hpp"
 #include "GlideLook.hpp"
 #include "NavLook.hpp"
 #include "ChartLook.hpp"
@@ -53,6 +54,7 @@ struct Look {
   GestureLook gesture;
   TerminalLook terminal;
   VarioLook vario;
+  VarioAltLook vario_alt;
   GlideLook glide;
   NavLook nav;
   ChartLook chart;

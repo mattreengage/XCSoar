@@ -53,6 +53,9 @@ Look::InitialiseConfigured(const UISettings &settings,
   vario.Initialise(settings.info_boxes.inverse,
                    settings.info_boxes.use_colors,
                    info_box.title_font);
+  vario_alt.Initialise(settings.info_boxes.inverse,
+                   settings.info_boxes.use_colors,
+                   info_box.title_font);
   glide.Initialise(settings.info_boxes.inverse,
                    settings.info_boxes.use_colors,
                    info_box.title_font);

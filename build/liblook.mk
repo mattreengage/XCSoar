@@ -10,6 +10,7 @@ LOOK_SOURCES := \
 	$(SRC)/Look/CheckBoxLook.cpp \
 	$(SRC)/Look/TerminalLook.cpp \
 	$(SRC)/Look/VarioLook.cpp \
+	$(SRC)/Look/VarioAltLook.cpp \
 	$(SRC)/Look/GlideLook.cpp \
 	$(SRC)/Look/NavLook.cpp \
 	$(SRC)/Look/ChartLook.cpp \
