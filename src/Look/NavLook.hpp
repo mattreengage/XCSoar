@@ -21,30 +21,38 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#ifndef XCSOAR_NAV_LOOK_HPP
+#define XCSOAR_NAV_LOOK_HPP
 
-#include <cstdint>
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+class Font;
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+struct NavLook {
+  bool inverse, colors;
 
-  void SetDefaults();
+  Color background_color, text_color;
+
+  Brush goal_brush, track_brush;
+  Pen border_pen, goal_pen, track_pen;
+
+  bool fonts_valid;
+  Font text_font, error_font;
+
+  PixelRect old_rc;
+  unsigned middle;
+
+  const TCHAR no_target_msg[22] = _T("No Navigation Target");
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
 };
 
 #endif

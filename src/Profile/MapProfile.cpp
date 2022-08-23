@@ -146,6 +146,12 @@ Profile::Load(const ProfileMap &map, MapSettings &settings)
   map.Get(ProfileKeys::EnableVarioBar,
           settings.vario_bar_enabled);
 
+  map.GetEnum(ProfileKeys::EnableNavRibbon,
+          settings.nav_ribbon_mode);
+
+  map.GetEnum(ProfileKeys::EnableGlideRibbon,
+          settings.glide_ribbon_mode);
+
   Load(map, settings.trail);
   Load(map, settings.item_list);
 }

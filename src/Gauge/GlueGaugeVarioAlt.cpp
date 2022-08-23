@@ -21,30 +21,39 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#include "Gauge/GlueGaugeVarioAlt.hpp"
+#include "Gauge/GaugeVarioAlt.hpp"
+#include "Blackboard/LiveBlackboard.hpp"
 
-#include <cstdint>
+void
+GlueGaugeVarioAlt::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
+{
+  WindowStyle style;
+  style.Hide();
+  style.Disable();
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+  SetWindow(std::make_unique<GaugeVarioAlt>(blackboard, parent, look,
+                                         rc, style));
+}
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+void
+GlueGaugeVarioAlt::Show(const PixelRect &rc) noexcept
+{
+  WindowWidget::Show(rc);
 
-  void SetDefaults();
-};
+  blackboard.AddListener(*this);
+}
 
-#endif
+void
+GlueGaugeVarioAlt::Hide() noexcept
+{
+  blackboard.RemoveListener(*this);
+
+  WindowWidget::Hide();
+}
+
+void
+GlueGaugeVarioAlt::OnGPSUpdate(const MoreData &basic)
+{
+  ((GaugeVarioAlt &)GetWindow()).Invalidate();
+}

@@ -95,6 +95,9 @@ struct AirspaceRendererSettings {
   /** Altitude (m) above which airspace is not drawn for clip mode */
   unsigned clip_altitude;
 
+  /** Altitude at which display transitions from QNH to FL based */
+  unsigned transition_altitude;
+
 #if defined(HAVE_HATCHED_BRUSH) && defined(HAVE_ALPHA_BLEND)
   /**
    * Should the airspace be rendered with a transparent brush instead

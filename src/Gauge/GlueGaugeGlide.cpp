@@ -21,30 +21,39 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#include "Gauge/GlueGaugeGlide.hpp"
+#include "Gauge/GaugeGlide.hpp"
+#include "Blackboard/LiveBlackboard.hpp"
 
-#include <cstdint>
+void
+GlueGaugeGlide::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
+{
+  WindowStyle style;
+  style.Hide();
+  style.Disable();
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+  SetWindow(std::make_unique<GaugeGlide>(blackboard, parent, look,
+                                         rc, style));
+}
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+void
+GlueGaugeGlide::Show(const PixelRect &rc) noexcept
+{
+  WindowWidget::Show(rc);
 
-  void SetDefaults();
-};
+  blackboard.AddListener(*this);
+}
 
-#endif
+void
+GlueGaugeGlide::Hide() noexcept
+{
+  blackboard.RemoveListener(*this);
+
+  WindowWidget::Hide();
+}
+
+void
+GlueGaugeGlide::OnGPSUpdate(const MoreData &basic)
+{
+  ((GaugeGlide &)GetWindow()).Invalidate();
+}

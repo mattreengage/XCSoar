@@ -21,30 +21,35 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#ifndef XCSOAR_GLIDE_LOOK_HPP
+#define XCSOAR_GLIDE_LOOK_HPP
 
-#include <cstdint>
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+class Font;
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+struct GlideLook {
+  bool inverse, colors;
 
-  void SetDefaults();
+  Color background_color, text_color;
+
+  Brush border_brush, bad_brush, good_brush;
+  Pen border, good_pen, bad_pen, require_pen;
+
+  Font text_font, inf_font;
+
+  bool fonts_valid;
+  PixelRect old_rc;
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
 };
 
 #endif

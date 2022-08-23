@@ -21,30 +21,42 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#ifndef XCSOAR_VARIO_ALT_LOOK_HPP
+#define XCSOAR_VARIO_ALT_LOOK_HPP
 
-#include <cstdint>
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Bitmap.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+class Font;
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+struct VarioAltLook {
+  bool inverse, colors;
 
-  void SetDefaults();
+  Color background_color, text_color, dimmed_text_color;
+
+  Color sink_color, lift_color;
+
+  Brush sink_brush, lift_brush, ave_brush;
+
+  Pen thick_background_pen, thick_sink_pen, thick_lift_pen, ave_pen, th_ave_pen;
+
+  Pen markings_pen, border_pen;
+
+  Font text_font, value_font, corner_font;
+
+  bool fonts_valid;
+  PixelRect info_box, old_rc;
+  unsigned num_info_box, info_height;
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
 };
 
 #endif

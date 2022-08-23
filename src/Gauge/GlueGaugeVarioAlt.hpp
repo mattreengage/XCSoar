@@ -21,30 +21,34 @@ Copyright_License {
 }
 */
 
-#ifndef XCSOAR_VARIO_SETTINGS_HPP
-#define XCSOAR_VARIO_SETTINGS_HPP
+#ifndef GLUE_GAUGE_VARIO_ALT_H
+#define GLUE_GAUGE_VARIO_ALT_H
 
-#include <cstdint>
+#include "Widget/WindowWidget.hpp"
+#include "Blackboard/BlackboardListener.hpp"
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+struct VarioAltLook;
+class LiveBlackboard;
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+/**
+ * A variant of GaugeVario which auto-updates its data from the device
+ * blackboard.
+ */
+class GlueGaugeVarioAlt final
+  : public WindowWidget, private NullBlackboardListener {
+  LiveBlackboard &blackboard;
+  VarioAltLook &look;
 
-  void SetDefaults();
+public:
+  GlueGaugeVarioAlt(LiveBlackboard &_blackboard,  VarioAltLook &_look) noexcept
+    :blackboard(_blackboard), look(_look) {}
+
+  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
+  void Show(const PixelRect &rc) noexcept override;
+  void Hide() noexcept override;
+
+private:
+  virtual void OnGPSUpdate(const MoreData &basic) override;
 };
 
 #endif

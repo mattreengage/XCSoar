@@ -25,6 +25,10 @@ Copyright_License {
 #include "Border.hpp"
 #include "util/Macros.hpp"
 #include "util/Clamp.hpp"
+#include "MapSettings.hpp"
+#include "Interface.hpp"
+
+#include "LogFile.hpp"
 
 static constexpr double CONTROLHEIGHTRATIO = 7.4;
 
@@ -34,8 +38,8 @@ static constexpr double CONTROLHEIGHTRATIO = 7.4;
 static constexpr unsigned char geometry_counts[] = {
   8, 8, 8, 8, 8, 8,
   9, 5, 12, 24, 12,
-  12, 9, 8, 4, 4, 4, 4,
-  8, 16, 15, 10, 10, 10,
+  12, 8, 8, 4, 4, 4, 4,
+  8, 16, 14, 10, 10, 10,
   12, // 3 rows X 4 boxes
   15, // 3 rows X 5 boxes
 };
@@ -135,6 +139,8 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
   CalcInfoBoxSizes(layout, screen_size, geometry);
 
   layout.ClearVario();
+  layout.ClearGlide();
+  layout.ClearNav();
 
   unsigned right = rc.right;
 
@@ -225,30 +231,38 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     break;
 
   case InfoBoxSettings::Geometry::LEFT_6_RIGHT_3_VARIO:
-    layout.vario.left = rc.right - layout.control_size.width;
+    layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
     layout.vario.top = 0;
-    layout.vario.bottom = layout.vario.top + layout.control_size.height * 3;
+    layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
 
+    // Info boxes under the vario
+    rc.right = MakeRightColumn(layout, layout.positions + 6, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 7, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+
+    // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
-    rc.right = MakeRightColumn(layout, layout.positions + 6, 3, rc.right,
-                               rc.top + 3 * layout.control_size.height, rc.bottom);
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
-    layout.vario.left = rc.right - layout.control_size.width;
+    layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
     layout.vario.top = 0;
-    layout.vario.bottom = layout.vario.top + layout.control_size.height * 3;
+    layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
 
-    rc.right = MakeRightColumn(layout, layout.positions + 6, 3, rc.right,
-                               rc.top + 3 * layout.control_size.height, rc.bottom);
+    // Info boxes under the vario
+    rc.right = MakeRightColumn(layout, layout.positions + 12, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 13, 1, rc.right,
+                               rc.top + 5 * layout.control_size.height, rc.bottom);
 
-    layout.control_size.width = layout.control_size.height * 1.1;
+    // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
                              rc.left, rc.top, rc.bottom);
-    rc.left = MakeLeftColumn(layout, layout.positions + 9, 6,
+    rc.left = MakeLeftColumn(layout, layout.positions + 6, 6,
                              rc.left, rc.top, rc.bottom);
     break;
 
@@ -410,6 +424,48 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
                                 rc.left, rc.right, rc.bottom);
     break;
   };
+
+  const MapSettings &map_settings = CommonInterface::GetMapSettings();
+  // Add the navigation ribbon if required
+  if (map_settings.nav_ribbon_mode != NavRibbonType::NONE)
+  {
+    layout.nav.right = rc.right;
+    layout.nav.left = rc.left;
+
+    if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
+    {
+      layout.nav.top = rc.top;
+      layout.nav.bottom = rc.top + layout.control_size.height / 2;
+      rc.top = layout.nav.bottom;
+    }
+    else
+    {
+      layout.nav.bottom = rc.bottom;
+      layout.nav.top = rc.bottom - layout.control_size.height / 2;
+      rc.bottom = layout.nav.top;
+    }
+  }
+
+
+  // Add the glide ratio ribbon if required
+  if (map_settings.glide_ribbon_mode != GlideRibbonType::NONE)
+  {
+    layout.glide.top = rc.top;
+    layout.glide.bottom = rc.bottom;
+
+    if (map_settings.glide_ribbon_mode == GlideRibbonType::RIGHT)
+    {
+      layout.glide.right = rc.right;
+      layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+      rc.right = layout.glide.left;
+    }
+    else
+    {
+      layout.glide.left = rc.left;
+      layout.glide.right = layout.glide.left + layout.control_size.width / 2;
+      rc.left = layout.glide.right;
+    }
+  }
 
   layout.remaining = rc;
   return layout;
@@ -611,7 +667,7 @@ InfoBoxLayout::CalcInfoBoxSizes(Layout &layout, PixelSize screen_size,
     // calculate control dimensions
     layout.control_size.height = screen_size.height / 6;
     // preserve relative shape
-    layout.control_size.width = layout.control_size.height * 1.35;
+    layout.control_size.width = layout.control_size.height * 1.44;
     break;
 
   case InfoBoxSettings::Geometry::RIGHT_5:
@@ -843,7 +899,7 @@ InfoBoxLayout::GetBorder(InfoBoxSettings::Geometry geometry, bool landscape,
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
-    if (!((i == 0) ||(i == 9)))
+    if (!((i == 0) || (i == 6)))
       border |= BORDERTOP;
     if (i < 12)
       border |= BORDERRIGHT;
