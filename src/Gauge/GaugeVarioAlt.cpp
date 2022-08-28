@@ -127,7 +127,7 @@ GaugeVarioAlt::GaugeVarioAlt(const FullBlackboard &_blackboard,
 }
 
 void
-GaugeVarioAlt::OnPaintBuffer(Canvas &canvas)
+GaugeVarioAlt::OnPaintBuffer(Canvas &canvas) noexcept
 {
   const PixelRect rc = GetClientRect();
   if (!look.fonts_valid || look.HasChanged(rc))
@@ -351,11 +351,11 @@ GaugeVarioAlt::RenderBase(Canvas &canvas, PixelRect rc) noexcept
     // Render the numbers
     if (look.num_info_box > 0)
     {
-      TCHAR buffer[3];
+      TCHAR buffer[5];
       int disp = abs(val);
       if (Units::GetUserVerticalSpeedUnit() == Unit::FEET_PER_MINUTE)
         disp = (disp + 50) / 100;
-      _stprintf(buffer, _T("%d"), disp);
+      _stprintf(buffer, _T("%d"), (int8_t)disp);
       canvas.Select(look.corner_font);
       PixelSize ts = canvas.CalcTextSize(buffer);
       PixelPoint local_offset = geometry.offset;

@@ -1132,7 +1132,7 @@ MainWindow::UpdateGaugeVisibility() noexcept
 }
 
 void
-MainWindow::UpdateRibbonVisibility()
+MainWindow::UpdateRibbonVisibility() noexcept
 {
   bool full_screen = GetFullScreen();
 

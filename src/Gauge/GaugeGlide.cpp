@@ -35,7 +35,7 @@ GaugeGlide::GaugeGlide(const FullBlackboard &_blackboard,
 }
 
 void
-GaugeGlide::OnPaintBuffer(Canvas &canvas)
+GaugeGlide::OnPaintBuffer(Canvas &canvas) noexcept
 {
   const PixelRect rc = GetClientRect();
 

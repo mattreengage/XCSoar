@@ -75,7 +75,7 @@ protected:
   virtual void OnResize(PixelSize new_size) override;
 
   /* virtual methods from class AntiFlickerWindow */
-  virtual void OnPaintBuffer(Canvas &canvas) override;
+  virtual void OnPaintBuffer(Canvas &canvas) noexcept override;
 
 private:
   void RenderScale(Canvas &canvas, PixelRect rc, unsigned root_value, const TCHAR *label, bool inf) noexcept;

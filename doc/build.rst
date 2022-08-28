@@ -163,7 +163,7 @@ For Android, you need:
 
 - `Android SDK level 26 <http://developer.android.com/sdk/>`__
 
-- `Android NDK r23b <http://developer.android.com/sdk/ndk/>`__
+- `Android NDK r23 <http://developer.android.com/sdk/ndk/>`__
 
 - `Ogg Vorbis <http://www.vorbis.com/>`__
 

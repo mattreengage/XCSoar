@@ -42,7 +42,7 @@ GaugeNav::GaugeNav(const FullBlackboard &_blackboard,
 }
 
 void
-GaugeNav::OnPaintBuffer(Canvas &canvas)
+GaugeNav::OnPaintBuffer(Canvas &canvas) noexcept
 {
   const PixelRect rc = GetClientRect();
 

@@ -378,6 +378,7 @@ public:
   Widget *GetFlavourWidget(const TCHAR *flavour) noexcept;
 
   void UpdateGaugeVisibility() noexcept;
+  void UpdateRibbonVisibility() noexcept;
 
   [[gnu::pure]]
   const MapWindowProjection &GetProjection() const noexcept;
@@ -386,8 +387,10 @@ public:
   void ToggleForceFLARMRadar() noexcept;
 
 private:
-  void UpdateVarioGaugeVisibility();
-  void UpdateTrafficGaugeVisibility();
+  void UpdateVarioGaugeVisibility() noexcept;
+  void UpdateTrafficGaugeVisibility() noexcept;
+
+  void StopDragging() noexcept;
 
   void LateInitialise() noexcept;
 
