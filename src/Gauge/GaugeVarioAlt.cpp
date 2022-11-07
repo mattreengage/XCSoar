@@ -90,7 +90,7 @@ inline
 GaugeVarioAlt::Geometry::Geometry( VarioAltLook &look, const PixelRect &rc) noexcept
   :ballast(look, rc), bugs(look, rc)
 {
-  nlength0 = Layout::Scale(22);
+  nlength0 = Layout::Scale(20);
   nlength1 = Layout::Scale(1);
   nwidth = Layout::Scale(4);
 
@@ -217,7 +217,7 @@ GaugeVarioAlt::OnPaintBuffer(Canvas &canvas) noexcept
 static constexpr PixelPoint
 TransformRotatedPoint(IntPoint2D pt, IntPoint2D offset, int ratio) noexcept
 {
-  return { pt.x + offset.x, (pt.y * ratio / 66) + offset.y + 1 };
+  return { pt.x + offset.x, (pt.y * ratio / 72) + offset.y + 1 };
 }
 
 void

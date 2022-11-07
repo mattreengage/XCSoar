@@ -38,7 +38,7 @@ static constexpr double CONTROLHEIGHTRATIO = 7.4;
 static constexpr unsigned char geometry_counts[] = {
   8, 8, 8, 8, 8, 8,
   9, 5, 12, 24, 12,
-  12, 8, 8, 4, 4, 4, 4,
+  12, 10, 8, 4, 4, 4, 4,
   8, 16, 14, 10, 10, 10,
   12, // 3 rows X 4 boxes
   15, // 3 rows X 5 boxes
@@ -132,12 +132,37 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
 
   Layout layout;
 
+  const MapSettings &map_settings = CommonInterface::GetMapSettings();
+
   layout.geometry = geometry;
   layout.landscape = screen_size.width > screen_size.height;
   layout.count = geometry_counts[(unsigned)geometry];
   assert(layout.count <= InfoBoxSettings::Panel::MAX_CONTENTS);
 
   CalcInfoBoxSizes(layout, screen_size, geometry);
+
+  // Add the navigation ribbon if required
+  if (map_settings.nav_ribbon_mode != NavRibbonType::NONE)
+  {
+    layout.nav.right = rc.right;
+    layout.nav.left = rc.left;
+
+    if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
+    {
+      layout.nav.top = rc.top;
+      layout.nav.bottom = rc.top + layout.control_size.height / 2;
+      rc.top = layout.nav.bottom;
+    }
+    else
+    {
+      layout.nav.bottom = rc.bottom;
+      layout.nav.top = rc.bottom - layout.control_size.height / 2;
+      rc.bottom = layout.nav.top;
+    }
+  }
+
+  const PixelSize info_screen_size = rc.GetSize();
+  CalcInfoBoxSizes(layout, info_screen_size, geometry);
 
   layout.ClearVario();
   layout.ClearGlide();
@@ -234,14 +259,14 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
   case InfoBoxSettings::Geometry::LEFT_6_RIGHT_3_VARIO:
     layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
-    layout.vario.top = 0;
-    layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
+    layout.vario.top = rc.top;
+    layout.vario.bottom = layout.vario.top + layout.control_size.height * 4;
 
     // Info boxes under the vario
-    rc.right = MakeRightColumn(layout, layout.positions + 6, 1, rc.right,
-                               rc.top + 5 * layout.control_size.height, rc.bottom);
-    rc.right = MakeRightColumn(layout, layout.positions + 7, 1, rc.right,
-                               rc.top + 5 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 6, 2, rc.right,
+                               rc.top + 4 * layout.control_size.height, rc.bottom);
+    rc.right = MakeRightColumn(layout, layout.positions + 8, 2, rc.right,
+                               rc.top + 4 * layout.control_size.height, rc.bottom);
 
     // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
@@ -251,7 +276,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
     layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
-    layout.vario.top = 0;
+    layout.vario.top = rc.top;
     layout.vario.bottom = layout.vario.top + layout.control_size.height * 5;
 
     // Info boxes under the vario
@@ -444,7 +469,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     break;
   };
 
-  const MapSettings &map_settings = CommonInterface::GetMapSettings();
+  /*
   // Add the navigation ribbon if required
   if (map_settings.nav_ribbon_mode != NavRibbonType::NONE)
   {
@@ -464,6 +489,7 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
       rc.bottom = layout.nav.top;
     }
   }
+  */
 
 
   // Add the glide ratio ribbon if required
@@ -682,7 +708,7 @@ InfoBoxLayout::CalcInfoBoxSizes(Layout &layout, PixelSize screen_size,
     // calculate control dimensions
     layout.control_size.height = screen_size.height / 6;
     // preserve relative shape
-    layout.control_size.width = layout.control_size.height * 1.44;
+    layout.control_size.width = layout.control_size.height * 1.2;
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
