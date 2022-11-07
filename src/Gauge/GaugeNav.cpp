@@ -161,7 +161,7 @@ GaugeNav::NoTarget(Canvas &canvas, PixelRect rc)
 }
 
 void
-GaugeNav::OnResize(PixelSize new_size)
+GaugeNav::OnResize(PixelSize new_size) noexcept
 {
   AntiFlickerWindow::OnResize(new_size);
 }

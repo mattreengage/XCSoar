@@ -183,7 +183,7 @@ unsigned GaugeGlide::VertPos(PixelRect rc, double root_value)
 }
 
 void
-GaugeGlide::OnResize(PixelSize new_size)
+GaugeGlide::OnResize(PixelSize new_size) noexcept
 {
   AntiFlickerWindow::OnResize(new_size);
 }

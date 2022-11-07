@@ -222,7 +222,7 @@ ActionInterface::OffsetManualMacCready(double offset, bool to_devices) noexcept
 }
 
 void 
-ActionInterface::SetVarioRange(unsigned range)
+ActionInterface::SetVarioRange(unsigned range) noexcept
 {
   if (range <= 2)
   {

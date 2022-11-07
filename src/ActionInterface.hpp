@@ -85,7 +85,7 @@ OffsetManualMacCready(double offset, bool to_devices=true) noexcept;
    * @param trigger_draw triggers a map redraw immediately if true,
    * rather than waiting for eventual redraw
    */
-  void SendMapSettings(const bool trigger_draw = false);
+  void SendMapSettings(const bool trigger_draw = false) noexcept;
 
 /**
  * Call this after #UIState has been modified with SetUIState().  It
