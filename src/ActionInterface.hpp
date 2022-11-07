@@ -77,6 +77,17 @@ SetManualMacCready(double mc, bool to_devices=true) noexcept;
 void
 OffsetManualMacCready(double offset, bool to_devices=true) noexcept;
 
+
+/**
+ * Call this after VarioSettings has been modified with
+ * SetVarioRange().  It sends the new values to all sub systems,
+ * and optionally forces a redraw.
+ *
+ * @param range provides the new vario range
+ */
+void 
+SetVarioRange(unsigned range) noexcept;
+
   /**
    * Call this after MapSettings has been modified with
    * SetMapSettings().  It sends the new values to all sub systems,
