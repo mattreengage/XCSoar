@@ -2,7 +2,7 @@
 Copyright_License {
 
   XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
+  Copyright (C) 2000-2021 The XCSoar Project
   A detailed list of copyright holders can be found in the file "AUTHORS".
 
   This program is free software; you can redistribute it and/or
@@ -21,27 +21,39 @@ Copyright_License {
 }
 */
 
-#pragma once
+#include "Gauge/GlueGaugeNav.hpp"
+#include "Gauge/GaugeNav.hpp"
+#include "Blackboard/LiveBlackboard.hpp"
 
-#include <cstdint>
+void
+GlueGaugeNav::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
+{
+  WindowStyle style;
+  style.Hide();
+  style.Disable();
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
-};
+  SetWindow(std::make_unique<GaugeNav>(blackboard, parent, look,
+                                         rc, style));
+}
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
+void
+GlueGaugeNav::Show(const PixelRect &rc) noexcept
+{
+  WindowWidget::Show(rc);
 
-  void SetDefaults();
-};
+  blackboard.AddListener(*this);
+}
+
+void
+GlueGaugeNav::Hide() noexcept
+{
+  blackboard.RemoveListener(*this);
+
+  WindowWidget::Hide();
+}
+
+void
+GlueGaugeNav::OnGPSUpdate(const MoreData &basic)
+{
+  ((GaugeNav &)GetWindow()).Invalidate();
+}

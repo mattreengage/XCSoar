@@ -2,7 +2,7 @@
 Copyright_License {
 
   XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
+  Copyright (C) 2000-2021 The XCSoar Project
   A detailed list of copyright holders can be found in the file "AUTHORS".
 
   This program is free software; you can redistribute it and/or
@@ -21,27 +21,34 @@ Copyright_License {
 }
 */
 
-#pragma once
+#ifndef GLUE_GAUGE_NAV_H
+#define GLUE_GAUGE_NAV_H
 
-#include <cstdint>
+#include "Widget/WindowWidget.hpp"
+#include "Blackboard/BlackboardListener.hpp"
 
-enum class VarioRange : uint8_t {
-  RANGE_LOW,
-  RANGE_NORMAL,
-  RANGE_HIGH,
+struct NavLook;
+class LiveBlackboard;
+
+/**
+ * A variant of GaugeVario which auto-updates its data from the device
+ * blackboard.
+ */
+class GlueGaugeNav final
+  : public WindowWidget, private NullBlackboardListener {
+  LiveBlackboard &blackboard;
+  NavLook &look;
+
+public:
+  GlueGaugeNav(LiveBlackboard &_blackboard,  NavLook &_look) noexcept
+    :blackboard(_blackboard), look(_look) {}
+
+  void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
+  void Show(const PixelRect &rc) noexcept override;
+  void Hide() noexcept override;
+
+private:
+  virtual void OnGPSUpdate(const MoreData &basic) override;
 };
 
-struct VarioSettings {
-  VarioRange vario_range;
-  bool show_alt_vario;
-  bool show_average;
-  bool show_mc;
-  bool show_speed_to_fly;
-  bool show_ballast;
-  bool show_bugs;
-  bool show_gross;
-  bool show_average_needle;
-  bool show_thermal_average_needle;
-
-  void SetDefaults();
-};
+#endif

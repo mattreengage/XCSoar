@@ -77,16 +77,15 @@ SetManualMacCready(double mc, bool to_devices=true) noexcept;
 void
 OffsetManualMacCready(double offset, bool to_devices=true) noexcept;
 
-/**
- * Call this after MapSettings has been modified with
- * SetMapSettings().  It sends the new values to all sub systems,
- * and optionally forces a redraw.
- *
- * @param trigger_draw triggers a map redraw immediately if true,
- * rather than waiting for eventual redraw
- */
-void
-SendMapSettings(const bool trigger_draw = false) noexcept;
+  /**
+   * Call this after MapSettings has been modified with
+   * SetMapSettings().  It sends the new values to all sub systems,
+   * and optionally forces a redraw.
+   *
+   * @param trigger_draw triggers a map redraw immediately if true,
+   * rather than waiting for eventual redraw
+   */
+  void SendMapSettings(const bool trigger_draw = false);
 
 /**
  * Call this after #UIState has been modified with SetUIState().  It

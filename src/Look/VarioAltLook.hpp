@@ -21,19 +21,42 @@ Copyright_License {
 }
 */
 
-#include "VarioSettings.hpp"
+#ifndef XCSOAR_VARIO_ALT_LOOK_HPP
+#define XCSOAR_VARIO_ALT_LOOK_HPP
 
-void
-VarioSettings::SetDefaults()
-{
-  vario_range = VarioRange::RANGE_NORMAL;
-  show_alt_vario = false;
-  show_average = false;
-  show_mc = false;
-  show_speed_to_fly = false;
-  show_ballast = false;
-  show_bugs = false;
-  show_gross = true;
-  show_average_needle = false;
-  show_thermal_average_needle = false;
-}
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Bitmap.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
+
+class Font;
+
+struct VarioAltLook {
+  bool inverse, colors;
+
+  Color background_color, text_color, dimmed_text_color;
+
+  Color sink_color, lift_color;
+
+  Brush sink_brush, lift_brush, ave_brush;
+
+  Pen thick_background_pen, thick_sink_pen, thick_lift_pen, ave_pen, th_ave_pen;
+
+  Pen markings_pen, border_pen;
+
+  Font text_font, value_font, corner_font;
+
+  bool fonts_valid;
+  PixelRect info_box, old_rc;
+  unsigned num_info_box, info_height;
+
+  void Initialise(bool inverse, bool colors,
+                  const Font &text_font);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
+};
+
+#endif
