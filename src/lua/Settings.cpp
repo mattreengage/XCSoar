@@ -53,7 +53,7 @@ l_settings_index(lua_State *L)
     const ComputerSettings &settings_computer =
       CommonInterface::GetComputerSettings();
     
-    Lua::Push(L, (int)settings_computer.vario_range);
+    Lua::Push(L, (lua_Integer)settings_computer.vario_range);
   } else if (StringIsEqual(name, "wingload")) {
       /* Current used wingload */
       const ComputerSettings &settings_computer =
