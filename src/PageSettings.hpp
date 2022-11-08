@@ -96,6 +96,8 @@ struct PageLayout
      */
     CROSS_SECTION,
 
+    FLARM_RADAR,
+
     /**
      * A custom #Widget is being displayed.  This is not a
      * user-accessible option, it's only used for runtime state.

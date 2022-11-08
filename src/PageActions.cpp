@@ -32,6 +32,8 @@ Copyright_License {
 #include "Pan.hpp"
 #include "UIGlobals.hpp"
 #include "MapWindow/GlueMapWindow.hpp"
+#include "Gauge/BigTrafficWidget.hpp"
+#include "FLARM/Glue.hpp"
 
 #if defined(ENABLE_SDL) && defined(main)
 /* on some platforms, SDL wraps the main() function and clutters our
@@ -225,6 +227,11 @@ LoadBottom(PageLayout::Bottom bottom)
 
   case PageLayout::Bottom::CROSS_SECTION:
     CommonInterface::main_window->SetBottomWidget(new CrossSectionWidget());
+    break;
+
+  case PageLayout::Bottom::FLARM_RADAR:
+    LoadFlarmDatabases();
+    CommonInterface::main_window->SetBottomWidget(new TrafficWidget());
     break;
 
   case PageLayout::Bottom::CUSTOM:

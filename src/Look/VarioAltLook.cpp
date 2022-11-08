@@ -84,7 +84,7 @@ VarioAltLook::Resize(Canvas &canvas, PixelRect rc)
   info_box.bottom = mid_height + (box_height / 2);
   info_box.right = rc.right; 
 
-  num_info_box = (box_height >= 160) ? 4 : (box_height >= 128) ? 4 : 0;
+  num_info_box = (box_height >= 160) ? 4 : 0;
   if (num_info_box > 0) {
     info_height = box_height / num_info_box;
     const unsigned height = info_height * 5u / 8u;

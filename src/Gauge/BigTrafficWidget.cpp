@@ -619,9 +619,8 @@ TrafficWidget::Windows::UpdateLayout(const PixelRect &rc) noexcept
   const unsigned button_width = std::max(unsigned(rc.right / 6),
                                          button_height);
 
-  const int x1 = rc.right / 2;
-  const int x0 = x1 - button_width;
-  const int x2 = x1 + button_width;
+  const int x1 = rc.right - button_width - margin;
+  const int x0 = margin;
 
   const int y0 = margin;
   const int y1 = y0 + button_height;
@@ -632,27 +631,27 @@ TrafficWidget::Windows::UpdateLayout(const PixelRect &rc) noexcept
 
   button_rc.left = x0;
   button_rc.top = y0;
-  button_rc.right = x1 - margin;
+  button_rc.right = x0 + button_width;
   button_rc.bottom = y1;
   zoom_in_button.Move(button_rc);
 
   button_rc.left = x1;
-  button_rc.right = x2 - margin;
+  button_rc.right = x1 + button_width;
   zoom_out_button.Move(button_rc);
 
   button_rc.left = x0;
   button_rc.top = y2;
-  button_rc.right = x1 - margin;
+  button_rc.right = x0 + button_width;
   button_rc.bottom = y3;
   previous_item_button.Move(button_rc);
 
   button_rc.left = x1;
-  button_rc.right = x2 - margin;
+  button_rc.right = x1 + button_width;
   next_item_button.Move(button_rc);
 
   button_rc.left = margin;
-  button_rc.top = button_height * 3 / 2;
-  button_rc.right = button_rc.left + Layout::Scale(50);
+  button_rc.top = button_height + margin * 2;
+  button_rc.right = button_rc.left + button_width;
   button_rc.bottom = button_rc.top + button_height;
   details_button.Move(button_rc);
 

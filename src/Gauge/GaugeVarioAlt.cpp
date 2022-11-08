@@ -45,7 +45,7 @@ GaugeVarioAlt::BallastGeometry::BallastGeometry( VarioAltLook &look,
 {
   // position of ballast value
   value_pos.x = 4;
-  value_pos.y = rc.top + 4
+  value_pos.y = rc.top + 10
     + look.corner_font.GetCapitalHeight()
     - look.corner_font.GetAscentHeight();
 }
