@@ -149,12 +149,14 @@ GaugeVarioAlt::OnPaintBuffer(Canvas &canvas) noexcept
                 true,
                 0);
 
-
-    RenderValue(canvas, geometry.value_b_pos, value_b,
-                Units::ToUserVSpeed(calc.current_thermal.lift_rate),
-                _T("Avg Th."), 
-                true,
-                0);
+    if (geometry.num_values > 4)
+    {
+      RenderValue(canvas, geometry.value_e_pos, value_b,
+                  Units::ToUserVSpeed(calc.current_thermal.lift_rate),
+                  _T("Avg Th."), 
+                  true,
+                  0);
+    }
 
     auto alt = (basic.baro_altitude_available) 
               ? basic.baro_altitude 
@@ -168,7 +170,7 @@ GaugeVarioAlt::OnPaintBuffer(Canvas &canvas) noexcept
     */
     auto transition = Units::ToSysAltitude(10000);
 
-    RenderValue(canvas, geometry.value_c_pos, value_c,
+    RenderValue(canvas, geometry.value_b_pos, value_c,
                 Units::ToUserAltitude((alt > transition) ? alt_fl : alt),
                 (alt > transition) ? _T("Alt FL") : _T("Alt QNH"), 
                 false,
@@ -178,19 +180,16 @@ GaugeVarioAlt::OnPaintBuffer(Canvas &canvas) noexcept
     const TaskStats &task_stats = calc.task_stats;
     if (task_stats.task_valid && task_stats.total.travelled.IsDefined()) 
     {
-      RenderValue(canvas, geometry.value_d_pos, value_d,
+      RenderValue(canvas, geometry.value_c_pos, value_d,
                   Units::ToUserTaskSpeed(task_stats.total.travelled.GetSpeed()),
                   _T("V Task Avg"), 
                   true,
                   0);
-      if (geometry.num_values > 4)
-      {
-        RenderValue(canvas, geometry.value_e_pos, value_e,
-                  Units::ToUserTaskSpeed(task_stats.last_hour.speed),
-                  _T("V Task H"), 
-                  true,
-                  0);
-      }
+      RenderValue(canvas, geometry.value_d_pos, value_e,
+                Units::ToUserTaskSpeed(task_stats.last_hour.speed),
+                _T("V Task H"), 
+                true,
+                0);
     }
   }
 
