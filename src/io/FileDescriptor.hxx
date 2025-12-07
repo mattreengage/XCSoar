@@ -1,43 +1,14 @@
-/*
- * Copyright 2012-2022 Max Kellermann <max.kellermann@gmail.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * - Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-2-Clause
+// author: Max Kellermann <max.kellermann@gmail.com>
 
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <utility>
 
 #include <unistd.h>
 #include <sys/types.h>
-
-#ifdef __linux__
-#include <csignal>
-#endif
 
 #ifdef _WIN32
 #include <wchar.h>
@@ -56,7 +27,10 @@ protected:
 	int fd;
 
 public:
+	[[nodiscard]]
 	FileDescriptor() = default;
+
+	[[nodiscard]]
 	explicit constexpr FileDescriptor(int _fd) noexcept:fd(_fd) {}
 
 	constexpr bool operator==(FileDescriptor other) const noexcept {
@@ -109,6 +83,7 @@ public:
 		fd = _fd;
 	}
 
+	[[nodiscard]]
 	int Steal() noexcept {
 		return std::exchange(fd, -1);
 	}
@@ -117,37 +92,46 @@ public:
 		fd = -1;
 	}
 
+	[[nodiscard]]
 	static constexpr FileDescriptor Undefined() noexcept {
 		return FileDescriptor(-1);
 	}
 
 #ifdef __linux__
+	[[nodiscard]]
 	bool Open(FileDescriptor dir, const char *pathname,
 		  int flags, mode_t mode=0666) noexcept;
 #endif
 
+	[[nodiscard]]
 	bool Open(const char *pathname, int flags, mode_t mode=0666) noexcept;
 
 #ifdef _WIN32
+	[[nodiscard]]
 	bool Open(const wchar_t *pathname, int flags, mode_t mode=0666) noexcept;
 #endif
 
+	[[nodiscard]]
 	bool OpenReadOnly(const char *pathname) noexcept;
 
 #ifdef __linux__
+	[[nodiscard]]
 	bool OpenReadOnly(FileDescriptor dir,
 			  const char *pathname) noexcept;
 #endif
 
 #ifndef _WIN32
+	[[nodiscard]]
 	bool OpenNonBlocking(const char *pathname) noexcept;
 #endif
 
 #ifdef __linux__
+	[[nodiscard]]
 	static bool CreatePipe(FileDescriptor &r, FileDescriptor &w,
 			       int flags) noexcept;
 #endif
 
+	[[nodiscard]]
 	static bool CreatePipe(FileDescriptor &r, FileDescriptor &w) noexcept;
 
 #ifdef _WIN32
@@ -155,6 +139,7 @@ public:
 	void DisableCloseOnExec() const noexcept {}
 	void SetBinaryMode() const noexcept;
 #else
+	[[nodiscard]]
 	static bool CreatePipeNonBlock(FileDescriptor &r,
 				       FileDescriptor &w) noexcept;
 
@@ -188,11 +173,13 @@ public:
 	 * @return the new file descriptor or UniqueFileDescriptor{}
 	 * on error
 	 */
+	[[nodiscard]]
 	UniqueFileDescriptor Duplicate() const noexcept;
 
 	/**
 	 * Duplicate the file descriptor onto the given file descriptor.
 	 */
+	[[nodiscard]]
 	bool Duplicate(FileDescriptor new_fd) const noexcept {
 		return ::dup2(Get(), new_fd.Get()) != -1;
 	}
@@ -204,11 +191,6 @@ public:
 	 * process, to be used by a newly executed program.
 	 */
 	bool CheckDuplicate(FileDescriptor new_fd) const noexcept;
-#endif
-
-#ifdef __linux__
-	bool CreateEventFD(unsigned initval=0) noexcept;
-	bool CreateSignalFD(const sigset_t *mask) noexcept;
 #endif
 
 	/**
@@ -223,12 +205,15 @@ public:
 	/**
 	 * Rewind the pointer to the beginning of the file.
 	 */
+	[[nodiscard]]
 	bool Rewind() const noexcept;
 
+	[[nodiscard]]
 	off_t Seek(off_t offset) const noexcept {
 		return lseek(Get(), offset, SEEK_SET);
 	}
 
+	[[nodiscard]]
 	off_t Skip(off_t offset) const noexcept {
 		return lseek(Get(), offset, SEEK_CUR);
 	}
@@ -245,12 +230,19 @@ public:
 	off_t GetSize() const noexcept;
 
 #ifndef _WIN32
+	[[nodiscard]]
 	ssize_t ReadAt(off_t offset,
 		       void *buffer, std::size_t length) const noexcept {
 		return ::pread(fd, buffer, length, offset);
 	}
 #endif
 
+	[[nodiscard]]
+	ssize_t Read(std::span<std::byte> dest) const noexcept {
+		return ::read(fd, dest.data(), dest.size());
+	}
+
+	[[nodiscard]]
 	ssize_t Read(void *buffer, std::size_t length) const noexcept {
 		return ::read(fd, buffer, length);
 	}
@@ -259,8 +251,14 @@ public:
 	 * Read until all of the given buffer has been filled.  Throws
 	 * on error.
 	 */
-	void FullRead(void *buffer, std::size_t length) const;
+	void FullRead(std::span<std::byte> dest) const;
 
+	[[nodiscard]]
+	ssize_t Write(std::span<const std::byte> src) const noexcept {
+		return ::write(fd, src.data(), src.size());
+	}
+
+	[[nodiscard]]
 	ssize_t Write(const void *buffer, std::size_t length) const noexcept {
 		return ::write(fd, buffer, length);
 	}
@@ -269,12 +267,16 @@ public:
 	 * Write until all of the given buffer has been written.
 	 * Throws on error.
 	 */
-	void FullWrite(const void *buffer, std::size_t length) const;
+	void FullWrite(std::span<const std::byte> src) const;
 
 #ifndef _WIN32
+	[[nodiscard]]
 	int Poll(short events, int timeout) const noexcept;
 
+	[[nodiscard]]
 	int WaitReadable(int timeout) const noexcept;
+
+	[[nodiscard]]
 	int WaitWritable(int timeout) const noexcept;
 
 	[[gnu::pure]]

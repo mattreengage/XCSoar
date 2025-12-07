@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -39,6 +19,8 @@ Copyright_License {
 #include "Wind/Settings.hpp"
 #include "WaveSettings.hpp"
 #include "RadioFrequency.hpp"
+#include "TransponderCode.hpp"
+#include "TransponderMode.hpp"
 #include "net/client/WeGlide/Settings.hpp"
 #include "Gauge/VarioSettings.hpp"
 
@@ -115,6 +97,16 @@ struct PlacesOfInterestSettings {
   GeoPoint atc_reference;
   Angle magnetic_declination;
 
+  /**
+   * elevation of home waypoint is available
+   */
+  bool home_elevation_available;
+
+  /**
+   * elevation (if available) of home waypoint
+   */
+  double home_elevation;
+
   void SetDefaults() {
     ClearHome();
     atc_reference.SetInvalid();
@@ -140,6 +132,19 @@ struct RadioSettings {
     standby_frequency.Clear();
     active_name.clear();
     standby_name.clear();
+  }
+};
+
+/**
+ * Options for transponder remote control
+ */
+struct TransponderSettings {
+  TransponderCode transponder_code;
+  TransponderMode transponder_mode;
+
+  void SetDefaults() {
+    transponder_code.Clear();
+    transponder_mode.Clear();
   }
 };
 
@@ -241,6 +246,7 @@ struct ComputerSettings {
   RadioSettings radio;
 
   VarioRange vario_range;
+  TransponderSettings transponder;
 
   void SetDefaults();
 };

@@ -1,25 +1,5 @@
-/*
-  Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 /**
  * @file
@@ -37,7 +17,7 @@
 #include "Widget/RowFormWidget.hpp"
 #include "FLARM/FlarmNetRecord.hpp"
 #include "FLARM/Traffic.hpp"
-#include "FLARM/FlarmDetails.hpp"
+#include "FLARM/Details.hpp"
 #include "FLARM/Friends.hpp"
 #include "FLARM/Glue.hpp"
 #include "Renderer/ColorButtonRenderer.hpp"
@@ -139,7 +119,7 @@ FlarmTrafficDetailsWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   AddReadOnly(_("Pilot"));
   AddReadOnly(_("Airport"));
   AddReadOnly(_("Radio frequency"));
-  AddReadOnly(_("Plane"));
+  AddReadOnly(_("Plane type"));
 
   Update();
 }
@@ -176,7 +156,7 @@ FlarmTrafficDetailsWidget::UpdateChanging(const MoreData &basic)
 
   // Fill distance/direction field
   if (target_ok) {
-    FormatUserDistanceSmart(target->distance, tmp, 20, 1000);
+    FormatUserDistanceSmart(target->distance, tmp, true, 20, 1000);
     TCHAR *p = tmp + _tcslen(tmp);
     *p++ = _T(' ');
     FormatAngleDelta(p, 20, target->Bearing() - basic.track);
@@ -190,7 +170,7 @@ FlarmTrafficDetailsWidget::UpdateChanging(const MoreData &basic)
   if (target_ok) {
     TCHAR *p = tmp;
     if (target->altitude_available) {
-      FormatUserAltitude(target->altitude, p, 20);
+      FormatUserAltitude(target->altitude, p);
       p += _tcslen(p);
       *p++ = _T(' ');
     }
@@ -206,7 +186,7 @@ FlarmTrafficDetailsWidget::UpdateChanging(const MoreData &basic)
 
   // Fill climb speed field
   if (target_ok && target->climb_rate_avg30s_available) {
-    FormatUserVerticalSpeed(target->climb_rate_avg30s, tmp, 20);
+    FormatUserVerticalSpeed(target->climb_rate_avg30s, tmp);
     value = tmp;
   } else
     value = _T("--");
@@ -318,7 +298,13 @@ FlarmTrafficDetailsWidget::OnCallsignClicked()
 {
   StaticString<21> newName;
   newName.clear();
-  if (TextEntryDialog(newName, _("Competition ID")) &&
+
+  // pre-fill the callsign from flarmnet database or userfile
+  const TCHAR* cs = FlarmDetails::LookupCallsign(target_id);
+  if (cs != nullptr && cs[0] != 0)
+    newName = cs;
+
+  if (TextEntryDialog(newName, _("Callsign")) &&
       FlarmDetails::AddSecondaryItem(target_id, newName))
     SaveFlarmNames();
 

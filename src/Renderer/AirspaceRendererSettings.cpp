@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 #include "AirspaceRendererSettings.hpp"
 #include "Asset.hpp"
 
@@ -59,27 +39,101 @@ AirspaceRendererSettings::SetDefaults()
 
 #ifdef HAVE_HATCHED_BRUSH
   classes[OTHER].brush = 2;
+  classes[RESTRICTED].brush = 3;
+  classes[PROHIBITED].brush = 3;
+  classes[DANGER].brush = 3;
   classes[CLASSA].brush = 3;
   classes[CLASSB].brush = 3;
   classes[CLASSC].brush = 3;
   classes[CLASSD].brush = 3;
+  classes[NOGLIDER].brush = 3;
   classes[CTR].brush = 3;
   classes[WAVE].brush = 2;
   classes[AATASK].brush = 3;
   classes[CLASSE].brush = 3;
   classes[CLASSF].brush = 3;
+  classes[TMZ].brush = 3;
+  classes[CLASSG].brush = 3;
+  classes[MATZ].brush = 3;
   classes[RMZ].brush = 3;
+  classes[UNCLASSIFIED].brush = 3;
+  classes[TMA].brush = 3;
+  classes[TRA].brush = 3;
+  classes[TSA].brush = 3;
+  classes[FIR].brush = 3;
+  classes[UIR].brush = 3;
+  classes[ADIZ].brush = 3;
+  classes[ATZ].brush = 3;
+  classes[AWY].brush = 3;
+  classes[MTR].brush = 3;
+  classes[ALERT].brush = 3;
+  classes[WARNING].brush = 3;
+  classes[PROTECTED].brush = 3;
+  classes[HTZ].brush = 3;
+  classes[GLIDING_SECTOR].brush = 3;
+  classes[TRP].brush = 3;
+  classes[TIZ].brush = 3;
+  classes[TIA].brush = 3;
+  classes[MTA].brush = 3;
+  classes[CTA].brush = 3;
+  classes[ACC_SECTOR].brush = 3;
+  classes[AERIAL_SPORTING_RECREATIONAL].brush = 3;
+  classes[OVERFLIGHT_RESTRICTION].brush = 3;
+  classes[MRT].brush = 3;
+  classes[TFR].brush = 3;
+  classes[VFR_SECTOR].brush = 3;
+  classes[FIS_SECTOR].brush = 2;
+  classes[LTA].brush = 3;
+  classes[UTA].brush = 3;
+  classes[AIRSPACECLASSCOUNT].brush = 3;
 #endif
 
-  classes[OTHER].SetColors(RGB8_CYAN);
-  classes[DANGER].SetColors(RGB8_MAGENTA.Darken());
-  classes[MATZ].SetColors(RGB8_MAGENTA.Darken());
-  classes[CLASSC].SetColors(RGB8_MAGENTA.Darken());
+  classes[OTHER].SetColors(RGB8_MAGENTA);
+  classes[RESTRICTED].SetColors(RGB8_RED);
+  classes[PROHIBITED].SetColors(RGB8_RED);
+  classes[DANGER].SetColors(RGB8_RED);
+  classes[CLASSA].SetColors(RGB8_RED);
+  classes[CLASSB].SetColors(RGB8_BLUE);
+  classes[CLASSC].SetColors(RGB8_BLUE);
   classes[CLASSD].SetColors(RGB8_BLUE);
-  classes[CTR].SetColors(RGB8_MAGENTA.Darken());
+  classes[NOGLIDER].SetColors(RGB8_RED);
+  classes[CTR].SetColors(RGB8_BLUE);
   classes[WAVE].SetColors(RGB8_YELLOW.Darken());
   classes[AATASK].SetColors(HasColors() ? RGB8_YELLOW : RGB8_MAGENTA);
-  classes[CLASSE].SetColors(RGB8_GREEN.Darken());
-  classes[CLASSF].SetColors(RGB8_GREEN.Darken());
-  classes[RMZ].SetColors(RGB8_MAGENTA.Darken());
+  classes[CLASSE].SetColors(RGB8_BLUE);
+  classes[CLASSF].SetColors(RGB8_BLUE);
+  classes[TMZ].SetColors(RGB8_STEEL_BLUE);
+  classes[CLASSG].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[MATZ].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[RMZ].SetColors(RGB8_STEEL_BLUE);
+  classes[UNCLASSIFIED].SetColors(RGB8_MAGENTA.Darken());
+  classes[TMA].SetColors(RGB8_BLUE);
+  classes[TRA].SetColors(RGB8_RED);
+  classes[TSA].SetColors(RGB8_RED);
+  classes[FIR].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[UIR].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[ADIZ].SetColors(RGB8_RED);
+  classes[ATZ].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[AWY].SetColors(RGB8_BLUE);
+  classes[MTR].SetColors(RGB8_LIGHT_GRAY);
+  classes[ALERT].SetColors(RGB8_DARK_GRAY);
+  classes[WARNING].SetColors(RGB8_DARK_GRAY);
+  classes[PROTECTED].SetColors(RGB8_GREEN.Darken());
+  classes[HTZ].SetColors(RGB8_GREEN.Darken());
+  classes[GLIDING_SECTOR].SetColors(RGB8_GREEN.Darken());
+  classes[TRP].SetColors(RGB8_RED);
+  classes[TIZ].SetColors(RGB8_DARK_GRAY);
+  classes[TIA].SetColors(RGB8_DARK_GRAY);
+  classes[MTA].SetColors(RGB8_DARK_GRAY);
+  classes[CTA].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[ACC_SECTOR].SetColors(RGB8_GRAYISH_VIOLET);
+  classes[AERIAL_SPORTING_RECREATIONAL].SetColors(RGB8_RED.Darken());
+  classes[OVERFLIGHT_RESTRICTION].SetColors(RGB8_RED);
+  classes[MRT].SetColors(RGB8_RED);
+  classes[TFR].SetColors(RGB8_RED);
+  classes[VFR_SECTOR].SetColors(RGB8_BLUE);
+  classes[FIS_SECTOR].SetColors(RGB8_BLUE);
+  classes[LTA].SetColors(RGB8_BLUE);
+  classes[UTA].SetColors(RGB8_BLUE);
+  classes[AIRSPACECLASSCOUNT].SetColors(RGB8_MAGENTA);
 }

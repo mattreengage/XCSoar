@@ -1,38 +1,36 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 package org.xcsoar;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.BroadcastReceiver;
 import android.os.BatteryManager;
 
 class BatteryReceiver extends BroadcastReceiver {
-  private static native void setBatteryPercent(int level, int plugged);
+  private static native void setBatteryPercent(int batteryPct, int plugged);
 
-  @Override public void onReceive(Context context, Intent intent) {
-    int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
-    int plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
-    setBatteryPercent(level, plugged);
+  @Override public void onReceive(Context context, Intent intent)
+  {
+    if (intent == null ||
+        !intent.getAction().equals(Intent.ACTION_BATTERY_CHANGED)) {
+      return;
+    }
+
+    boolean isBatteryPresent =
+        intent.getBooleanExtra(BatteryManager.EXTRA_PRESENT, false);
+    int batteryPct = 0;
+    int plugged = 1; // Assume plugged in if no battery is present
+
+    if (isBatteryPresent) {
+      int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+      int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+      batteryPct = (level >= 0 && scale > 0) ? (level * 100 / scale) : 0;
+      plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
+    }
+
+    // Pass the calculated battery percentage and plugged status to native code
+    setBatteryPercent(batteryPct, plugged);
   }
 }

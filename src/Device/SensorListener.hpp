@@ -1,27 +1,11 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
+
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 #include <chrono>
 
@@ -57,13 +41,25 @@ public:
   virtual void OnRotationSensor(float dtheta_x, float dtheta_y,
                                 float dtheta_z) noexcept = 0;
   virtual void OnMagneticFieldSensor(float h_x, float h_y, float h_z) noexcept = 0;
-  virtual void OnBarometricPressureSensor(float pressure,
-                                          float sensor_noise_variance) noexcept = 0;
   virtual void OnPressureAltitudeSensor(float altitude) noexcept = 0;
   virtual void OnI2CbaroSensor(int index, int sensorType,
                                AtmosphericPressure pressure) noexcept = 0;
   virtual void OnVarioSensor(float vario) noexcept = 0;
   virtual void OnHeartRateSensor(unsigned bpm) noexcept = 0;
+  /**
+   * @param[in] has_cht Is the Engine Cylinder Head Temperature sensor present?
+   * @param[in] cht Engine Cylinder Head Temperature.
+   * @param[in] has_egt Is the Engine Exhaust Gas Temperature sensor present?
+   * @param[in] egt Engine Exhaust Gas Temperature.
+   * @param[in] has_ignitions_per_second Are the measured ignitions valid?
+   * @param[in] ignitions_per_second Engine Ignitions Per Second, firing of the spark plug per second.
+   */
+  virtual void OnEngineSensors(bool has_cht,
+                               Temperature cht,
+                               bool has_egt,
+                               Temperature egt,
+                               bool has_ignitions_per_second,
+                               float ignitions_per_second) noexcept = 0;
 
   virtual void OnVoltageValues(int temp_adc, unsigned voltage_index,
                                int volt_adc) noexcept = 0;
@@ -84,4 +80,8 @@ public:
   virtual void OnSensorStateChanged() noexcept = 0;
   virtual void OnSensorError(const char *msg) noexcept = 0;
 #endif // ANDROID
+#if defined(ANDROID) || (defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE)
+  virtual void OnBarometricPressureSensor(float pressure,
+                      float sensor_noise_variance) noexcept = 0;
+#endif // ANDROID or iPhone
 };

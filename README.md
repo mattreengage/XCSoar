@@ -1,11 +1,10 @@
 # <img src="./Data/graphics/logo.svg" width="5%" alt="XCSoar Logo"> XCSoar
 
 [![.github/workflows/build-native.yml](https://github.com/XCSoar/XCSoar/actions/workflows/build-native.yml/badge.svg)](https://github.com/XCSoar/XCSoar/actions/workflows/build-native.yml)
-[![.github/workflows/build-kobo.yml](https://github.com/XCSoar/XCSoar/actions/workflows/build-kobo.yml/badge.svg)](https://github.com/XCSoar/XCSoar/actions/workflows/build-kobo.yml)
-[![.github/workflows/build-unix.yml](https://github.com/XCSoar/XCSoar/actions/workflows/build-unix.yml/badge.svg)](https://github.com/XCSoar/XCSoar/actions/workflows/build-unix.yml)
+[![.github/workflows/build-container.yml](https://github.com/XCSoar/XCSoar/actions/workflows/build-container.yml/badge.svg)](https://github.com/XCSoar/XCSoar/actions/workflows/build-container.yml)
 [![.github/workflows/build-docs.yml](https://github.com/XCSoar/XCSoar/actions/workflows/build-docs.yml/badge.svg)](https://github.com/XCSoar/XCSoar/actions/workflows/build-docs.yml)
 
-XCSoar is a tactical glide computer for Android, Linux, Mac OS X,
+XCSoar is a tactical glide computer for Android, Linux, macOS,
 and Windows.
 
 This file is aimed at developers.  Developers should [read the
@@ -16,20 +15,21 @@ downloaded via the [XCSoar home page](https://xcsoar.org/discover/manual.html).
 
 ## Getting the source
 
-The XCSoar source code is managed with [git](http://git-scm.com/). It can be
-downloaded with the following command:
+The XCSoar source code is managed with git. It can be fetched with the
+following command:
 
 ```bash
-git clone --recursive https://github.com/XCSoar/XCSoar
+git clone --recurse-submodules https://github.com/XCSoar/XCSoar
 ```
 
-To update your repository, type:
+To update your repository, use the following command:
 
 ```bash
-git pull
+git pull --recurse-submodules
 ```
 
-For more information, please refer to the git documentation.
+For more information, please refer to the [git
+documentation](http://git-scm.com/).
 
 ## Compiling from source
 

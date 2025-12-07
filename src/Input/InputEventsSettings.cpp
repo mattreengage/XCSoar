@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "InputEvents.hpp"
 #include "Dialogs/Error.hpp"
@@ -28,7 +8,7 @@ Copyright_License {
 #include "ActionInterface.hpp"
 #include "Message.hpp"
 #include "Profile/Profile.hpp"
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Profile/Settings.hpp"
 #include "Profile/Current.hpp"
 #include "util/Macros.hpp"
@@ -36,11 +16,12 @@ Copyright_License {
 #include "Units/Units.hpp"
 #include "Protection.hpp"
 #include "UtilsSettings.hpp"
-#include "Components.hpp"
 #include "Task/ProtectedTaskManager.hpp"
 #include "Audio/VarioGlue.hpp"
 #include "system/Path.hpp"
 #include "util/StringCompare.hxx"
+#include "Components.hpp"
+#include "BackendComponents.hpp"
 
 void
 InputEvents::eventSounds(const TCHAR *misc)
@@ -178,7 +159,7 @@ InputEvents::eventAudioDeadband(const TCHAR *misc)
 void
 InputEvents::eventBugs(const TCHAR *misc)
 {
-  if (protected_task_manager == NULL)
+  if (!backend_components->protected_task_manager)
     return;
 
   PolarSettings &settings = CommonInterface::SetComputerSettings().polar;
@@ -199,13 +180,13 @@ InputEvents::eventBugs(const TCHAR *misc)
     BUGS = 0.5;
   else if (StringIsEqual(misc, _T("show"))) {
     TCHAR Temp[100];
-    _stprintf(Temp, _T("%d"), (int)(BUGS * 100));
+    StringFormatUnsafe(Temp, _T("%d"), (int)(BUGS * 100));
     Message::AddMessage(_("Bugs performance"), Temp);
   }
 
   if (BUGS != oldBugs) {
     settings.SetBugs(BUGS);
-    protected_task_manager->SetGlidePolar(settings.glide_polar_task);
+    backend_components->SetTaskPolar(settings);
   }
 }
 
@@ -219,11 +200,11 @@ InputEvents::eventBugs(const TCHAR *misc)
 void
 InputEvents::eventBallast(const TCHAR *misc)
 {
-  if (protected_task_manager == NULL)
+  if (!backend_components->protected_task_manager)
     return;
 
-  GlidePolar &polar =
-    CommonInterface::SetComputerSettings().polar.glide_polar_task;
+  auto &settings = CommonInterface::SetComputerSettings().polar;
+  GlidePolar &polar = settings.glide_polar_task;
   auto BALLAST = polar.GetBallast();
   auto oldBallast = BALLAST;
 
@@ -241,14 +222,14 @@ InputEvents::eventBallast(const TCHAR *misc)
     BALLAST = 0;
   else if (StringIsEqual(misc, _T("show"))) {
     TCHAR Temp[100];
-    _stprintf(Temp, _T("%d"), (int)(BALLAST * 100));
+    StringFormatUnsafe(Temp, _T("%d"), (int)(BALLAST * 100));
     /* xgettext:no-c-format */
     Message::AddMessage(_("Ballast %"), Temp);
   }
 
   if (BALLAST != oldBallast) {
     polar.SetBallast(BALLAST);
-    protected_task_manager->SetGlidePolar(polar);
+    backend_components->SetTaskPolar(settings);
   }
 }
 
@@ -301,7 +282,7 @@ InputEvents::eventAdjustForecastTemperature(const TCHAR *misc)
     auto temperature =
       CommonInterface::GetComputerSettings().forecast_temperature;
     TCHAR Temp[100];
-    _stprintf(Temp, _T("%f"), temperature.ToUser());
+    StringFormatUnsafe(Temp, _T("%f"), temperature.ToUser());
     Message::AddMessage(_("Forecast temperature"), Temp);
   }
 }
@@ -333,8 +314,8 @@ InputEvents::eventDeclutterLabels(const TCHAR *misc)
     Profile::Set(ProfileKeys::WaypointLabelSelection, (int)wls);
   } else if (StringIsEqual(misc, _T("show"))) {
     TCHAR tbuf[64];
-    _stprintf(tbuf, _T("%s: %s"), _("Waypoint labels"),
-              gettext(msg[(unsigned)wls]));
+    StringFormatUnsafe(tbuf, _("%s: %s"), _("Waypoint labels"),
+                       gettext(msg[(unsigned)wls]));
     Message::AddMessage(tbuf);
   }
   else {
@@ -371,28 +352,40 @@ InputEvents::eventAirspaceDisplayMode(const TCHAR *misc)
 }
 
 void
-InputEvents::eventOrientation(const TCHAR *misc)
+InputEvents::eventOrientationCruise(const TCHAR *misc)
 {
   MapSettings &settings_map = CommonInterface::SetMapSettings();
 
   if (StringIsEqual(misc, _T("northup"))) {
     settings_map.cruise_orientation = MapOrientation::NORTH_UP;
-    settings_map.circling_orientation = MapOrientation::NORTH_UP;
-  } else if (StringIsEqual(misc, _T("northcircle"))) {
-    settings_map.cruise_orientation = MapOrientation::TRACK_UP;
-    settings_map.circling_orientation = MapOrientation::NORTH_UP;
-  } else if (StringIsEqual(misc, _T("trackcircle"))) {
-    settings_map.cruise_orientation = MapOrientation::NORTH_UP;
-    settings_map.circling_orientation = MapOrientation::TRACK_UP;
   } else if (StringIsEqual(misc, _T("trackup"))) {
     settings_map.cruise_orientation = MapOrientation::TRACK_UP;
-    settings_map.circling_orientation = MapOrientation::TRACK_UP;
-  } else if (StringIsEqual(misc, _T("northtrack"))) {
-    settings_map.cruise_orientation = MapOrientation::TRACK_UP;
-    settings_map.circling_orientation = MapOrientation::TARGET_UP;
+  } else if (StringIsEqual(misc, _T("headingup"))) {
+    settings_map.cruise_orientation = MapOrientation::HEADING_UP;
   } else if (StringIsEqual(misc, _T("targetup"))) {
     settings_map.cruise_orientation = MapOrientation::TARGET_UP;
+  } else if (StringIsEqual(misc, _T("windup"))) {
+    settings_map.cruise_orientation = MapOrientation::WIND_UP;
+  }
+
+  ActionInterface::SendMapSettings(true);
+}
+
+void
+InputEvents::eventOrientationCircling(const TCHAR *misc)
+{
+  MapSettings &settings_map = CommonInterface::SetMapSettings();
+
+  if (StringIsEqual(misc, _T("northup"))) {
+    settings_map.circling_orientation = MapOrientation::NORTH_UP;
+  } else if (StringIsEqual(misc, _T("trackup"))) {
+    settings_map.circling_orientation = MapOrientation::TRACK_UP;
+  } else if (StringIsEqual(misc, _T("headingup"))) {
+    settings_map.circling_orientation = MapOrientation::HEADING_UP;
+  } else if (StringIsEqual(misc, _T("targetup"))) {
     settings_map.circling_orientation = MapOrientation::TARGET_UP;
+  } else if (StringIsEqual(misc, _T("windup"))) {
+    settings_map.circling_orientation = MapOrientation::WIND_UP;
   }
 
   ActionInterface::SendMapSettings(true);
@@ -453,9 +446,8 @@ InputEvents::sub_TerrainTopography(int vswitch)
     TCHAR buf[128];
 
     if (settings_map.topography_enabled)
-      _stprintf(buf, _T("\r\n%s / "), _("On"));
-    else
-      _stprintf(buf, _T("\r\n%s / "), _("Off"));
+      StringFormatUnsafe(buf, _T("\r\n%s / "), _("On"));
+    else StringFormatUnsafe(buf, _T("\r\n%s / "), _("Off"));
 
     _tcscat(buf, settings_map.terrain.enable
             ? _("On") : _("Off"));

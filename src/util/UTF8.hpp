@@ -1,31 +1,14 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <string_view>
 #include <utility>
+
+constexpr std::string_view utf8_byte_order_mark{"\xef\xbb\xbf"};
 
 /**
  * Is this a valid UTF-8 string?
@@ -64,9 +47,13 @@ SequenceLengthUTF8(const char *p) noexcept;
  * there are no non-ASCII characters; returns nullptr if the destination
  * buffer is too small
  */
-[[gnu::pure]]  [[gnu::nonnull]]
+[[gnu::pure]] [[gnu::nonnull]]
 const char *
-Latin1ToUTF8(const char *src, char *buffer, std::size_t buffer_size) noexcept;
+Latin1ToUTF8(const char *src, std::span<char> buffer) noexcept;
+
+[[gnu::pure]]
+std::string_view
+Latin1ToUTF8(std::string_view src, std::span<char> buffer) noexcept;
 
 /**
  * Convert the specified character from ISO-8859-1 to UTF-8 and write
@@ -145,7 +132,7 @@ TruncateStringUTF8(const char *p,
  * @return a pointer to the end of the destination string
  */
 char *
-CopyTruncateStringUTF8(char *dest, std::size_t dest_size,
+CopyTruncateStringUTF8(std::span<char> dest,
                        const char *src, std::size_t truncate) noexcept;
 
 /**

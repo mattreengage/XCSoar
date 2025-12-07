@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -33,10 +13,7 @@ Copyright_License {
 #include <cstdint>
 #include <cassert>
 
-#ifdef KOBO
-#define HAVE_SHOW_MENU_BUTTON
-#include "Menu/ShowMenuButton.hpp"
-#endif
+#include "Menu/ShowButton.hpp"
 
 struct ComputerSettings;
 struct MapSettings;
@@ -63,9 +40,9 @@ class MainWindow : public UI::SingleWindow {
 
   MenuBar *menu_bar = nullptr;
 
-#ifdef HAVE_SHOW_MENU_BUTTON
   ShowMenuButton *show_menu_button = nullptr;
-#endif
+  ShowZoomOutButton *show_zoom_out_button = nullptr;
+  ShowZoomInButton *show_zoom_in_button = nullptr;
 
   GlueMapWindow *map = nullptr;
 
@@ -256,6 +233,12 @@ public:
   void ReinitialiseLayout() noexcept;
 
   /**
+   * Reinitialise the #Look after relevant #UISettings have been
+   * changed.
+   */
+  void ReinitialiseLook() noexcept;
+
+  /**
    * Suspend threads that are owned by this object.
    */
   void SuspendThreads() noexcept;
@@ -424,7 +407,15 @@ protected:
   bool OnMouseDouble(PixelPoint p) noexcept override;
   bool OnKeyDown(unsigned key_code) noexcept override;
   void OnPaint(Canvas &canvas) noexcept override;
+  PixelRect GetShowMenuButtonRect(const PixelRect rc) noexcept;
+  PixelRect GetShowZoomOutButtonRect(const PixelRect rc) noexcept;
+  PixelRect GetShowZoomInButtonRect(const PixelRect rc) noexcept;
 
   /* virtual methods from class TopWindow */
-  virtual bool OnClose() noexcept override;
+  bool OnClose() noexcept override;
+
+#ifdef ANDROID
+  void OnLook() noexcept override;
+  void OnTaskReceived() noexcept override;
+#endif
 };

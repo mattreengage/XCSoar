@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/XCVario.hpp"
 #include "Device/Driver/CAI302/PocketNav.hpp"
@@ -29,11 +9,14 @@ Copyright_License {
 #include "NMEA/Info.hpp"
 #include "Device/Port/Port.hpp"
 #include "NMEA/InputLine.hpp"
-#include "util/Clamp.hpp"
 #include "Atmosphere/Pressure.hpp"
 #include "Operation/Operation.hpp"
+
+#include <algorithm> // for std::clamp()
+
 #include <math.h>
 
+using std::string_view_literals::operator""sv;
 
 class XVCDevice : public AbstractDevice {
   Port &port;
@@ -79,7 +62,7 @@ private:
   C.C    = MacCready 0 to 10 m/s
   EE     = bugs degradation, 0 = clean to 30 %,
   F.FF  = Ballast 1.00 to 1.60 ( for protocol version 1, empty in protocol version 2)
-  G      = 0 in climb, 1 in cruise,
+  G      = 1 in climb, 0 in cruise,
   HH.H   = Outside airtemp in degrees celcius ( may have leading negative sign ) e.g. 24.4,
   QQQQ.Q = QNH in hectoPascal e.g. 1013.2,
   PPPP.P = static pressure in hPa,
@@ -118,7 +101,7 @@ XVCDevice::PXCV(NMEAInputLine &line, NMEAInfo &info)
 
   // Bugs setting as entered in XCVario
   if (line.ReadChecked(value))
-    info.settings.ProvideBugs(1 - Clamp(value, 0., 30.) / 100.,
+    info.settings.ProvideBugs(1 - std::clamp(value, 0., 30.) / 100.,
                               info.clock);
 
   // legacy reading of fractional water ballast in protocol version 1
@@ -178,15 +161,13 @@ XVCDevice::PXCV(NMEAInputLine &line, NMEAInfo &info)
 bool
 XVCDevice::XCV(NMEAInputLine &line, NMEAInfo &info)
 {
-  char topic[16];
-  line.Read(topic, sizeof(topic));
-  if (StringIsEqual(topic, "bal-water")) {
+  const auto topic = line.ReadView();
+  if (topic == "bal-water"sv) {
     double value;
     if (line.ReadChecked(value)) {
       info.settings.ProvideBallastLitres(value, info.clock);
     }
-  }
-  else if (StringIsEqual(topic, "version")) {
+  } else if (topic == "version"sv) {
     unsigned int value;
     if (line.ReadChecked(value)) {
       protocol_version = std::min(value, (unsigned int)XCV_VERSION_2);  // switch protocol version to the minimum version both can do
@@ -215,16 +196,14 @@ XVCDevice::ParseNMEA(const char *String, NMEAInfo &info)
   if (!VerifyNMEAChecksum(String))
     return false;
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, sizeof(type));
-  if (StringIsEqual(type, "$PXCV")) {                // cyclic data from device useful for channel supervision
+  const auto type = line.ReadView();
+  if (type == "$PXCV"sv) {                // cyclic data from device useful for channel supervision
     xcvario_protocol_up = true;
     if (protocol_version != XCV_VERSION_UNKNOWN) {   // only parse NMEA once protocol version is set
       return PXCV(line, info);
     }
     return true;
-  }
-  else if (StringIsEqual(type, "!xcv")) {
+  } else if (type == "!xcv"sv) {
     return XCV(line, info);
   }
   return false;
@@ -257,7 +236,7 @@ XVCDevice::PutQNH(const AtmosphericPressure &pres, OperationEnvironment &env)
   char buffer[32];
   unsigned qnh = uround(pres.GetHectoPascal());
   int msg_len = sprintf(buffer,"!g,q%u\r", std::min(qnh,(unsigned)2000));
-  port.FullWrite(buffer, msg_len, env, std::chrono::seconds(2));
+  port.FullWrite(std::as_bytes(std::span{buffer}.first(msg_len)), env, std::chrono::seconds(2));
   return true;
 }
 
@@ -285,10 +264,10 @@ XVCDevice::PutBallast(double fraction, [[maybe_unused]] double overload,
 {
   /* the XCVario understands CAI302 like command for ballast "!g,b" with
      float precision */
-   char buffer[32];
-   double ballast = fraction * 10.;
-   int msg_len = sprintf(buffer,"!g,b%.3f\r", ballast);
-   port.FullWrite(buffer, msg_len, env, std::chrono::seconds(2));
+  char buffer[32];
+  double ballast = fraction * 10.;
+  int msg_len = sprintf(buffer,"!g,b%.3f\r", ballast);
+  port.FullWrite(std::as_bytes(std::span{buffer}.first(msg_len)), env, std::chrono::seconds(2));
   return true;
 }
 

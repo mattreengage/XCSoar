@@ -1,34 +1,63 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "NMEA/InputLine.hpp"
+#include "Units/System.hpp"
+#include "Geo/SpeedVector.hpp"
+#include "Math/Angle.hpp"
 
 #include <string.h>
 
-NMEAInputLine::NMEAInputLine(const char* line):
-  CSVLine(line)
+NMEAInputLine::NMEAInputLine(const char* line) noexcept
+  :CSVLine(line)
 {
   const char* asterisk = strchr(line, '*');
   if (asterisk != NULL)
     end = asterisk;
+}
+
+bool
+NMEAInputLine::ReadBearing(Angle &value_r) noexcept
+{
+  double value;
+  if (!ReadChecked(value))
+    return false;
+
+  if (value <= -1 || value >= 361)
+    return false;
+
+  value_r = Angle::Degrees(value).AsBearing();
+  return true;
+}
+
+bool
+NMEAInputLine::ReadSpeedVectorKPH(SpeedVector &value_r) noexcept
+{
+  Angle bearing;
+  double norm;
+
+  bool bearing_valid = ReadBearing(bearing);
+  bool norm_valid = ReadChecked(norm) && norm >= 0 && norm < 2000;
+
+  bool valid = bearing_valid && norm_valid;
+  if (valid)
+    value_r = {bearing, Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR)};
+
+  return valid;
+}
+
+bool
+NMEAInputLine::ReadSwappedSpeedVectorKPH(SpeedVector &value_r) noexcept
+{
+  Angle bearing;
+  double norm;
+
+  bool norm_valid = ReadChecked(norm) && norm >= 0 && norm < 2000;
+  bool bearing_valid = ReadBearing(bearing);
+
+  bool valid = bearing_valid && norm_valid;
+  if (valid)
+    value_r = {bearing, Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR)};
+
+  return valid;
 }

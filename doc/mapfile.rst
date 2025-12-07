@@ -36,6 +36,12 @@ JPEG compression parameters and algorithms are used which do not
 generate artefacts at the coastlines due to the potentially big jump in
 elevation value.
 
+Airspace
+---------
+
+A map database file can contain airspace. They reside in the
+``airspace.txt`` file, which is in openair format.
+
 Waypoints
 ---------
 
@@ -88,9 +94,9 @@ XCSoar v6.7 and later will display at most 30 topography layers.
 
       ============================ =========== ===========
       Column name                  Data type   Valid range
-      filename                     string      
+      filename                     string
       range                        double (nm)
-      icon                         string      
+      icon                         string
       label index                  int         0-1
       color (red component)        int         0-255
       color (green component)      int         0-255
@@ -242,20 +248,12 @@ To add your own images to the list of icons:
    into ``xcsoar/Data/icons``. For Android, the name must be
    lowercase.
 
-#. Insert two (for normal and high-res) lines into
-   :file:`xcsoar/Data/XCSoar.rc`, (e.g.)
+#. Insert a line into
+   :file:`xcsoar/Data/resources.txt`, (e.g.)
 
    ::
 
-      BITMAP_ICON(IDB_MAST, "mast")
-      BITMAP_ICON(IDB_MAST_HD, "mast_160")
-
-#. Insert two lines into :file:`xcsoar/src/Resources.hpp` (e.g.)
-
-   ::
-
-      MAKE_RESOURCE(IDB_MAST, 500);
-      MAKE_RESOURCE(IDB_MAST_HD, 5500);
+      bitmap_icon_scaled IDB_MAST "mast"
 
 #. Add a corresponding line into the ``icon_list`` table in
    :file:`xcsoar/src/Topography/TopographyStore.cpp`
@@ -276,4 +274,3 @@ icon to the Shapefile using the icon name. (e.g.)
 Note that unless these changes are merged into the main XCSoar
 repository, then only your specific build of XCSoar will be able to
 display your icon image.
-

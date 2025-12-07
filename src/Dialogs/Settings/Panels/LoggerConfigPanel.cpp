@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "LoggerConfigPanel.hpp"
 #include "Profile/Profile.hpp"
@@ -31,7 +11,9 @@ Copyright_License {
 #include "Logger/NMEALogger.hpp"
 #include "UtilsSettings.hpp"
 #include "Components.hpp"
+#include "BackendComponents.hpp"
 #include "Units/Group.hpp"
+#include "Units/Units.hpp"
 
 using namespace std::chrono;
 
@@ -80,7 +62,7 @@ LoggerConfigPanel::Prepare(ContainerWindow &parent,
             _("Default for all weight loaded to the glider beyond the empty weight and besides "
                 "the water ballast."),
             _T("%.0f %s"), _T("%.0f"),
-            0, 300, 5, false, UnitGroup::MASS,
+            0, Units::ToUserMass(300), 5, false, UnitGroup::MASS,
             logger.crew_mass_template);
 
   AddDuration(_("Time step cruise"),
@@ -141,8 +123,8 @@ LoggerConfigPanel::Save(bool &changed) noexcept
   changed |= SaveValue(EnableNMEALogger, ProfileKeys::EnableNMEALogger,
                        logger.enable_nmea_logger);
 
-  if (logger.enable_nmea_logger && nmea_logger != nullptr)
-    nmea_logger->Enable();
+  if (logger.enable_nmea_logger && backend_components->nmea_logger != nullptr)
+    backend_components->nmea_logger->Enable();
 
   if (SaveValue(EnableFlightLogger, ProfileKeys::EnableFlightLogger,
                 logger.enable_flight_logger)) {

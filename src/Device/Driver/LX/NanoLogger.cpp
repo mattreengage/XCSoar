@@ -1,25 +1,5 @@
-/*
-  Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "NanoLogger.hpp"
 #include "Device/Port/Port.hpp"
@@ -32,11 +12,14 @@
 #include "io/FileOutputStream.hxx"
 #include "time/TimeoutClock.hpp"
 #include "NMEA/InputLine.hpp"
+#include "util/SpanCast.hxx"
+#include "util/StringCompare.hxx"
 
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
+using std::string_view_literals::operator""sv;
 
 static void
 RequestLogbookInfo(Port &port, OperationEnvironment &env)
@@ -64,14 +47,14 @@ GetNumberOfFlights(Port &port, PortNMEAReader &reader,
     if (response == nullptr)
       return -1;
 
-    if (memcmp(response, ",A,", 3) == 0) {
+    if (auto a = StringAfterPrefix(response, ",A,"sv)) {
       /* old Nano firmware versions (e.g. 2.05) print "LOGBOOK,A,n" */
-      response += 3;
+      response = a;
       break;
-    } else if (memcmp(response, "SIZE,A,", 7) == 0) {
+    } else if (auto size_a = StringAfterPrefix(response, "SIZE,A,"sv)) {
       /* new Nano firmware versions (e.g. 2.10) print
          "LOGBOOKSIZE,A,n" */
-      response += 7;
+      response = size_a;
       break;
     }
   }
@@ -160,10 +143,10 @@ static bool
 ParseLogbookContent(const char *_line, RecordedFlightInfo &info)
 {
   NMEAInputLine line(_line);
+  line.Skip();
 
   unsigned n;
-  return line.Skip() &&
-    line.ReadChecked(n) &&
+  return line.ReadChecked(n) &&
     ReadFilename(line, info) > 0 &&
     ReadDate(line, info.date) &&
     ReadTime(line, info.start_time) &&
@@ -222,7 +205,12 @@ Nano::ReadFlightList(Port &port, RecordedFlightList &flight_list,
 
   env.SetProgressRange(nflights);
 
-  unsigned requested_tail = 1;
+  /* Start download at first flight in logger if capacity of flight_list is
+     enough for all flights in logger. Otherwise, calculate the starting
+     point to fill flight_list to capacity with only the latest flights. */
+  unsigned requested_tail = (unsigned) std::max(1,
+                     (signed) nflights - (signed) flight_list.max_size() + 1);
+
   while (true) {
     const unsigned room = flight_list.max_size() - flight_list.size();
     const unsigned remaining = nflights - requested_tail + 1;
@@ -240,6 +228,9 @@ Nano::ReadFlightList(Port &port, RecordedFlightList &flight_list,
 
     requested_tail += nrequest;
     env.SetProgressPosition(requested_tail - 1);
+  }
+  if (flight_list.size() > 1) {
+    std::reverse(flight_list.begin(), flight_list.end());
   }
 
   return true;
@@ -281,10 +272,7 @@ HandleFlightLine(const char *_line, BufferedOutputStream &os,
     /* don't allow changes in file size */
     return false;
 
-  auto content = line.Rest();
-  size_t length = content.end() - content.begin();
-  os.Write(content.begin(), length);
-
+  os.Write(AsBytes(line.Rest()));
   os.Write("\r\n");
   ++i;
   return true;

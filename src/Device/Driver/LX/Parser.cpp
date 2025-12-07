@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Internal.hpp"
 #include "NMEA/Checksum.hpp"
@@ -30,21 +10,7 @@ Copyright_License {
 #include "util/Macros.hpp"
 #include "util/StringCompare.hxx"
 
-static bool
-ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r)
-{
-  double bearing, norm;
-
-  bool bearing_valid = line.ReadChecked(bearing);
-  bool norm_valid = line.ReadChecked(norm);
-
-  if (bearing_valid && norm_valid) {
-    value_r.bearing = Angle::Degrees(bearing);
-    value_r.norm = Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR);
-    return true;
-  } else
-    return false;
-}
+using std::string_view_literals::operator""sv;
 
 static bool
 LXWP0(NMEAInputLine &line, NMEAInfo &info)
@@ -86,22 +52,14 @@ LXWP0(NMEAInputLine &line, NMEAInfo &info)
 
   line.Skip(6);
 
-  SpeedVector wind;
-  if (ReadSpeedVector(line, wind))
+  if (SpeedVector wind; line.ReadSpeedVectorKPH(wind))
     info.ProvideExternalWind(wind);
 
   return true;
 }
 
-template<size_t N>
-static void
-ReadString(NMEAInputLine &line, NarrowString<N> &value)
-{
-  line.Read(value.buffer(), value.capacity());
-}
-
-static void
-LXWP1(NMEAInputLine &line, DeviceInfo &device)
+void
+LXDevice::LXWP1(NMEAInputLine &line, DeviceInfo &device)
 {
   /*
    * $LXWP1,
@@ -112,10 +70,10 @@ LXWP1(NMEAInputLine &line, DeviceInfo &device)
    * license string
    */
 
-  ReadString(line, device.product);
-  ReadString(line, device.serial);
-  ReadString(line, device.software_version);
-  ReadString(line, device.hardware_version);
+  device.product = line.ReadView();
+  device.serial = line.ReadView();
+  device.software_version = line.ReadView();
+  device.hardware_version = line.ReadView();
 }
 
 static bool
@@ -198,20 +156,18 @@ LXWP3(NMEAInputLine &line, NMEAInfo &info)
 static bool
 PLXV0(NMEAInputLine &line, DeviceSettingsMap<std::string> &settings)
 {
-  char name[64];
-  line.Read(name, ARRAY_SIZE(name));
-  if (StringIsEmpty(name))
+  const auto name = line.ReadView();
+  if (name.empty())
     return true;
 
-  char type[2];
-  line.Read(type, ARRAY_SIZE(type));
-  if (type[0] != 'W')
+  const auto type = line.ReadView();
+  if (!type.starts_with('W'))
     return true;
 
   const auto value = line.Rest();
 
   const std::lock_guard<Mutex> lock(settings);
-  settings.Set(name, std::string(value.begin(), value.end()));
+  settings.Set(std::string{name}, value);
 
   return true;
 }
@@ -219,10 +175,10 @@ PLXV0(NMEAInputLine &line, DeviceSettingsMap<std::string> &settings)
 static void
 ParseNanoVarioInfo(NMEAInputLine &line, DeviceInfo &device)
 {
-  ReadString(line, device.product);
-  ReadString(line, device.software_version);
+  device.product = line.ReadView();
+  device.software_version = line.ReadView();
   line.Skip(); /* ver.date, e.g. "May 12 2012 21:38:28" */
-  ReadString(line, device.hardware_version);
+  device.hardware_version = line.ReadView();
 }
 
 /**
@@ -235,34 +191,28 @@ PLXVC(NMEAInputLine &line, DeviceInfo &device,
       DeviceInfo &secondary_device,
       DeviceSettingsMap<std::string> &settings)
 {
-  char key[64];
-  line.Read(key, ARRAY_SIZE(key));
+  const auto key = line.ReadView();
+  const auto type = line.ReadView();
 
-  char type[2];
-  line.Read(type, ARRAY_SIZE(type));
-  if (StringIsEqual(key, "SET") && type[0] == 'A') {
-    char name[64];
-    line.Read(name, ARRAY_SIZE(name));
-
+  if (key == "SET"sv && type.starts_with('A')) {
+    const auto name = line.ReadView();
     const auto value = line.Rest();
-    if (!StringIsEmpty(name)) {
+    if (!name.empty()) {
       const std::lock_guard<Mutex> lock(settings);
-      settings.Set(name, std::string(value.begin(), value.end()));
+      settings.Set(std::string{name}, value);
     }
-  } else if (StringIsEqual(key, "INFO") && type[0] == 'A') {
+  } else if (key == "INFO"sv && type.starts_with('A')) {
     ParseNanoVarioInfo(line, device);
-  } else if (StringIsEqual(key, "GPSINFO") && type[0] == 'A') {
+  } else if (key == "GPSINFO"sv && type.starts_with('A')) {
     /* the LXNAV V7 (firmware >= 2.01) forwards the Nano's INFO
        sentence with the "GPS" prefix */
 
-    char name[64];
-    line.Read(name, ARRAY_SIZE(name));
-
-    if (StringIsEqual(name, "LXWP1")) {
-      LXWP1(line, secondary_device);
-    } else if (StringIsEqual(name, "INFO")) {
-      line.Read(type, ARRAY_SIZE(type));
-      if (type[0] == 'A')
+    const auto name = line.ReadView();
+    if (name == "LXWP1"sv) {
+      LXDevice::LXWP1(line, secondary_device);
+    } else if (name == "INFO"sv) {
+      const auto type2 = line.ReadView();
+      if (type2.starts_with('A'))
         ParseNanoVarioInfo(line, secondary_device);
     }
   }
@@ -273,14 +223,24 @@ PLXVC(NMEAInputLine &line, DeviceInfo &device,
  *
  * $PLXVF,time ,AccX,AccY,AccZ,Vario,IAS,PressAlt*CS<CR><LF>
  *
- * Example: $PLXVF,1.00,0.87,-0.12,-0.25,90.2,244.3,*CS<CR><LF>
+ * Example: $PLXVF,,1.00,0.87,-0.12,-0.25,90.2,244.3,*CS<CR><LF>
  *
  * @see http://www.xcsoar.org/trac/raw-attachment/ticket/1666/V7%20dataport%20specification%201.97.pdf
  */
 static bool
 PLXVF(NMEAInputLine &line, NMEAInfo &info)
 {
-  line.Skip(4);
+  line.Skip();
+
+  double a[3];
+  bool a_available = line.ReadChecked(a[0]);
+  if (!line.ReadChecked(a[1]))
+    a_available = false;
+  if (!line.ReadChecked(a[2]))
+    a_available = false;
+
+  if (a_available)
+    info.acceleration.ProvideGLoad(SpaceDiagonal(a[0], a[1], a[2]));
 
   double vario;
   if (line.ReadChecked(vario))
@@ -343,13 +303,12 @@ LXDevice::ParseNMEA(const char *String, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$LXWP0"))
+  const auto type = line.ReadView();
+  if (type == "$LXWP0"sv)
     return LXWP0(line, info);
 
-  if (StringIsEqual(type, "$LXWP1")) {
+  else if (type == "$LXWP1"sv) {
     /* if in pass-through mode, assume that this line was sent by the
        secondary device */
     DeviceInfo &device_info = mode == Mode::PASS_THROUGH
@@ -386,20 +345,18 @@ LXDevice::ParseNMEA(const char *String, NMEAInfo &info)
       is_colibri = false;
 
     return true;
-  }
 
-  if (StringIsEqual(type, "$LXWP2"))
+  } else if (type == "$LXWP2"sv)
     return LXWP2(line, info);
 
-  if (StringIsEqual(type, "$LXWP3"))
+  else if (type == "$LXWP3"sv)
     return LXWP3(line, info);
 
-  if (StringIsEqual(type, "$PLXV0")) {
+  else if (type == "$PLXV0"sv) {
     is_colibri = false;
     return PLXV0(line, lxnav_vario_settings);
-  }
 
-  if (StringIsEqual(type, "$PLXVC")) {
+  } else if (type == "$PLXVC"sv) {
     is_colibri = false;
     PLXVC(line, info.device, info.secondary_device, nano_settings);
     is_forwarded_nano = info.secondary_device.product.equals("NANO") ||
@@ -409,17 +366,15 @@ LXDevice::ParseNMEA(const char *String, NMEAInfo &info)
     LXDevice::IdDeviceByName(info.device.product);
 
     return true;
-  }
 
-  if (StringIsEqual(type, "$PLXVF")) {
+  } else if (type == "$PLXVF"sv) {
     is_colibri = false;
     return PLXVF(line, info);
-  }
 
-  if (StringIsEqual(type, "$PLXVS")) {
+  } else if (type == "$PLXVS"sv) {
     is_colibri = false;
     return PLXVS(line, info);
-  }
 
-  return false;
+  } else
+    return false;
 }

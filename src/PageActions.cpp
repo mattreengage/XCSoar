@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "PageActions.hpp"
 #include "UIActions.hpp"
@@ -34,6 +14,7 @@ Copyright_License {
 #include "MapWindow/GlueMapWindow.hpp"
 #include "Gauge/BigTrafficWidget.hpp"
 #include "FLARM/Glue.hpp"
+#include "Components.hpp"
 
 #if defined(ENABLE_SDL) && defined(main)
 /* on some platforms, SDL wraps the main() function and clutters our
@@ -68,11 +49,10 @@ PageActions::LeavePage()
   if (state.special_page.IsDefined())
     return;
 
-  PageState &page = state.pages[state.current_index];
-
   const GlueMapWindow *map = UIGlobals::GetMapIfActive();
   if (map != nullptr) {
     const MapSettings &map_settings = CommonInterface::GetMapSettings();
+    PageState &page = state.pages[state.current_index];
     page.cruise_scale = map_settings.cruise_scale;
     page.circling_scale = map_settings.circling_scale;
     page.auto_zoom_enabled = map_settings.auto_zoom_enabled;
@@ -197,6 +177,7 @@ LoadMain(PageLayout::Main main)
 {
   switch (main) {
   case PageLayout::Main::MAP:
+  case PageLayout::Main::MAP_NORTH_UP:
     CommonInterface::main_window->ActivateMap();
     break;
 
@@ -226,7 +207,7 @@ LoadBottom(PageLayout::Bottom bottom)
     break;
 
   case PageLayout::Bottom::CROSS_SECTION:
-    CommonInterface::main_window->SetBottomWidget(new CrossSectionWidget());
+    CommonInterface::main_window->SetBottomWidget(new CrossSectionWidget(*data_components));
     break;
 
   case PageLayout::Bottom::FLARM_RADAR:
@@ -332,10 +313,10 @@ GlueMapWindow *
 PageActions::ShowMap()
 {
   PageLayout layout = GetCurrentLayout();
-  if (layout.main != PageLayout::Main::MAP) {
+  if (layout.main != PageLayout::Main::MAP && layout.main != PageLayout::Main::MAP_NORTH_UP) {
     /* not showing map currently: activate it */
 
-    if (GetConfiguredLayout().main == PageLayout::Main::MAP)
+    if (GetConfiguredLayout().main == PageLayout::Main::MAP || GetConfiguredLayout().main == PageLayout::Main::MAP_NORTH_UP)
       /* the configured page is a map page: restore it */
       Restore();
     else {

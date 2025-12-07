@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "AirspaceFormatter.hpp"
 #include "Engine/Airspace/AbstractAirspace.hpp"
@@ -44,6 +24,41 @@ static const TCHAR *const airspace_class_names[] = {
   _T("Class G"),
   _T("Military Aerodrome Traffic Zone"),
   _T("Radio Mandatory Zone"),
+  _T("Unclassified"),
+  _T("TMA"),
+  _T("Temporary Reserved Airspace"),
+  _T("Temporary Segregated Area"),
+  _T("Flight Information Region"),
+  _T("Upper Flight Information Region"),
+  _T("Air Defense Identification Zone"),
+  _T("Aerodrome Traffic Zone"),
+  _T("Airway"),
+  _T("Military Training Route"),
+  _T("Alert Area"),
+  _T("Warning Area"),
+  _T("Protected Area"),
+  _T("Hazardous Area"),
+  _T("Gliding Sector"),
+  _T("Temporary Reserved Prohibited Area"),
+  _T("Terminal Information Zone"),
+  _T("Terminal Instrument Approach Procedure Area"),
+  _T("Military Training Area"),
+  _T("Control Area"),
+  _T("Area Control Center Sector"),
+  _T("Aerial Sporting Recreational"),
+  _T("Overflight Restriction"),
+  _T("Military Restricted Area"),
+  _T("Temporary Flight Restriction"),
+  _T("Visual Flight Rules Sector"),
+  _T("Flight Information Sector"),
+  _T("Lower Traffic Area"),
+  _T("Upper Traffic Area"),
+  _T("Aerial Sporting Or Recreational Activity"),
+  _T("NOTAM Affected Area"),
+  _T("Airspace without type"),
+  _T("TRA/TSA Feeding Route"),
+  _T("Transponder Recommended Zone"),
+  _T("Designated Route for VFR"),
 };
 
 static_assert(ARRAY_SIZE(airspace_class_names) ==
@@ -70,6 +85,41 @@ static const TCHAR *const airspace_class_short_names[] = {
   _T("G"),
   _T("MATZ"),
   _T("RMZ"),
+  _T("Unclassified"),
+  _T("TMA"),
+  _T("TTRA"),
+  _T("TSA"),
+  _T("FIR"),
+  _T("UIR"),
+  _T("ADIZ"),
+  _T("AATZ"),
+  _T("AWY"),
+  _T("MTR"),
+  _T("Alert"),
+  _T("Warning"),
+  _T("Protected"),
+  _T("HTZ"),
+  _T("Gld_Sec"),
+  _T("TRP"),
+  _T("TIZ"),
+  _T("TIA"),
+  _T("MTA"),
+  _T("CTA"),
+  _T("ACC_Sec"),
+  _T("ASR"),
+  _T("OverFl_Restr"),
+  _T("MRT"),
+  _T("TFR"),
+  _T("VFR_Sec"),
+  _T("FIS_Sec"),
+  _T("LTA"),
+  _T("UTA"),
+  _T("ASRA"),
+  _T("NOTAM"),
+  _T("NOTYPE"),
+  _T("TRA/TSA"),
+  _T("TRZ"),
+  _T("VFRROUTE"),
 };
 
 static_assert(ARRAY_SIZE(airspace_class_short_names) ==
@@ -98,11 +148,23 @@ AirspaceFormatter::GetClassShort(AirspaceClass airspace_class)
 const TCHAR *
 AirspaceFormatter::GetClass(const AbstractAirspace &airspace)
 {
-  return GetClass(airspace.GetType());
+  return GetClass(airspace.GetClass());
 }
 
 const TCHAR *
 AirspaceFormatter::GetClassShort(const AbstractAirspace &airspace)
 {
-  return GetClassShort(airspace.GetType());
+  return GetClassShort(airspace.GetClass());
+}
+
+const TCHAR *
+AirspaceFormatter::GetType(const AbstractAirspace &airspace)
+{
+  return GetClass(airspace.GetType());
+}
+
+const TCHAR *
+AirspaceFormatter::GetClassOrType(const AbstractAirspace &airspace)
+{
+  return GetClass(airspace.GetClassOrType());
 }

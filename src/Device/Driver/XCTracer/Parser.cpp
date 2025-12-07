@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "../XCTracer/Internal.hpp"
 #include "NMEA/Checksum.hpp"
@@ -42,6 +22,8 @@ Copyright_License {
  * $LXWP0,N,,119.9,0.16,,,,,,259,,*64
  * $GPRMC,081158.800,A,4837.7018,N,00806.2923,E,2.34,261.89,110815,,,D*69
  */
+
+using std::string_view_literals::operator""sv;
 
 /**
  * Helper functions to parse and check an input field
@@ -119,8 +101,8 @@ XCTracerDevice::LXWP0(NMEAInputLine &line, NMEAInfo &info)
   line.Skip(5);
 
   /* read course */
-  if (line.ReadChecked(value)) {
-    info.track = Angle::Degrees(value);
+  if (Angle track; line.ReadBearing(track)) {
+    info.track = track;
     info.track_available.Update(info.clock);
   }
 
@@ -226,10 +208,10 @@ XCTracerDevice::XCTRC(NMEAInputLine &line, NMEAInfo &info)
   }
 
   /* read course*/
-  if (line.ReadChecked(value)) {
+  if (Angle track; line.ReadBearing(track)) {
     /* update only if we're moving .. */
     if (info.MovementDetected()) {
-      info.track = Angle::Degrees(value);
+      info.track = track;
       info.track_available.Update(info.clock);
     }
     valid_fields++;
@@ -271,14 +253,14 @@ XCTracerDevice::ParseNMEA(const char *string, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(string);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$LXWP0"))
+  const auto type = line.ReadView();
+  if (type == "$LXWP0"sv)
     return LXWP0(line, info);
 
-  if (StringIsEqual(type, "$XCTRC"))
+  else if (type == "$XCTRC"sv)
     return XCTRC(line, info);
 
-  return false;
+  else
+    return false;
 }

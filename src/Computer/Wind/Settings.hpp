@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -27,21 +7,6 @@ Copyright_License {
 #include "NMEA/Validity.hpp"
 
 #include <type_traits>
-
-// control of calculations, these only changed by user interface
-// but are used read-only by calculations
-
-/** AutoWindMode (not in use) */
-enum AutoWindModeBits
-{
-  /** 0: Manual */
-  AUTOWIND_NONE = 0,
-  /** 1: Circling */
-  AUTOWIND_CIRCLING,
-  /** 2: ZigZag */
-  AUTOWIND_ZIGZAG,
-  /** 3: Both */
-};
 
 /**
  * Wind calculator settings
@@ -67,25 +32,25 @@ struct WindSettings {
   SpeedVector manual_wind;
   Validity manual_wind_available;
 
-  void SetDefaults();
+  void SetDefaults() noexcept;
 
-  bool IsAutoWindEnabled() const {
+  constexpr bool IsAutoWindEnabled() const noexcept {
     return circling_wind || zig_zag_wind;
   }
 
-  bool CirclingWindEnabled() const {
+  constexpr bool CirclingWindEnabled() const noexcept {
     return circling_wind;
   }
 
-  bool ZigZagWindEnabled() const {
+  constexpr bool ZigZagWindEnabled() const noexcept {
     return zig_zag_wind;
   }
 
-  unsigned GetLegacyAutoWindMode() const {
+  constexpr unsigned GetLegacyAutoWindMode() const noexcept {
     return (circling_wind ? 0x1 : 0x0) | (zig_zag_wind ? 0x2 : 0x0);
   }
 
-  void SetLegacyAutoWindMode(unsigned mode) {
+  constexpr void SetLegacyAutoWindMode(unsigned mode) noexcept {
     circling_wind = (mode & 0x1) != 0;
     zig_zag_wind = (mode & 0x2) != 0;
   }

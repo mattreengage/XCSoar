@@ -1,40 +1,20 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WaypointReaderCompeGPS.hpp"
 #include "Waypoint/Waypoints.hpp"
-#include "io/LineReader.hpp"
 #include "Geo/UTM.hpp"
+#include "util/StringSplit.hxx"
 
 static bool
-ParseAngle(const TCHAR *&src, Angle &angle)
+ParseAngle(const char *&src, Angle &angle) noexcept
 {
   // 41.234234N
 
-  TCHAR *endptr;
+  char *endptr;
 
   // Parse numerical value
-  double value = _tcstod(src, &endptr);
+  double value = strtod(src, &endptr);
   if (endptr == src)
     return false;
 
@@ -43,13 +23,13 @@ ParseAngle(const TCHAR *&src, Angle &angle)
 
   // Skip until next whitespace and look for NSEW signs
   bool found = false;
-  while (*src != _T(' ') && *src != _T('\0')) {
+  while (*src != ' ' && *src != '\0') {
     if (!found) {
-      if (*src == _T('N') || *src == _T('n') ||
-          *src == _T('E') || *src == _T('e')) {
+      if (*src == 'N' || *src == 'n' ||
+          *src == 'E' || *src == 'e') {
         found = true;
-      } else if (*src == _T('S') || *src == _T('s') ||
-                 *src == _T('W') || *src == _T('w')) {
+      } else if (*src == 'S' || *src == 's' ||
+                 *src == 'W' || *src == 'w') {
         found = true;
         angle.Flip();
       }
@@ -62,18 +42,18 @@ ParseAngle(const TCHAR *&src, Angle &angle)
 }
 
 static bool
-ParseLocation(const TCHAR *&src, GeoPoint &p)
+ParseLocation(const char *&src, GeoPoint &p) noexcept
 {
   // A 41.234234N 7.234424W
 
   // Ignore but require 'A' placeholder
-  if (*src != _T('A'))
+  if (*src != 'A')
     return false;
 
   src++;
 
   // Skip whitespace
-  while (*src == _T(' '))
+  while (*src == ' ')
     src++;
 
   Angle lat, lon;
@@ -90,14 +70,14 @@ ParseLocation(const TCHAR *&src, GeoPoint &p)
 }
 
 static bool
-ParseLocationUTM(const TCHAR *&src, GeoPoint &p)
+ParseLocationUTM(const char *&src, GeoPoint &p) noexcept
 {
   // 31T 318570 4657569
 
-  TCHAR *endptr;
+  char *endptr;
 
   // Parse zone number
-  long zone_number = _tcstol(src, &endptr, 10);
+  long zone_number = strtol(src, &endptr, 10);
   if (endptr == src)
     return false;
 
@@ -105,13 +85,13 @@ ParseLocationUTM(const TCHAR *&src, GeoPoint &p)
   char zone_letter = src[0];
 
   src++;
-  long easting = _tcstol(src, &endptr, 10);
-  if (endptr == src || *endptr != _T(' '))
+  long easting = strtol(src, &endptr, 10);
+  if (endptr == src || *endptr != ' ')
     return false;
 
   src = endptr;
-  long northing = _tcstol(src, &endptr, 10);
-  if (endptr == src || *endptr != _T(' '))
+  long northing = strtol(src, &endptr, 10);
+  if (endptr == src || *endptr != ' ')
     return false;
 
   UTM u(zone_number, zone_letter, easting, northing);
@@ -126,10 +106,10 @@ ParseLocationUTM(const TCHAR *&src, GeoPoint &p)
 }
 
 static bool
-ParseAltitude(const TCHAR *&src, double &dest)
+ParseAltitude(const char *&src, double &dest) noexcept
 {
-  TCHAR *endptr;
-  double value = _tcstod(src, &endptr);
+  char *endptr;
+  double value = strtod(src, &endptr);
   if (endptr == src)
     return false;
 
@@ -139,7 +119,7 @@ ParseAltitude(const TCHAR *&src, double &dest)
 }
 
 bool
-WaypointReaderCompeGPS::ParseLine(const TCHAR *line, Waypoints &waypoints)
+WaypointReaderCompeGPS::ParseLine(const char *line, Waypoints &waypoints)
 {
   /*
    * G  WGS 84
@@ -154,27 +134,27 @@ WaypointReaderCompeGPS::ParseLine(const TCHAR *line, Waypoints &waypoints)
    */
 
   // Skip projection and file encoding information
-  if (*line == _T('G') || *line == _T('B'))
+  if (*line == 'G' || *line == 'B')
     return true;
 
   // Check for format: UTM or LatLon
-  if (StringStartsWith(line, _T("U  0"))) {
+  if (StringStartsWith(line, "U  0")) {
     is_utm = true;
     return true;
   }
 
   // Skip non-waypoint lines
-  if (*line != _T('W'))
+  if (*line != 'W')
     return true;
 
   // Skip W indicator and whitespace
   line++;
-  while (*line == _T(' '))
+  while (*line == ' ')
     line++;
 
   // Find next space delimiter, skip shortname
-  const TCHAR *name = line;
-  const TCHAR *space = _tcsstr(line, _T(" "));
+  const char *name = line;
+  const char *space = strstr(line, " ");
   if (space == nullptr)
     return false;
 
@@ -183,28 +163,29 @@ WaypointReaderCompeGPS::ParseLine(const TCHAR *line, Waypoints &waypoints)
     return false;
 
   line = space;
-  while (*line == _T(' '))
+  while (*line == ' ')
     line++;
 
   // Parse location
   GeoPoint location;
-  if ((!is_utm && !ParseLocation(line, location)) ||
-      (is_utm && !ParseLocationUTM(line, location)))
+  if (!(is_utm
+        ? ParseLocationUTM(line, location)
+        : ParseLocation(line, location)))
     return false;
 
   // Skip whitespace
-  while (*line == _T(' '))
+  while (*line == ' ')
     line++;
 
   // Skip unused date field
-  line = _tcsstr(line, _T(" "));
+  line = strstr(line, " ");
   if (line == nullptr)
     return false;
 
   line++;
 
   // Skip unused time field
-  line = _tcsstr(line, _T(" "));
+  line = strstr(line, " ");
   if (line == nullptr)
     return false;
 
@@ -212,35 +193,31 @@ WaypointReaderCompeGPS::ParseLine(const TCHAR *line, Waypoints &waypoints)
 
   // Create new waypoint instance
   Waypoint waypoint = factory.Create(location);
-  waypoint.name.assign(name, name_length);
+  waypoint.name.assign(string_converter.Convert({name, name_length}));
 
   // Parse altitude
-  if (!ParseAltitude(line, waypoint.elevation) &&
-      !factory.FallbackElevation(waypoint))
-    return false;
+  if (ParseAltitude(line, waypoint.elevation))
+    waypoint.has_elevation = true;
+  else
+    factory.FallbackElevation(waypoint);
 
   // Skip whitespace
-  while (*line == _T(' '))
+  while (*line == ' ')
     line++;
 
   // Parse waypoint name
-  waypoint.comment.assign(line);
+  waypoint.comment.assign(string_converter.Convert(line));
 
   waypoints.Append(std::move(waypoint));
   return true;
 }
 
 bool
-WaypointReaderCompeGPS::VerifyFormat(TLineReader &reader)
+WaypointReaderCompeGPS::VerifyFormat(std::string_view contents) noexcept
 {
-  const TCHAR *line = reader.ReadLine();
-  if (line == nullptr)
-    return false;
-
   // Ignore optional line with encoding information
-  if (StringStartsWith(line, _T("B ")))
-    if ((line = reader.ReadLine()) == nullptr)
-      return false;
+  if (contents.starts_with("B "))
+    contents = Split(contents, '\n').second;
 
-  return StringStartsWith(line, _T("G  WGS 84"));
+  return contents.starts_with("G  WGS 84");
 }

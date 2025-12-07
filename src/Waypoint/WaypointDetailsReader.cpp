@@ -1,35 +1,23 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WaypointDetailsReader.hpp"
-#include "Language/Language.hpp"
-#include "Profile/ProfileKeys.hpp"
+
 #include "Engine/Waypoint/Waypoint.hpp"
 #include "Engine/Waypoint/Waypoints.hpp"
-#include "io/ConfiguredFile.hpp"
-#include "io/LineReader.hpp"
+#include "Language/Language.hpp"
+#include "LogFile.hpp"
 #include "Operation/ProgressListener.hpp"
+#include "Profile/Keys.hpp"
+#include "Profile/Profile.hpp"
+#include "io/BufferedReader.hxx"
+#include "io/ConfiguredFile.hpp"
+#include "io/FileReader.hxx"
+#include "io/MapFile.hpp"
+#include "io/ProgressReader.hpp"
+#include "io/StringConverter.hpp"
+#include "io/ZipReader.hpp"
+#include "system/Path.hpp"
 
 namespace WaypointDetails {
 
@@ -78,25 +66,19 @@ WaypointDetailsBuilder::Commit(Waypoints &way_points) noexcept
 #endif
 }
 
-/**
- * Parses the data provided by the airfield details file handle
- */
-static void
-ParseAirfieldDetails(Waypoints &way_points, TLineReader &reader,
-                     ProgressListener &progress)
+void
+ReadFile(BufferedReader &reader, Waypoints &way_points)
 {
+  StringConverter string_converter;
   WaypointDetailsBuilder builder;
-  const TCHAR *filename;
+  const char *filename;
 
   bool in_details = false;
   int i;
 
-  const long filesize = std::max(reader.GetSize(), 1l);
-  progress.SetProgressRange(100);
-
-  TCHAR *line;
+  char *line;
   while ((line = reader.ReadLine()) != nullptr) {
-    if (line[0] == _T('[')) { // Look for start
+    if (line[0] == '[') { // Look for start
       if (in_details)
         builder.Commit(way_points);
 
@@ -104,7 +86,7 @@ ParseAirfieldDetails(Waypoints &way_points, TLineReader &reader,
 
       // extract name
       for (i = 1; i < 201; i++) {
-        if (line[i] == _T(']'))
+        if (line[i] == ']')
           break;
 
         builder.name[i - 1] = line[i];
@@ -112,21 +94,19 @@ ParseAirfieldDetails(Waypoints &way_points, TLineReader &reader,
       builder.name[i - 1] = 0;
 
       in_details = true;
-
-      progress.SetProgressPosition(reader.Tell() * 100 / filesize);
     } else if ((filename =
-                StringAfterPrefixIgnoreCase(line, _T("image="))) != nullptr) {
-      builder.files_embed.emplace_front(filename);
+                StringAfterPrefixIgnoreCase(line, "image=")) != nullptr) {
+      builder.files_embed.emplace_front(string_converter.Convert(filename));
     } else if ((filename =
-                StringAfterPrefixIgnoreCase(line, _T("file="))) != nullptr) {
+                StringAfterPrefixIgnoreCase(line, "file=")) != nullptr) {
 #ifdef HAVE_RUN_FILE
-      builder.files_external.emplace_front(filename);
+      builder.files_external.emplace_front(string_converter.Convert(filename));
 #endif
     } else {
       // append text to details string
       if (!StringIsEmpty(line)) {
-        builder.details += line;
-        builder.details += _T('\n');
+        builder.details += string_converter.Convert(line);
+        builder.details += '\n';
       }
     }
   }
@@ -135,25 +115,28 @@ ParseAirfieldDetails(Waypoints &way_points, TLineReader &reader,
     builder.Commit(way_points);
 }
 
-/**
- * Opens the airfield details file and parses it
- */
-void
-ReadFile(TLineReader &reader, Waypoints &way_points,
-         ProgressListener &progress)
-{
-  ParseAirfieldDetails(way_points, reader, progress);
-}
-
 void
 ReadFileFromProfile(Waypoints &way_points,
                     ProgressListener &progress)
 {
-  auto reader = OpenConfiguredTextFile(ProfileKeys::AirfieldFile,
-                                       "airfields.txt",
-                                       Charset::AUTO);
-  if (reader)
-    ReadFile(*reader, way_points, progress);
+  auto paths =
+      Profile::GetMultiplePaths(ProfileKeys::AirfieldFileList, _T("*.txt\0"));
+  for (const auto &path : paths) {
+    try {
+      auto reader = std::make_unique<FileReader>(Path(path));
+      ProgressReader progress_reader{*reader, reader->GetSize(), progress};
+      BufferedReader buffered_reader{progress_reader};
+      ReadFile(buffered_reader, way_points);
+    } catch (...) {
+      LogError(std::current_exception());
+    }
+  }
+
+  if (auto reader = OpenInMapFile("airfields.txt")) {
+    ProgressReader progress_reader{*reader, reader->GetSize(), progress};
+    BufferedReader buffered_reader{progress_reader};
+    ReadFile(buffered_reader, way_points);
+  }
 }
 
 } // namespace WaypointDetails

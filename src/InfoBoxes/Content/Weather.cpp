@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "InfoBoxes/Content/Weather.hpp"
 #include "InfoBoxes/Panel/Panel.hpp"
@@ -32,6 +12,7 @@ Copyright_License {
 #include "Formatter/AngleFormatter.hpp"
 #include "Screen/Layout.hpp"
 #include "ui/dim/Rect.hpp"
+#include "Renderer/RadarRenderer.hpp"
 #include "Renderer/WindArrowRenderer.hpp"
 #include "UIGlobals.hpp"
 #include "Look/Look.hpp"
@@ -48,7 +29,7 @@ UpdateInfoBoxHumidity(InfoBoxData &data) noexcept
   }
 
   // Set Value
-  data.UnsafeFormatValue( _T("%d"), (int)basic.humidity);
+  data.FmtValue( _T("{}"), (int)basic.humidity);
 }
 
 void
@@ -61,7 +42,7 @@ UpdateInfoBoxTemperature(InfoBoxData &data) noexcept
   }
 
   // Set Value
-  data.SetValue(_T("%2.1f"), basic.temperature.ToUser());
+  data.FmtValue(_T("{:2.1f}"), basic.temperature.ToUser());
 
   data.SetValueUnit(Units::current.temperature_unit);
 }
@@ -70,7 +51,7 @@ void
 InfoBoxContentTemperatureForecast::Update(InfoBoxData &data) noexcept
 {
   auto temperature = CommonInterface::GetComputerSettings().forecast_temperature;
-  data.SetValue(_T("%2.1f"), temperature.ToUser());
+  data.FmtValue(_T("{:2.1f}"), temperature.ToUser());
 
   data.SetValueUnit(Units::current.temperature_unit);
 }
@@ -123,8 +104,7 @@ UpdateInfoBoxWindSpeed(InfoBoxData &data) noexcept
   }
 
   // Set Value
-  data.SetValue(_T("%2.0f"),
-                    Units::ToUserWindSpeed(info.wind.norm));
+  data.FmtValue(_T("{:2.0f}"), Units::ToUserWindSpeed(info.wind.norm));
 
   // Set Unit
   data.SetValueUnit(Units::current.wind_speed_unit);
@@ -159,8 +139,7 @@ UpdateInfoBoxHeadWind(InfoBoxData &data) noexcept
   }
 
   // Set Value
-  data.SetValue(_T("%2.0f"),
-                    Units::ToUserWindSpeed(info.head_wind));
+  data.FmtValue(_T("{:2.0f}"), Units::ToUserWindSpeed(info.head_wind));
 
   // Set Unit
   data.SetValueUnit(Units::current.wind_speed_unit);
@@ -178,7 +157,7 @@ UpdateInfoBoxHeadWindSimplified(InfoBoxData &data) noexcept
   auto value = basic.true_airspeed - basic.ground_speed;
 
   // Set Value
-  data.SetValue(_T("%2.0f"), Units::ToUserWindSpeed(value));
+  data.FmtValue(_T("{:2.0f}"), Units::ToUserWindSpeed(value));
 
   // Set Unit
   data.SetValueUnit(Units::current.wind_speed_unit);
@@ -216,19 +195,14 @@ InfoBoxContentWindArrow::OnCustomPaint(Canvas &canvas,
 
   const auto &info = CommonInterface::Calculated();
 
-  const auto pt = rc.GetCenter();
-
   const unsigned scale = Layout::Scale(100U);
 
-  const unsigned padding = Layout::FastScale(10u);
-  unsigned size = std::min(rc.GetWidth(), rc.GetHeight());
-
-  if (size > padding)
-    size -= padding;
+  RadarRenderer radar_renderer{Layout::FastScale(10u)};
+  radar_renderer.UpdateLayout(rc);
 
   // Normalize the size because the Layout::Scale is applied
   // by the DrawArrow() function again
-  size = size * 100 / scale;
+  const unsigned size = radar_renderer.GetRadius() * 100 / scale;
 
   auto angle = info.wind.bearing - CommonInterface::Basic().attitude.heading;
 
@@ -240,7 +214,7 @@ InfoBoxContentWindArrow::OnCustomPaint(Canvas &canvas,
   auto style = CommonInterface::GetMapSettings().wind_arrow_style;
 
   WindArrowRenderer renderer(UIGlobals::GetLook().wind_arrow_info_box);
-  renderer.DrawArrow(canvas, pt, angle,
+  renderer.DrawArrow(canvas, radar_renderer.GetCenter(), angle,
                      arrow_width, length, arrow_tail_length,
                      style, offset, scale);
 }

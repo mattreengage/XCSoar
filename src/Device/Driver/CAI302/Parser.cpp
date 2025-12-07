@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Internal.hpp"
 #include "Units/System.hpp"
@@ -27,18 +7,20 @@ Copyright_License {
 #include "NMEA/InputLine.hpp"
 #include "NMEA/Checksum.hpp"
 
+using std::string_view_literals::operator""sv;
+
 static bool
 ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r)
 {
-  double bearing, norm;
+  Angle bearing;
+  double norm;
 
-  bool bearing_valid = line.ReadChecked(bearing) &&
-    bearing > -1 && bearing < 361;
+  bool bearing_valid = line.ReadBearing(bearing);
   bool norm_valid = line.ReadChecked(norm) &&
     norm >= 0 && norm < 2000;
 
   if (bearing_valid && norm_valid) {
-    value_r.bearing = Angle::Degrees(bearing);
+    value_r.bearing = bearing;
     value_r.norm = norm / 10;
     return true;
   }
@@ -148,17 +130,14 @@ CAI302Device::ParseNMEA(const char *String, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$PCAIB"))
+  const auto type = line.ReadView();
+  if (type == "$PCAIB"sv)
     return cai_PCAIB(line, info);
-
-  if (StringIsEqual(type, "$PCAID"))
+  else if (type == "$PCAID"sv)
     return cai_PCAID(line, info);
-
-  if (StringIsEqual(type, "!w"))
+  else if (type == "!w"sv)
     return cai_w(line, info);
-
-  return false;
+  else
+    return false;
 }

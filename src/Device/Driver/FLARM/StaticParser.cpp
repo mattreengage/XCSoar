@@ -1,46 +1,35 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "StaticParser.hpp"
-#include "NMEA/InputLine.hpp"
 #include "FLARM/Error.hpp"
-#include "FLARM/Version.hpp"
-#include "FLARM/Status.hpp"
 #include "FLARM/List.hpp"
+#include "FLARM/Status.hpp"
+#include "FLARM/Version.hpp"
+#include "Language/Language.hpp"
+#include "Message.hpp"
+#include "NMEA/InputLine.hpp"
 #include "util/Macros.hpp"
 #include "util/StringAPI.hxx"
+
+using std::string_view_literals::operator""sv;
 
 void
 ParsePFLAE(NMEAInputLine &line, FlarmError &error, TimeStamp clock) noexcept
 {
-  char type[2];
-  line.Read(type, ARRAY_SIZE(type));
-  if (!StringIsEqual(type, "A"))
+  const auto type = line.ReadView();
+  if (type != "A"sv)
     return;
 
   error.severity = (FlarmError::Severity)
     line.Read((int)FlarmError::Severity::NO_ERROR);
   error.code = (FlarmError::Code)line.ReadHex(0);
+  TCHAR buffer[100];
+  StringFormatUnsafe(buffer, _T("%s - %s"),
+                     FlarmError::ToString(error.severity),
+                     FlarmError::ToString(error.code));
+  if (error.severity != FlarmError::Severity::NO_ERROR)
+    Message::AddMessage(_T("FLARM: "), buffer);
 
   error.available.Update(clock);
 }
@@ -49,21 +38,17 @@ void
 ParsePFLAV(NMEAInputLine &line, FlarmVersion &version,
            TimeStamp clock) noexcept
 {
-  char type[2];
-  line.Read(type, ARRAY_SIZE(type));
-  if (!StringIsEqual(type, "A"))
+  const auto type = line.ReadView();
+  if (type != "A"sv)
     return;
 
-  line.Read(version.hardware_version.buffer(),
-            version.hardware_version.capacity());
+  version.hardware_version = line.ReadView();
   version.hardware_version.CleanASCII();
 
-  line.Read(version.software_version.buffer(),
-            version.software_version.capacity());
+  version.software_version = line.ReadView();
   version.software_version.CleanASCII();
 
-  line.Read(version.obstacle_version.buffer(),
-            version.obstacle_version.capacity());
+  version.obstacle_version = line.ReadView();
   version.obstacle_version.CleanASCII();
 
   version.available.Update(clock);
@@ -86,25 +71,8 @@ ParsePFLAU(NMEAInputLine &line, FlarmStatus &flarm, TimeStamp clock) noexcept
     line.Read((int)FlarmTraffic::AlarmType::NONE);
 }
 
-/**
- * Parses non-negative floating-point angle value in degrees.
- */
-static bool
-ReadBearing(NMEAInputLine &line, Angle &value_r)
-{
-  double value;
-  if (!line.ReadChecked(value))
-    return false;
-
-  if (value < 0 || value > 360)
-    return false;
-
-  value_r = Angle::Degrees(value).AsBearing();
-  return true;
-}
-
 void
-ParsePFLAA(NMEAInputLine &line, TrafficList &flarm, TimeStamp clock) noexcept
+ParsePFLAA(NMEAInputLine &line, TrafficList &flarm, TimeStamp clock, RangeFilter &range) noexcept
 {
   flarm.modified.Update(clock);
 
@@ -122,15 +90,24 @@ ParsePFLAA(NMEAInputLine &line, TrafficList &flarm, TimeStamp clock) noexcept
     return;
   traffic.relative_north = value;
 
-  if (!line.ReadChecked(value))
-    // Relative East is required !
-    return;
-  traffic.relative_east = value;
+  if (line.ReadChecked(value))
+    // Relative East
+    traffic.relative_east = value;
+  else
+    // No position target
+    traffic.relative_east = 0;
 
   if (!line.ReadChecked(value))
     // Relative Altitude is required !
     return;
   traffic.relative_altitude = value;
+
+  if (range.horizontal && range.vertical) {
+    // object outside cylinder; non filtered data only !
+    if ((hypot(traffic.relative_north, traffic.relative_east) > (RoughDistance)range.horizontal) ||
+    (abs((int)traffic.relative_altitude) > range.vertical))
+      return;
+  }
 
   line.Skip(); /* id type */
 
@@ -140,7 +117,7 @@ ParsePFLAA(NMEAInputLine &line, TrafficList &flarm, TimeStamp clock) noexcept
   traffic.id = FlarmId::Parse(id_string, nullptr);
 
   Angle track;
-  traffic.track_received = ReadBearing(line, track);
+  traffic.track_received = line.ReadBearing(track);
   if (!traffic.track_received) {
     // Field is empty in stealth mode
     stealth = true;
@@ -173,7 +150,7 @@ ParsePFLAA(NMEAInputLine &line, TrafficList &flarm, TimeStamp clock) noexcept
 
   traffic.stealth = stealth;
 
-  unsigned type = line.Read(0);
+  unsigned type = line.ReadHex(0);
   if (type > 15 || type == 14)
     traffic.type = FlarmTraffic::AircraftType::UNKNOWN;
   else

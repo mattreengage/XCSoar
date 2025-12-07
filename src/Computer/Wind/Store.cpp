@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 /* This library was originally imported from Cumulus
    http://kflog.org/cumulus/ */
@@ -31,7 +11,7 @@ Copyright_License {
 #include <math.h>
 
 void
-WindStore::reset()
+WindStore::reset() noexcept
 {
   windlist.Reset();
   update_clock = {};
@@ -40,7 +20,7 @@ WindStore::reset()
 
 void
 WindStore::SlotMeasurement(const MoreData &info,
-                           const SpeedVector &windvector, unsigned quality)
+                           const SpeedVector &windvector, unsigned quality) noexcept
 {
   updated = true;
   windlist.addMeasurement(info.time, windvector,
@@ -49,7 +29,7 @@ WindStore::SlotMeasurement(const MoreData &info,
 }
 
 void
-WindStore::SlotAltitude(const MoreData &info, DerivedInfo &derived)
+WindStore::SlotAltitude(const MoreData &info, DerivedInfo &derived) noexcept
 {
   if (updated || (fabs(info.nav_altitude - _lastAltitude) > 100)) {
     //only recalculate if there is a significant change
@@ -67,19 +47,19 @@ WindStore::GetWind(TimeStamp Time, double h,
   return windlist.getWind(Time, h, found);
 }
 
-void
-WindStore::recalculateWind(const MoreData &info, DerivedInfo &derived) const
+inline void
+WindStore::recalculateWind(const MoreData &info, DerivedInfo &derived) const noexcept
 {
   bool found;
   Vector CurWind = windlist.getWind(info.time, info.nav_altitude, found);
   if (found) {
-    NewWind(info, derived, CurWind);
+    NewWind(derived, CurWind);
   }
 }
 
-void
-WindStore::NewWind([[maybe_unused]] const NMEAInfo &info, DerivedInfo &derived,
-                   Vector &wind) const
+inline void
+WindStore::NewWind(DerivedInfo &derived,
+                   const Vector &wind) const noexcept
 {
   auto mag = wind.Magnitude();
   Angle bearing;
@@ -95,9 +75,4 @@ WindStore::NewWind([[maybe_unused]] const NMEAInfo &info, DerivedInfo &derived,
   } else {
     // TODO code: give warning, wind estimate bogus or very strong!
   }
-
-  #ifdef DEBUG_WIND
-  LogDebug(_T("%f %f 0 # wind estimate\n"), wind.x, wind.y);
-  #endif
-
 }

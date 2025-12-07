@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/Westerboer.hpp"
 #include "Device/Driver.hpp"
@@ -31,6 +11,8 @@ Copyright_License {
 
 #include <tchar.h>
 #include <stdio.h>
+
+using std::string_view_literals::operator""sv;
 
 /**
  * Device driver for Westerboer VW1150.
@@ -141,16 +123,16 @@ WesterboerDevice::ParseNMEA(const char *String, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$PWES0"))
+  const auto type = line.ReadView();
+  if (type == "$PWES0"sv)
     return PWES0(line, info);
 
-  if (StringIsEqual(type, "$PWES1"))
+  else if (type == "$PWES1"sv)
     return PWES1(line, info);
 
-  return false;
+  else
+    return false;
 }
 
 bool
@@ -163,7 +145,7 @@ WesterboerDevice::PutMacCready(double _mac_cready, OperationEnvironment &env)
   sprintf(buffer, "$PWES4,,%02u,,,,,,,", mac_cready);
   AppendNMEAChecksum(buffer);
   strcat(buffer, "\r\n");
-  port.FullWriteString(buffer, env, std::chrono::milliseconds{100});
+  port.FullWrite(buffer, env, std::chrono::milliseconds{100});
 
   return true;
 }
@@ -178,7 +160,7 @@ WesterboerDevice::PutBugs(double _bugs, OperationEnvironment &env)
   sprintf(buffer, "$PWES4,,,,,%02u,,,,", bugs);
   AppendNMEAChecksum(buffer);
   strcat(buffer, "\r\n");
-  port.FullWriteString(buffer, env, std::chrono::milliseconds{100});
+  port.FullWrite(buffer, env, std::chrono::milliseconds{100});
 
   return true;
 }

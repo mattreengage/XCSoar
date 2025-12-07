@@ -1,33 +1,13 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ui/canvas/Font.hpp"
 #include "Screen/Debug.hpp"
 #include "ui/canvas/custom/Files.hpp"
 #include "Look/FontDescription.hpp"
-#include "util/RuntimeError.hxx"
 #include "Init.hpp"
 #include "Asset.hpp"
+#include "lib/fmt/RuntimeError.hxx"
 #include "system/Path.hpp"
 
 #ifndef ENABLE_OPENGL
@@ -50,6 +30,7 @@ Copyright_License {
 #include <algorithm>
 
 #include <cassert>
+#include <concepts>
 #include <cstdint>
 
 #ifndef ENABLE_OPENGL
@@ -94,7 +75,6 @@ FT_CEIL(FT_Long x) noexcept
   return FT_FLOOR(x + 63);
 }
 
-[[gnu::pure]]
 static unsigned
 NextChar(tstring_view &s) noexcept
 {
@@ -166,8 +146,8 @@ Font::LoadFile(const char *file, unsigned ptsize, [[maybe_unused]] bool bold, [[
   FT_Error error = ::FT_Set_Pixel_Sizes(new_face, 0, ptsize);
   if (error) {
     ::FT_Done_Face(new_face);
-    throw FormatRuntimeError("Failed to initialise font %s: %s",
-                             file, FT_Error_String(error));
+    throw FmtRuntimeError("Failed to initialise font {}: {}",
+                          file, FT_Error_String(error));
   }
 
   const FT_Fixed y_scale = new_face->size->metrics.y_scale;
@@ -229,9 +209,8 @@ Font::Destroy() noexcept
   face = nullptr;
 }
 
-template<typename F>
 static void
-ForEachChar(tstring_view text, F &&f)
+ForEachChar(tstring_view text, std::invocable<unsigned> auto f)
 {
 #ifndef _UNICODE
   assert(ValidateUTF8(text));
@@ -243,10 +222,10 @@ ForEachChar(tstring_view text, F &&f)
   }
 }
 
-template<typename T, typename F>
+template<typename T>
 static void
 ForEachGlyph(const FT_Face face, unsigned ascent_height, T &&text,
-             F &&f) noexcept
+             std::invocable<int, int, FT_GlyphSlot> auto f) noexcept
 {
   const bool use_kerning = FT_HAS_KERNING(face);
 

@@ -44,11 +44,11 @@ Getting the Source Code
 The XCSoar source code is managed with `git <http://git-scm.com/>`__. It
 can be downloaded with the following command::
 
-  git clone https://github.com/XCSoar/XCSoar
+  git clone --recurse-submodules https://github.com/XCSoar/XCSoar
 
 To update your repository, type::
 
-  git pull
+  git pull --recurse-submodules
 
 To update third-party libraries used by XCSoar (such as `Boost
 <http://www.boost.org/>`__), type::
@@ -65,13 +65,13 @@ The following is needed for all targets:
 -  GNU make
 
 -  GNU compiler collection (``gcc``), version 10 or later or clang/LLVM
-   10 (with "make CLANG=y")
+   12 (with "make CLANG=y")
 
 -  GNU gettext
 
--  `rsvg <http://librsvg.sourceforge.net/)>`__
+-  `rsvg <https://librsvg.sourceforge.net/>`__
 
--  `ImageMagick 6.4 <http://www.imagemagick.org/>`__
+-  `ImageMagick 6.4 <https://www.imagemagick.org/>`__
 
 -  `xsltproc <http://xmlsoft.org/XSLT/xsltproc2.html>`__
 
@@ -98,24 +98,24 @@ Compiling for Linux/UNIX
 The following additional packages are needed to build for Linux and
 similar operating systems:
 
--  `zlib <http://www.zlib.net/>`__
+-  `zlib <https://www.zlib.net/>`__
 
-- `c-ares <https://c-ares.haxx.se/`__
+-  `c-ares <https://c-ares.org/>`__
 
--  `CURL <http://curl.haxx.se/>`__
+-  `CURL <https://curl.se/>`__
 
--  `Lua <http://www.lua.org/>`__
+-  `Lua <https://www.lua.org/>`__
 
 -  `libinput <https://www.freedesktop.org/wiki/Software/libinput/>`__
    (not required when using Wayland or on the KOBO)
 
--  `SDL <http://www.libsdl.org/>`__
+-  `SDL <https://www.libsdl.org/>`__
 
--  `SDL_ttf <http://www.libsdl.org/projects/SDL_ttf/>`__
+-  `SDL_ttf <https://github.com/libsdl-org/SDL_ttf>`__
 
--  `libpng <http://www.libpng.org/>`__
+-  `libpng <http://www.libpng.org/pub/png/libpng.html>`__
 
--  `libjpeg <http://libjpeg.sourceforge.net/>`__
+-  `libjpeg <https://libjpeg.sourceforge.net/>`__
 
 -  OpenGL (Mesa)
 
@@ -126,8 +126,10 @@ similar operating systems:
 The following command installs these on Debian::
 
   sudo apt-get install make g++  zlib1g-dev \
+      libfmt-dev \
+      libdbus-1-dev \
       libsodium-dev \
-      libfreetype6-dev \
+      libfreetype-dev \
       libpng-dev libjpeg-dev \
       libtiff5-dev libgeotiff-dev \
       libc-ares-dev \
@@ -161,32 +163,35 @@ Compiling for Android
 
 For Android, you need:
 
-- `Android SDK level 26 <http://developer.android.com/sdk/>`__
+- `Android SDK level 33 <http://developer.android.com/sdk/>`__
 
-- `Android NDK r25b <http://developer.android.com/sdk/ndk/>`__
+- `Android NDK r26d <http://developer.android.com/sdk/ndk/>`__
 
 - `Ogg Vorbis <http://www.vorbis.com/>`__
 
 - Java JDK
 
 On Debian::
-  
-  sudo apt-get install default-jdk-headless vorbis-tools adb
+
+  sudo apt-get install
+      default-jdk-headless \
+      vorbis-tools \
+      adb
 
 The required Android SDK components are:
 
-- Android SDK Build-Tools 28.0.3
+- Android SDK Build-Tools 33.0.2
 
-- SDK Platform 26
+- SDK Platform 33
 
 These can be installed from the Android Studio SDK Manager, or using the
 SDK command line tools:
 
-tools/bin/sdkmanager  "build-tools;28.0.3"  "platforms;android-26"
+tools/bin/sdkmanager  "build-tools;33.0.2"  "platforms;android-33"
 
 The ``Makefile`` assumes that the Android SDK is installed in
 ``~/opt/android-sdk-linux`` and the NDK is installed in
-``~/opt/android-ndk-r25b``. You can use the options ``ANDROID_SDK`` and
+``~/opt/android-ndk-r26d``. You can use the options ``ANDROID_SDK`` and
 ``ANDROID_NDK`` to override these paths.
 
 Load/update the IOIO source code::
@@ -239,43 +244,55 @@ Use one of the following targets:
 ``WIN64`` Windows x64 (amd64 / x86-64)
 ========= ============================
 
-Compiling for iOS and macOS
+Compiling for iOS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-On macOS, the following tools are required:
+To compile for iOS, you need a Mac with Xcode (at least the Command Line Tools) installed.
 
-- png2icns from `libicns <http://icns.sourceforge.net>`__ to build for
-  macOS
+Install the required Homebrew packages via the provisioning script::
 
-- `dpkg <https://alioth.debian.org/projects/dpkg>`__ to build the iOS
-  IPA package
+  ./ide/provisioning/install-darwin-packages.sh BASE IOS
 
-- `mkisofs <http://cdrecord.org/private/cdrecord.html>`__ to build the
-  macOS DMG package
+Note that you always need to install the BASE packages and the specific IOS or MACOS packages.
 
 To compile for iOS / AArch64, run::
 
   make TARGET=IOS64 ipa
 
+To compile with the iOS simulator SDK, run::
+
+  make TARGET=IOS64SIM ipa
+
 To compile for iOS / ARMv7, run::
 
   make TARGET=IOS32 ipa
+
+Compiling for macOS (with Homebrew)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Install the required Homebrew packages via the provisioning script::
+
+  ./ide/provisioning/install-darwin-packages.sh MACOS
+
+To compile for macOS / ARM64, run::
+
+  make TARGET=MACOS dmg
 
 To compile for macOS / x86_64, run::
 
   make TARGET=OSX64 dmg
 
-Compiling for macOS (with Homebrew)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Debugging for iOS and macOS
 
-Install the required Homebrew packages::
-
-  brew install automake autoconf libtool imagemagick sox \
-      librsvg quilt pkg-config
-
-Then compile::
-
-  make dmg
+Debugging under iOS and macOS is possible using the LLDB debugger.
+To make this convenient, Xcode or Visual Studio can be used.
+An example Xcode project is provided in `darwin/XCSoar.xcodeproj`. 
+It includes one target for iOS and macOS and will automatically build 
+the XCSoar binary for the selected device target, using the build
+helper script `darwin/build.sh`.
+For iOS debugging with Visual Studio Code, the `iOS Debug`
+extension (https://github.com/nisargjhaveri/vscode-ios-debug) can be used.
+Note that this also requires an Xcode installation.
 
 Compiling on the Raspberry Pi 4
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -333,7 +350,8 @@ Debian packages::
   sudo apt-get install \
       fakeroot \
       python3-setuptools \
-      ttf-bitstream-vera
+      ttf-bitstream-vera \
+      fonts-roboto-unhinted
 
 Then compile using this command::
 

@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Dialogs/Dialogs.h"
 #include "Dialogs/WidgetDialog.hpp"
@@ -32,7 +12,9 @@ Copyright_License {
 #include "util/StringCompare.hxx"
 #include "util/tstring.hpp"
 #include "io/DataFile.hpp"
-#include "io/LineReader.hpp"
+#include "io/Reader.hxx"
+#include "io/BufferedReader.hxx"
+#include "io/StringConverter.hpp"
 #include "Language/Language.hpp"
 
 #include <string>
@@ -70,13 +52,15 @@ LoadChecklist() noexcept
 try {
   Checklist c;
 
-  auto reader = OpenDataTextFile(_T(XCSCHKLIST));
+  auto file_reader = OpenDataFile(_T(XCSCHKLIST));
+  BufferedReader reader{*file_reader};
+  StringConverter string_converter{Charset::UTF8};
 
   ChecklistPage page;
 
-  TCHAR *TempString;
-  while ((TempString = reader->ReadLine()) != NULL) {
-    const tstring_view line{TempString};
+  char *TempString;
+  while ((TempString = reader.ReadLine()) != nullptr) {
+    const std::string_view line{TempString};
 
     // Look for start
     if (TempString[0] == '[') {
@@ -86,11 +70,11 @@ try {
       }
 
       // extract name
-      page.title = tstring{Split(line.substr(1), _T(']')).first};
+      page.title.assign(string_converter.Convert(Split(line.substr(1), ']').first));
     } else if (!line.empty() || !page.text.empty()) {
       // append text to details string
-      page.text.append(line);
-      page.text.push_back(_T('\n'));
+      page.text.append(string_converter.Convert(line));
+      page.text.push_back('\n');
     }
   }
 

@@ -1,27 +1,8 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device.hpp"
+#include "system/Sleep.h"
 
 #include <stdio.h>
 
@@ -44,12 +25,51 @@ FlarmDevice::SendSetting(const char *name, const char *value,
   Send(buffer, env);
 }
 
+bool
+FlarmDevice::RequestAllSettings(const char* const* settings, 
+                                OperationEnvironment &env)
+{
+  try {
+    for (auto i = settings; *i != NULL; ++i)
+      FlarmDevice::RequestSetting(*i, env);
+
+    for (auto i = settings; *i != NULL; ++i)
+      FlarmDevice::WaitForSetting(*i, 500);
+  } catch (OperationCancelled) {
+    return false;
+  } catch (...) {
+    env.SetError(std::current_exception());
+    return false;
+  }
+
+  return true;
+}
+
 void
 FlarmDevice::RequestSetting(const char *name, OperationEnvironment &env)
 {
   char buffer[64];
   sprintf(buffer, "PFLAC,R,%s", name);
   Send(buffer, env);
+}
+
+bool
+FlarmDevice::WaitForSetting(const char *name, unsigned timeout_ms)
+{
+  for (unsigned i = 0; i < timeout_ms / 100; ++i) {
+    if (FlarmDevice::SettingExists(name))
+      return true;
+    Sleep(100);
+  }
+
+  return false;
+}
+
+[[gnu::pure]]
+bool
+FlarmDevice::SettingExists(const char *name) noexcept
+{
+  return (bool)FlarmDevice::GetSetting(name);
 }
 
 std::optional<std::string>
@@ -61,4 +81,17 @@ FlarmDevice::GetSetting(const char *name) const noexcept
     return std::nullopt;
 
   return *i;
+}
+
+unsigned
+FlarmDevice::GetUnsignedValue(const char *name, unsigned default_value)
+{
+  if (const auto x = FlarmDevice::GetSetting(name)) {
+    char *endptr;
+    unsigned long y = strtoul(x->c_str(), &endptr, 10);
+    if (endptr > x->c_str() && *endptr == 0)
+      return (unsigned)y;
+  }
+
+  return default_value;
 }

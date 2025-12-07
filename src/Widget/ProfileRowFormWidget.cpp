@@ -1,38 +1,19 @@
-/*
-Copyright_License {
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
-
-#include "RowFormWidget.hpp"
-#include "Form/Edit.hpp"
-#include "Form/DataField/File.hpp"
 #include "Form/DataField/Date.hpp"
-#include "Profile/Profile.hpp"
-#include "LocalPath.hpp"
-#include "util/ConvertString.hpp"
+#include "Form/DataField/File.hpp"
+#include "Form/DataField/MultiFile.hpp"
+#include "Form/Edit.hpp"
 #include "Formatter/TimeFormatter.hpp"
+#include "LocalPath.hpp"
+#include "Profile/Profile.hpp"
+#include "RowFormWidget.hpp"
+#include "util/ConvertString.hpp"
 
 WndProperty *
 RowFormWidget::AddFile(const TCHAR *label, const TCHAR *help,
-                       const char *registry_key, const TCHAR *filters,
+                       std::string_view profile_key, const TCHAR *filters,
                        FileType file_type,
                        bool nullable) noexcept
 {
@@ -46,8 +27,8 @@ RowFormWidget::AddFile(const TCHAR *label, const TCHAR *help,
 
   df->ScanMultiplePatterns(filters);
 
-  if (registry_key != nullptr) {
-    const auto path = Profile::GetPath(registry_key);
+  if (profile_key.data() != nullptr) {
+    const auto path = Profile::GetPath(profile_key);
     if (path != nullptr)
       df->SetValue(path);
   }
@@ -57,51 +38,78 @@ RowFormWidget::AddFile(const TCHAR *label, const TCHAR *help,
   return edit;
 }
 
-void
-RowFormWidget::SetProfile(const char *registry_key, unsigned value) noexcept
+WndProperty *
+RowFormWidget::AddMultipleFiles(const TCHAR *label, const TCHAR *help,
+                                std::string_view registry_key,
+                                const TCHAR *filters, FileType file_type)
 {
-  Profile::Set(registry_key, value);
+
+  WndProperty *edit = Add(label, help);
+  auto *df = new MultiFileDataField();
+  df->SetFileType(file_type);
+  edit->SetDataField(df);
+
+  df->ScanMultiplePatterns(filters);
+
+  if (registry_key.data() != nullptr) {
+    auto paths = Profile::GetMultiplePaths(registry_key, filters);
+
+    if (!paths.empty()) {
+      for (auto const &p : paths) {
+        df->AddInitialPath(p);
+      }
+    }
+  }
+
+  edit->RefreshDisplay();
+
+  return edit;
+}
+
+void
+RowFormWidget::SetProfile(std::string_view profile_key, unsigned value) noexcept
+{
+  Profile::Set(profile_key, value);
 }
 
 bool
-RowFormWidget::SaveValue(unsigned i, const char *registry_key,
+RowFormWidget::SaveValue(unsigned i, std::string_view profile_key,
                          TCHAR *string, size_t max_size) const noexcept
 {
   if (!SaveValue(i, string, max_size))
     return false;
 
-  Profile::Set(registry_key, string);
+  Profile::Set(profile_key, string);
   return true;
 }
 
 bool
-RowFormWidget::SaveValue(unsigned i, const char *registry_key,
+RowFormWidget::SaveValue(unsigned i, std::string_view profile_key,
                          bool &value, bool negated) const noexcept
 {
   if (!SaveValue(i, value, negated))
     return false;
 
-  Profile::Set(registry_key, value);
+  Profile::Set(profile_key, value);
   return true;
 }
 
 bool
-RowFormWidget::SaveValue(unsigned i, const char *registry_key,
+RowFormWidget::SaveValue(unsigned i, std::string_view profile_key,
                          double &value) const noexcept
 {
   if (!SaveValue(i, value))
     return false;
 
-  Profile::Set(registry_key, value);
+  Profile::Set(profile_key, value);
   return true;
 }
 
 bool
 RowFormWidget::SaveValueFileReader(unsigned i,
-                                   const char *registry_key) noexcept
+                                   std::string_view profile_key) noexcept
 {
-  const auto *dfe = (const FileDataField *)GetControl(i).GetDataField();
-  Path new_value = dfe->GetValue();
+  Path new_value = GetValueFile(i);
   const auto contracted = ContractLocalPath(new_value);
   if (contracted != nullptr)
     new_value = contracted;
@@ -110,17 +118,17 @@ RowFormWidget::SaveValueFileReader(unsigned i,
   if (!new_value2.IsValid())
     return false;
 
-  const char *old_value = Profile::Get(registry_key, "");
+  const char *old_value = Profile::Get(profile_key, "");
   if (StringIsEqual(old_value, new_value2))
     return false;
 
-  Profile::Set(registry_key, new_value2);
+  Profile::Set(profile_key, new_value2);
   return true;
 }
 
 bool
 RowFormWidget::SaveValue(unsigned i,
-                         const char *registry_key,
+                         std::string_view profile_key,
                          BrokenDate &value) const noexcept
 {
   const auto &df = (const DataFieldDate &)GetDataField(i);
@@ -136,19 +144,51 @@ RowFormWidget::SaveValue(unsigned i,
 
   TCHAR buffer[0x10];
   FormatISO8601(buffer, new_value);
-  Profile::Set(registry_key, buffer);
+  Profile::Set(profile_key, buffer);
   value = new_value;
   return true;
 }
 
 bool
 RowFormWidget::SaveValue(unsigned i,
-                         const char *registry_key,
+                         std::string_view profile_key,
                          std::chrono::seconds &value) const noexcept
 {
   if (!SaveValue(i, value))
     return false;
 
-  Profile::Set(registry_key, value);
+  Profile::Set(profile_key, value);
+  return true;
+}
+
+bool
+RowFormWidget::SaveValueMultiFileReader(unsigned i,
+                                        std::string_view registry_key) noexcept
+{
+  const auto *dfe =
+      static_cast<const MultiFileDataField *>(GetControl(i).GetDataField());
+
+  std::vector<Path> new_values = dfe->GetPathFiles();
+
+  std::string new_output = "";
+
+  for (const auto& value : new_values) {
+
+    const auto contracted = ContractLocalPath(value);
+    Path final_path = contracted != nullptr ? Path(contracted) : value;
+
+    const WideToUTF8Converter value_to_add(final_path.c_str());
+    if (!value_to_add.IsValid()) continue;
+
+    new_output += value_to_add;
+    new_output += "|";
+  }
+  if (!new_output.empty())
+    new_output.pop_back();  // Removes the last "|"
+
+  std::string old_value = Profile::Get(registry_key, "");
+  if (old_value == new_output) return false;
+
+  Profile::Set(registry_key, new_output.c_str());
   return true;
 }

@@ -1,24 +1,5 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "UnorderedTask.hpp"
 #include "Task/Solvers/TaskBestMc.hpp"
@@ -66,7 +47,7 @@ UnorderedTask::CheckTransitions(const AircraftState &state_now,
   if (!stats.task_valid || !state_now.flying)
     return false;
 
-  if (!stats.start.task_started) {
+  if (!stats.start.HasStarted()) {
     stats.start.SetStarted(state_now);
     return true;
   }
@@ -158,13 +139,17 @@ void
 UnorderedTask::ScanDistanceMinMax([[maybe_unused]] const GeoPoint &location, [[maybe_unused]] bool full,
                                   double *dmin, double *dmax) noexcept
 {
-  *dmin = *dmax = stats.total.remaining.IsDefined()
-    ? stats.total.remaining.GetDistance()
-    : 0;
+  *dmin = *dmax = ScanDistanceNominal();
+}
+
+double 
+UnorderedTask::ScanDistanceMaxTotal() noexcept
+{
+  return ScanDistanceNominal();
 }
 
 double
-UnorderedTask::ScanDistanceNominal() noexcept
+UnorderedTask::ScanDistanceNominal() const noexcept
 {
   return stats.total.remaining.IsDefined()
     ? stats.total.remaining.GetDistance()
@@ -174,9 +159,7 @@ UnorderedTask::ScanDistanceNominal() noexcept
 double
 UnorderedTask::ScanDistancePlanned() noexcept
 {
-  return stats.total.remaining.IsDefined()
-    ? stats.total.remaining.GetDistance()
-    : 0;
+  return ScanDistanceNominal();
 }
 
 double

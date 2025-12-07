@@ -1,27 +1,8 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ClimbPercentRenderer.hpp"
+#include "RadarRenderer.hpp"
 #include "NMEA/CirclingInfo.hpp"
 #include "ui/canvas/Canvas.hpp"
 #include "Screen/Layout.hpp"
@@ -34,11 +15,11 @@ void
 ClimbPercentRenderer::Draw(const CirclingInfo& stats, Canvas &canvas,
                            const PixelRect &rc, bool inverse)
 {
-  const int radius = std::min(rc.GetWidth(), rc.GetHeight()) / 2 -
-                     Layout::Scale(3);
-  PixelPoint center;
-  center.x = (rc.left + rc.right) / 2;
-  center.y = (rc.bottom + rc.top) / 2;
+  RadarRenderer radar_renderer{Layout::Scale(3U)};
+  radar_renderer.UpdateLayout(rc);
+  
+  const unsigned radius = radar_renderer.GetRadius();
+  const auto center = radar_renderer.GetCenter();
 
   if (stats.time_cruise + stats.time_circling > FloatDuration{}) {
 
@@ -66,5 +47,5 @@ ClimbPercentRenderer::Draw(const CirclingInfo& stats, Canvas &canvas,
   const Pen pen_f(Layout::ScalePenWidth(1), inverse ? COLOR_WHITE : COLOR_BLACK);
   canvas.Select(pen_f);
   canvas.SelectHollowBrush();
-  canvas.DrawCircle(center, radius);
+  radar_renderer.DrawCircle(canvas, radius);
 }

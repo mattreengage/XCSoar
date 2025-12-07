@@ -1,28 +1,8 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "TaskRulesConfigPanel.hpp"
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Interface.hpp"
 #include "Language/Language.hpp"
@@ -71,7 +51,7 @@ TaskRulesConfigPanel::Prepare(ContainerWindow &parent,
   SetExpertRow(StartMaxSpeed);
 
   AddFloat(_("Start max. speed margin"),
-           _("Maximum speed above maximum start speed to tolerate.  Set to 0 for no tolerance."),
+           _("Maximum speed above maximum start speed to tolerate. Set to 0 for no tolerance."),
            _T("%.0f %s"), _T("%.0f"), 0, 300, 5, false, UnitGroup::HORIZONTAL_SPEED,
            task_behaviour.start_margins.max_speed_margin);
   SetExpertRow(StartMaxSpeedMargin);
@@ -80,14 +60,14 @@ TaskRulesConfigPanel::Prepare(ContainerWindow &parent,
   SetExpertRow(spacer_1);
 
   AddFloat(_("Start max. height"),
-           _("Maximum height based on start height reference (AGL or MSL) while starting the task.  "
+           _("Maximum height based on start height reference (AGL or MSL) while starting the task. "
                "Set to 0 for no limit."),
            _T("%.0f %s"), _T("%.0f"), 0, 10000, 50, false, UnitGroup::ALTITUDE,
            task_behaviour.ordered_defaults.start_constraints.max_height);
   SetExpertRow(StartMaxHeight);
 
   AddFloat(_("Start max. height margin"),
-           _("Maximum height above maximum start height to tolerate.  Set to 0 for no tolerance."),
+           _("Maximum height above maximum start height to tolerate. Set to 0 for no tolerance."),
            _T("%.0f %s"), _T("%.0f"), 0, 10000, 50, false, UnitGroup::ALTITUDE,
            task_behaviour.start_margins.max_height_margin);
   SetExpertRow(StartMaxHeightMargin);
@@ -110,7 +90,7 @@ TaskRulesConfigPanel::Prepare(ContainerWindow &parent,
   SetExpertRow(spacer_2);
 
   AddFloat(_("Finish min. height"),
-           _("Minimum height based on finish height reference (AGL or MSL) while finishing the task.  "
+           _("Minimum height based on finish height reference (AGL or MSL) while finishing the task. "
                "Set to 0 for no limit."),
            _T("%.0f %s"), _T("%.0f"), 0, 10000, 50, false, UnitGroup::ALTITUDE,
            task_behaviour.ordered_defaults.finish_constraints.min_height);

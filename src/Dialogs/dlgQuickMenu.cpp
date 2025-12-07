@@ -1,43 +1,23 @@
-/*
-Copyright_License {
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
-
+#include "Asset.hpp"
 #include "Dialogs/Dialogs.h"
-#include "WidgetDialog.hpp"
+#include "Form/Button.hpp"
+#include "Form/GridView.hpp"
+#include "Input/InputEvents.hpp"
+#include "Look/DialogLook.hpp"
+#include "Menu/ButtonLabel.hpp"
+#include "Menu/MenuData.hpp"
 #include "Renderer/ButtonRenderer.hpp"
 #include "Renderer/TextRenderer.hpp"
-#include "Look/DialogLook.hpp"
-#include "Widget/WindowWidget.hpp"
-#include "Form/GridView.hpp"
-#include "Form/Button.hpp"
-#include "Input/InputEvents.hpp"
 #include "Screen/Layout.hpp"
+#include "UIGlobals.hpp"
+#include "Widget/WindowWidget.hpp"
+#include "WidgetDialog.hpp"
 #include "ui/canvas/Canvas.hpp"
 #include "ui/event/KeyCode.hpp"
 #include "util/StaticString.hxx"
-#include "util/Macros.hpp"
-#include "Menu/ButtonLabel.hpp"
-#include "Menu/MenuData.hpp"
-#include "UIGlobals.hpp"
 
 #include <boost/container/static_vector.hpp>
 
@@ -129,10 +109,12 @@ public:
 protected:
   /* virtual methods from class Widget */
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
+  void AddNavigationButtons(GridView *grid_view,
+                            const WindowStyle &buttonStyle,
+                            const DialogLook &);
   bool SetFocus() noexcept override;
   bool KeyPress(unsigned key_code) noexcept override;
 };
-
 void
 QuickMenu::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
 {
@@ -162,6 +144,13 @@ QuickMenu::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
   WindowStyle buttonStyle;
   buttonStyle.TabStop();
 
+  // Calculate the number of buttons that fit on a single page
+  unsigned num_columns = rc.GetWidth() / column_width;
+  unsigned num_rows = rc.GetHeight() / row_height;
+  unsigned page_size = num_columns * num_rows - 3;
+
+  unsigned buttons_added = 0;
+
   for (unsigned i = 0; i < menu.MAX_ITEMS; ++i) {
     if (buttons.size() >= buttons.max_size())
       continue;
@@ -172,7 +161,7 @@ QuickMenu::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
 
     TCHAR buffer[100];
     const auto expanded =
-      ButtonLabel::Expand(menuItem.label, buffer, ARRAY_SIZE(buffer));
+      ButtonLabel::Expand(menuItem.label, std::span{buffer});
     if (!expanded.visible)
       continue;
 
@@ -192,11 +181,72 @@ QuickMenu::Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept
     button.SetEnabled(expanded.enabled);
 
     grid_view->AddItem(button);
+    buttons_added++;
+
+    if (buttons_added % page_size == 0 && HasTouchScreen())
+    {
+      AddNavigationButtons(grid_view.get(), buttonStyle, dialog_look);
+    }
+  }
+
+  /* if the last page wasn't completley filled,
+     still add the navigation buttons */
+  if (buttons_added % page_size != 0 && HasTouchScreen())
+  {
+    AddNavigationButtons(grid_view.get(), buttonStyle, dialog_look);
   }
 
   grid_view->RefreshLayout();
   SetWindow(std::move(grid_view));
   UpdateCaption();
+}
+
+void
+QuickMenu::AddNavigationButtons(GridView *grid_view,
+                                const WindowStyle &buttonStyle,
+                                const DialogLook &dialog_look)
+{
+  PixelRect button_rc;
+  button_rc.left = 0;
+  button_rc.top = 0;
+  button_rc.right = 80;
+  button_rc.bottom = 30;
+
+  // Add "Previous Page" button
+  auto &previous_button =
+      buttons.emplace_back(*grid_view, button_rc, buttonStyle,
+                           std::make_unique<QuickMenuButtonRenderer>(
+                               dialog_look, _T("Previous Page")),
+                           [this]()
+                           {
+                             auto &grid_view = GetWindow();
+                             grid_view.ShowNextPage(GridView::Direction::LEFT);
+                             SetFocus();
+                             UpdateCaption();
+                           });
+  previous_button.SetEnabled(true);
+  grid_view->AddItem(previous_button);
+  // Add "Next Page" button
+  auto &next_button = buttons.emplace_back(
+      *grid_view, button_rc, buttonStyle,
+      std::make_unique<QuickMenuButtonRenderer>(dialog_look, _T("Next Page")),
+      [this]()
+      {
+        auto &grid_view = GetWindow();
+        grid_view.ShowNextPage();
+        SetFocus();
+        UpdateCaption();
+      });
+  next_button.SetEnabled(true);
+  grid_view->AddItem(next_button);
+
+  // Add "Cancel" button
+  auto &cancel_button = buttons.emplace_back(
+      *grid_view, button_rc, buttonStyle,
+      std::make_unique<QuickMenuButtonRenderer>(dialog_look, _T("Cancel")),
+      [this]() { dialog.SetModalResult(mrCancel); });
+  cancel_button.SetEnabled(true);
+  grid_view->AddItem(cancel_button);
 }
 
 void

@@ -1,42 +1,26 @@
-/*
- * Copyright 2003-2021 The Music Player Daemon Project
- * http://www.musicpd.org
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The Music Player Daemon Project
 
 #pragma once
 
 #include "Chrono.hxx"
 #include "TimerWheel.hxx"
-#include "TimerList.hxx"
 #include "Backend.hxx"
-#include "SocketEvent.hxx"
 #include "event/Features.h"
 #include "time/ClockCache.hxx"
 #include "util/IntrusiveList.hxx"
 
+#ifndef NO_FINE_TIMER_EVENT
+#include "TimerList.hxx"
+#endif // NO_FINE_TIMER_EVENT
+
 #ifdef HAVE_THREADED_EVENT_LOOP
 #include "WakeFD.hxx"
+#include "SocketEvent.hxx"
 #include "thread/Id.hxx"
 #include "thread/Mutex.hxx"
-
-#include <boost/intrusive/list.hpp>
 #endif
 
-#include <atomic>
 #include <cassert>
 
 #include "io/uring/Features.h"
@@ -46,6 +30,7 @@ namespace Uring { class Queue; class Manager; }
 #endif
 
 class DeferEvent;
+class SocketEvent;
 class InjectEvent;
 
 /**
@@ -59,13 +44,18 @@ class InjectEvent;
  */
 class EventLoop final
 {
+	EventPollBackend poll_backend;
+
 #ifdef HAVE_THREADED_EVENT_LOOP
 	WakeFD wake_fd;
 	SocketEvent wake_event{*this, BIND_THIS_METHOD(OnSocketReady), wake_fd.GetSocket()};
 #endif
 
 	TimerWheel coarse_timers;
+
+#ifndef NO_FINE_TIMER_EVENT
 	TimerList timers;
+#endif // NO_FINE_TIMER_EVENT
 
 	using DeferList = IntrusiveList<DeferEvent>;
 
@@ -79,10 +69,7 @@ class EventLoop final
 #ifdef HAVE_THREADED_EVENT_LOOP
 	Mutex mutex;
 
-	using InjectList =
-		boost::intrusive::list<InjectEvent,
-				       boost::intrusive::base_hook<boost::intrusive::list_base_hook<>>,
-				       boost::intrusive::constant_time_size<false>>;
+	using InjectList = IntrusiveList<InjectEvent>;
 	InjectList inject;
 #endif
 
@@ -95,8 +82,8 @@ class EventLoop final
 	SocketList sockets;
 
 	/**
-	 * A linked list of #SocketEvent instances which have a
-	 * non-zero "ready_flags" field, and need to be dispatched.
+	 * A list of #SocketEvent instances which have a non-zero
+	 * "ready_flags" field, and need to be dispatched.
 	 */
 	SocketList ready_sockets;
 
@@ -119,7 +106,7 @@ class EventLoop final
 	bool alive;
 #endif
 
-	std::atomic_bool quit{false};
+	bool quit = false;
 
 	/**
 	 * If true, then Run() will return after all pending events
@@ -134,6 +121,8 @@ class EventLoop final
 	bool again;
 
 #ifdef HAVE_THREADED_EVENT_LOOP
+	bool quit_injected = false;
+
 	/**
 	 * True when handling callbacks, false when waiting for I/O or
 	 * timeout.
@@ -146,8 +135,6 @@ class EventLoop final
 #ifdef HAVE_URING
 	bool uring_initialized = false;
 #endif
-
-	EventPollBackend poll_backend;
 
 	ClockCache<std::chrono::steady_clock> steady_clock_cache;
 
@@ -187,17 +174,40 @@ public:
 		return steady_clock_cache.now();
 	}
 
+	void FlushClockCaches() noexcept {
+		steady_clock_cache.flush();
+	}
+
 #ifdef HAVE_URING
 	[[gnu::pure]]
 	Uring::Queue *GetUring() noexcept;
 #endif
 
 	/**
-	 * Stop execution of this #EventLoop at the next chance.  This
-	 * method is thread-safe and non-blocking: after returning, it
-	 * is not guaranteed that the EventLoop has really stopped.
+	 * Stop execution of this #EventLoop at the next chance.
+	 *
+	 * This method is not thread-safe.  For stopping the
+	 * #EventLoop from within another thread, use InjectBreak().
 	 */
-	void Break() noexcept;
+	void Break() noexcept {
+		quit = true;
+	}
+
+#ifdef HAVE_THREADED_EVENT_LOOP
+	/**
+	 * Like Break(), but thread-safe.  It is also non-blocking:
+	 * after returning, it is not guaranteed that the EventLoop
+	 * has really stopped.
+	 */
+	void InjectBreak() noexcept {
+		{
+			const std::scoped_lock lock{mutex};
+			quit_injected = true;
+		}
+
+		wake_fd.Write();
+	}
+#endif // HAVE_THREADED_EVENT_LOOP
 
 	/**
 	 * Finish Run() after all pending events have been handled.
@@ -226,12 +236,15 @@ public:
 	bool AbandonFD(SocketEvent &event) noexcept;
 
 	void Insert(CoarseTimerEvent &t) noexcept;
+
+#ifndef NO_FINE_TIMER_EVENT
 	void Insert(FineTimerEvent &t) noexcept;
+#endif // NO_FINE_TIMER_EVENT
 
 	/**
 	 * Schedule a call to DeferEvent::RunDeferred().
 	 */
-	void AddDefer(DeferEvent &d) noexcept;
+	void AddDefer(DeferEvent &e) noexcept;
 	void AddIdle(DeferEvent &e) noexcept;
 
 #ifdef HAVE_THREADED_EVENT_LOOP

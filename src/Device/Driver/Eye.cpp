@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/Eye.hpp"
 #include "Device/Driver.hpp"
@@ -29,6 +9,8 @@ Copyright_License {
 #include "Units/System.hpp"
 #include "Atmosphere/Pressure.hpp"
 #include "Math/Util.hpp"
+
+using std::string_view_literals::operator""sv;
 
 class EyeDevice : public AbstractDevice {
 public:
@@ -40,7 +22,6 @@ public:
 
 protected:
   static bool ReadAcceleration(NMEAInputLine &line, AccelerationState &value_r);
-  static bool ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r);
 };
 
 bool
@@ -50,12 +31,11 @@ EyeDevice::ParseNMEA(const char *_line, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(_line);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$PEYA"))
+  const auto type = line.ReadView();
+  if (type == "$PEYA"sv)
     return PEYA(line, info);
-  else if (StringIsEqual(type, "$PEYI"))
+  else if (type == "$PEYI"sv)
     return PEYI(line, info);
   else
     return false;
@@ -84,8 +64,7 @@ EyeDevice::PEYA(NMEAInputLine &line, NMEAInfo &info)
 
   // Direction from were the wind blows [°] (0 - 359)
   // Wind speed [km/h]
-  SpeedVector wind;
-  if (ReadSpeedVector(line, wind))
+  if (SpeedVector wind; line.ReadSpeedVectorKPH(wind))
     info.ProvideExternalWind(wind);
 
   // True air speed [km/h] (i.e. 183)
@@ -146,8 +125,8 @@ EyeDevice::PEYI(NMEAInputLine &line, NMEAInfo &info)
   line.Skip();
 
   // Bear to true North [°] (0° – 359°) (i.e. 248)
-  if (line.ReadChecked(value)) {
-    info.attitude.heading = Angle::Degrees(value);
+  if (Angle heading; line.ReadBearing(heading)) {
+    info.attitude.heading = heading;
     info.attitude.heading_available.Update(info.clock);
   }
 
@@ -155,22 +134,6 @@ EyeDevice::PEYI(NMEAInputLine &line, NMEAInfo &info)
   // Local declination [°] (i.e. +02.3)
 
   return true;
-}
-
-inline bool
-EyeDevice::ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r)
-{
-  double bearing, norm;
-
-  bool bearing_valid = line.ReadChecked(bearing);
-  bool norm_valid = line.ReadChecked(norm);
-
-  if (bearing_valid && norm_valid) {
-    value_r.bearing = Angle::Degrees(bearing);
-    value_r.norm = Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR);
-    return true;
-  } else
-    return false;
 }
 
 inline bool

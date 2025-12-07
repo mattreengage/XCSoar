@@ -1,21 +1,5 @@
-/*
- * Copyright 2003-2021 The Music Player Daemon Project
- * http://www.musicpd.org
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- */
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The Music Player Daemon Project
 
 #include "Loop.hxx"
 #include "DeferEvent.hxx"
@@ -87,17 +71,6 @@ EventLoop::GetUring() noexcept
 
 #endif
 
-void
-EventLoop::Break() noexcept
-{
-	if (quit.exchange(true))
-		return;
-
-#ifdef HAVE_THREADED_EVENT_LOOP
-	wake_fd.Write();
-#endif
-}
-
 bool
 EventLoop::AddFD(int fd, unsigned events, SocketEvent &event) noexcept
 {
@@ -151,9 +124,13 @@ EventLoop::AbandonFD(SocketEvent &event)  noexcept
 void
 EventLoop::Insert(CoarseTimerEvent &t) noexcept
 {
+	assert(IsInside());
+
 	coarse_timers.Insert(t, SteadyNow());
 	again = true;
 }
+
+#ifndef NO_FINE_TIMER_EVENT
 
 void
 EventLoop::Insert(FineTimerEvent &t) noexcept
@@ -164,36 +141,63 @@ EventLoop::Insert(FineTimerEvent &t) noexcept
 	again = true;
 }
 
+#endif // NO_FINE_TIMER_EVENT
+
+/**
+ * Determines which timeout will happen earlier; either one may be
+ * negative to specify "no timeout at all".
+ */
+static constexpr Event::Duration
+GetEarlierTimeout(Event::Duration a, Event::Duration b) noexcept
+{
+	return b.count() < 0 || (a.count() >= 0 && a < b)
+		? a
+		: b;
+}
+
 inline Event::Duration
 EventLoop::HandleTimers() noexcept
 {
 	const auto now = SteadyNow();
 
+#ifndef NO_FINE_TIMER_EVENT
 	auto fine_timeout = timers.Run(now);
+#else
+	const Event::Duration fine_timeout{-1};
+#endif // NO_FINE_TIMER_EVENT
 	auto coarse_timeout = coarse_timers.Run(now);
 
-	return fine_timeout.count() < 0 ||
-		(coarse_timeout.count() >= 0 && coarse_timeout < fine_timeout)
-		? coarse_timeout
-		: fine_timeout;
+	return GetEarlierTimeout(coarse_timeout, fine_timeout);
 }
 
 void
-EventLoop::AddDefer(DeferEvent &d) noexcept
+EventLoop::AddDefer(DeferEvent &e) noexcept
 {
 #ifdef HAVE_THREADED_EVENT_LOOP
 	assert(!IsAlive() || IsInside());
 #endif
 
-	defer.push_back(d);
+	defer.push_back(e);
+
+#ifdef HAVE_THREADED_EVENT_LOOP
+	/* setting this flag here is only relevant if we've been
+	   called by a DeferEvent */
 	again = true;
+#endif
 }
 
 void
 EventLoop::AddIdle(DeferEvent &e) noexcept
 {
-	idle.push_front(e);
+	assert(IsInside());
+
+	idle.push_back(e);
+
+#ifdef HAVE_THREADED_EVENT_LOOP
+	/* setting this flag here is only relevant if we've been
+	   called by a DeferEvent */
 	again = true;
+#endif
 }
 
 void
@@ -271,9 +275,8 @@ EventLoop::Run() noexcept
 #endif
 
 	assert(IsInside());
-	assert(!quit);
 #ifdef HAVE_THREADED_EVENT_LOOP
-	assert(alive);
+	assert(alive || quit_injected);
 	assert(busy);
 
 	wake_event.Schedule(SocketEvent::READ);
@@ -296,9 +299,9 @@ EventLoop::Run() noexcept
 	};
 #endif
 
-	steady_clock_cache.flush();
+	FlushClockCaches();
 
-	do {
+	while (!quit) {
 		again = false;
 
 		/* invoke timers */
@@ -341,7 +344,7 @@ EventLoop::Run() noexcept
 
 		Wait(finish ? Event::Duration{} : timeout);
 
-		steady_clock_cache.flush();
+		FlushClockCaches();
 
 #ifdef HAVE_THREADED_EVENT_LOOP
 		{
@@ -363,7 +366,7 @@ EventLoop::Run() noexcept
 
 			socket_event.Dispatch();
 		}
-	} while (!quit);
+	}
 
 #ifdef HAVE_THREADED_EVENT_LOOP
 #ifndef NDEBUG
@@ -425,6 +428,11 @@ EventLoop::OnSocketReady([[maybe_unused]] unsigned flags) noexcept
 	assert(IsInside());
 
 	wake_fd.Read();
+
+	if (quit_injected) {
+		Break();
+		return;
+	}
 
 	const std::scoped_lock<Mutex> lock(mutex);
 	HandleInject();

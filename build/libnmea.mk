@@ -17,4 +17,6 @@ LIBNMEA_SOURCES = \
 	$(SRC)/NMEA/Checksum.cpp \
 	$(SRC)/NMEA/Aircraft.cpp
 
+LIBNMEA_DEPENDS = GEO TIME UNITS
+
 $(eval $(call link-library,libnmea,LIBNMEA))

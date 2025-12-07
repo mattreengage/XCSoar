@@ -1,28 +1,8 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WindSettingsPanel.hpp"
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Profile/ProfileMap.hpp"
 #include "Form/Button.hpp"
 #include "Form/DataField/Float.hpp"
@@ -58,11 +38,11 @@ WindSettingsPanel::Prepare(ContainerWindow &parent,
   const MapSettings &map_settings = CommonInterface::GetMapSettings();
 
   AddBoolean(_("Circling wind"),
-             _("Estimate the wind vector while circling.  Requires only a GPS."),
+             _("Estimate the wind vector while circling. Requires only a GPS."),
              settings.circling_wind);
 
   AddBoolean(_("ZigZag wind"),
-             _("Estimate the wind vector during glides.  Requires an airspeed sensor."),
+             _("Estimate the wind vector during glides. Requires an airspeed sensor."),
              settings.zig_zag_wind);
 
   AddBoolean(_("External wind"),
@@ -163,9 +143,9 @@ WindSettingsPanel::OnModified(DataField &df) noexcept
     return;
 
   const NMEAInfo &basic = CommonInterface::Basic();
-  WindSettings &settings = CommonInterface::SetComputerSettings().wind;
 
   if (&df == &GetDataField(Speed) || &df == &GetDataField(Direction)) {
+    WindSettings &settings = CommonInterface::SetComputerSettings().wind;
     settings.manual_wind.norm = Units::ToSysWindSpeed(GetValueFloat(Speed));
     settings.manual_wind.bearing = GetValueAngle(Direction);
     settings.manual_wind_available.Update(basic.clock);
@@ -219,9 +199,9 @@ WindSettingsPanel::UpdateVector() noexcept
 
   const bool visible = settings.manual_wind_available;
   if (clear_manual_button)
-    SetRowVisible(CLEAR_MANUAL_BUTTON, visible);
+    SetRowEnabled(CLEAR_MANUAL_BUTTON, visible);
   else if (clear_manual_window != nullptr)
-    clear_manual_window->SetVisible(visible);
+    clear_manual_window->SetEnabled(visible);
 }
 
 void

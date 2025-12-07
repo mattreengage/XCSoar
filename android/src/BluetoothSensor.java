@@ -1,29 +1,12 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 package org.xcsoar;
 
 import java.util.Queue;
+import java.util.UUID;
 import java.util.LinkedList;
+import java.util.List;
 import java.io.IOException;
 
 import android.bluetooth.BluetoothDevice;
@@ -35,6 +18,8 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 
 /**
  * Read Bluetooth LE sensor values and report them to a
@@ -47,7 +32,7 @@ public final class BluetoothSensor
   private final SensorListener listener;
   private final SafeDestruct safeDestruct = new SafeDestruct();
 
-  private final BluetoothGatt gatt;
+  private BluetoothGatt gatt;
 
   private int state = STATE_LIMBO;
 
@@ -59,14 +44,29 @@ public final class BluetoothSensor
   private double flytecGroundSpeed, flytecTrack;
   private int flytecSatellites = 0;
 
-  public BluetoothSensor(Context context, BluetoothDevice device,
+  public BluetoothSensor(final Context context, final BluetoothDevice device,
                          SensorListener listener)
     throws IOException
   {
     this.listener = listener;
 
-    if (Build.VERSION.SDK_INT >= 23)
-      gatt = device.connectGatt(context, true, this, BluetoothDevice.TRANSPORT_LE);
+    if (Build.VERSION.SDK_INT >= 23){
+      /**
+       * Run GATT connect, discover etc. on main thread. If not,
+       * recent Android os will call close() before connection
+       * is fully established.
+       */
+      new Handler(Looper.getMainLooper()).post(new Runnable() {
+        @Override
+        public void run() {
+          /**
+           * Change auto connect = false and remove transport hint, which
+           * should be more stable and widespread supported.
+           */
+          gatt = device.connectGatt(context, false, BluetoothSensor.this);
+        }
+      });
+    }
     else
       gatt = device.connectGatt(context, true, this);
 
@@ -136,6 +136,36 @@ public final class BluetoothSensor
     }
   }
 
+  /**
+   * Data in the characteristic has little endian byteorder.
+   * Lowest bit of flags indicates valid ignitions_per_sec reading.
+   * 0 Kelvin indicates invalid temperatures e.g 
+   * no temperature sensor present.
+  */
+  private void engineSensorDataToListeners(BluetoothGattCharacteristic c) {
+    final int flags = c.getIntValue(c.FORMAT_UINT8, 0);
+    final int cht_temp = c.getIntValue(c.FORMAT_UINT16, 1);
+    final int egt_temp = c.getIntValue(c.FORMAT_UINT16, 3);
+    final int outside_air_temperature = c.getIntValue(c.FORMAT_UINT16, 5);
+
+    if(outside_air_temperature != 0)
+      listener.onTemperature(outside_air_temperature);
+
+    final int pressure = c.getIntValue(c.FORMAT_UINT32, 7);
+
+    // Just guessing the sensor_noise_variance.
+    if(pressure != 0)
+      listener.onBarometricPressureSensor(pressure / 100.0f, 0.01f);
+
+    final int ignitions_per_second = c.getIntValue(c.FORMAT_UINT16, 11);
+    listener.onEngineSensors(cht_temp != 0 ? true : false,
+                             cht_temp,
+                             egt_temp != 0 ? true : false,
+                             egt_temp,
+                             (flags&0x01) == 0x01 ? true : false,
+                             ignitions_per_second);
+  }
+
   private void readHeartRateMeasurement(BluetoothGattCharacteristic c) {
     int offset = 0;
     final int flags = c.getIntValue(c.FORMAT_UINT8, offset);
@@ -169,50 +199,50 @@ public final class BluetoothSensor
       return;
 
     try {
-      if (BluetoothUuids.HEART_RATE_SERVICE.equals(c.getService().getUuid())) {
-        if (BluetoothUuids.HEART_RATE_MEASUREMENT_CHARACTERISTIC.equals(c.getUuid())) {
-          readHeartRateMeasurement(c);
-        }
+      if (BluetoothUuids.HEART_RATE_MEASUREMENT_CHARACTERISTIC.equals(c.getUuid())) {
+        readHeartRateMeasurement(c);
       }
 
-      if (BluetoothUuids.FLYTEC_SENSBOX_SERVICE.equals(c.getService().getUuid())) {
-        if (BluetoothUuids.FLYTEC_SENSBOX_NAVIGATION_SENSOR_CHARACTERISTIC.equals(c.getUuid())) {
-          /* protocol documentation:
-             https://github.com/flytec/SensBoxLib_iOS/blob/master/_SensBox%20Documentation/SensorBox%20BLE%20Protocol.pdf */
-          final int gps_status = c.getIntValue(c.FORMAT_UINT8, 18) & 0x7;
-          final boolean hasAltitude = (gps_status == 2 || gps_status == 4);
+      if (BluetoothUuids.ENGINE_SENSORS_CHARACTERISTIC.equals(c.getUuid())) {
+        engineSensorDataToListeners(c);
+      }
 
-          final long time = 1000 *
-            toUnsignedLong(c.getIntValue(c.FORMAT_UINT32, 0));
+      if (BluetoothUuids.FLYTEC_SENSBOX_NAVIGATION_SENSOR_CHARACTERISTIC.equals(c.getUuid())) {        
+        /* protocol documentation:
+            https://github.com/flytec/SensBoxLib_iOS/blob/master/_SensBox%20Documentation/SensorBox%20BLE%20Protocol.pdf */
+        final int gps_status = c.getIntValue(c.FORMAT_UINT8, 18) & 0x7;
+        final boolean hasAltitude = (gps_status == 2 || gps_status == 4);
 
-          listener.onLocationSensor(time,
-                                    flytecSatellites,
-                                    c.getIntValue(c.FORMAT_SINT32, 8) / 10000000.,
-                                    c.getIntValue(c.FORMAT_SINT32, 4) / 10000000.,
-                                    hasAltitude, true,
-                                    c.getIntValue(c.FORMAT_SINT16, 12),
-                                    haveFlytecMovement, flytecTrack,
-                                    haveFlytecMovement, flytecGroundSpeed,
-                                    false, 0);
+        final long time = 1000 *
+          toUnsignedLong(c.getIntValue(c.FORMAT_UINT32, 0));
 
-          listener.onPressureAltitudeSensor(c.getIntValue(c.FORMAT_SINT16, 14));
-        } else if (BluetoothUuids.FLYTEC_SENSBOX_MOVEMENT_SENSOR_CHARACTERISTIC.equals(c.getUuid())) {
-          flytecGroundSpeed = c.getIntValue(c.FORMAT_SINT16, 6) / 10.;
-          flytecTrack = c.getIntValue(c.FORMAT_SINT16, 8) / 10.;
+        listener.onLocationSensor(time,
+                                  flytecSatellites,
+                                  c.getIntValue(c.FORMAT_SINT32, 8) / 10000000.,
+                                  c.getIntValue(c.FORMAT_SINT32, 4) / 10000000.,
+                                  hasAltitude, true,
+                                  c.getIntValue(c.FORMAT_SINT16, 12),
+                                  haveFlytecMovement, flytecTrack,
+                                  haveFlytecMovement, flytecGroundSpeed,
+                                  false, 0);
 
-          listener.onVarioSensor(c.getIntValue(c.FORMAT_SINT16, 4) / 100.f);
-          listener.onAccelerationSensor1(c.getIntValue(c.FORMAT_UINT16, 16) / 10.);
+        listener.onPressureAltitudeSensor(c.getIntValue(c.FORMAT_SINT16, 14));
+      } else if (BluetoothUuids.FLYTEC_SENSBOX_MOVEMENT_SENSOR_CHARACTERISTIC.equals(c.getUuid())) {
+        flytecGroundSpeed = c.getIntValue(c.FORMAT_SINT16, 6) / 10.;
+        flytecTrack = c.getIntValue(c.FORMAT_SINT16, 8) / 10.;
 
-          haveFlytecMovement = true;
-        } else if (BluetoothUuids.FLYTEC_SENSBOX_SECOND_GPS_CHARACTERISTIC.equals(c.getUuid())) {
-          flytecSatellites = c.getIntValue(c.FORMAT_UINT8, 6);
-        } else if (BluetoothUuids.FLYTEC_SENSBOX_SYSTEM_CHARACTERISTIC.equals(c.getUuid())) {
-          listener.onBatteryPercent(c.getIntValue(c.FORMAT_UINT8, 4));
+        listener.onVarioSensor(c.getIntValue(c.FORMAT_SINT16, 4) / 100.f);
+        listener.onAccelerationSensor1(c.getIntValue(c.FORMAT_UINT16, 16) / 10.);
 
-          final double CELSIUS_OFFSET = 273.15;
-          double temperatureCelsius = c.getIntValue(c.FORMAT_SINT16, 6) / 10.;
-          listener.onTemperature(CELSIUS_OFFSET + temperatureCelsius);
-        }
+        haveFlytecMovement = true;
+      } else if (BluetoothUuids.FLYTEC_SENSBOX_SECOND_GPS_CHARACTERISTIC.equals(c.getUuid())) {
+        flytecSatellites = c.getIntValue(c.FORMAT_UINT8, 6);
+      } else if (BluetoothUuids.FLYTEC_SENSBOX_SYSTEM_CHARACTERISTIC.equals(c.getUuid())) {
+        listener.onBatteryPercent(c.getIntValue(c.FORMAT_UINT8, 4));
+
+        final double CELSIUS_OFFSET = 273.15;
+        double temperatureCelsius = c.getIntValue(c.FORMAT_SINT16, 6) / 10.;
+        listener.onTemperature(CELSIUS_OFFSET + temperatureCelsius);
       }
     } catch (NullPointerException e) {
       /* probably caused by a malformed value - ignore */
@@ -254,37 +284,23 @@ public final class BluetoothSensor
       return;
     }
 
-    BluetoothGattService service = gatt.getService(BluetoothUuids.HEART_RATE_SERVICE);
-    if (service != null) {
-      BluetoothGattCharacteristic c =
-        service.getCharacteristic(BluetoothUuids.HEART_RATE_MEASUREMENT_CHARACTERISTIC);
-      if (c != null) {
-        setStateSafe(STATE_READY);
-        enableNotification(c);
-      }
-    }
-
-    /* enable notifications for Flytec Sensbox */
-    service = gatt.getService(BluetoothUuids.FLYTEC_SENSBOX_SERVICE);
-    if (service != null) {
-      BluetoothGattCharacteristic c =
-        service.getCharacteristic(BluetoothUuids.FLYTEC_SENSBOX_NAVIGATION_SENSOR_CHARACTERISTIC);
-      if (c != null) {
-        setStateSafe(STATE_READY);
-        enableNotification(c);
-      }
-
-      c = service.getCharacteristic(BluetoothUuids.FLYTEC_SENSBOX_MOVEMENT_SENSOR_CHARACTERISTIC);
-      if (c != null)
-        enableNotification(c);
-
-      c = service.getCharacteristic(BluetoothUuids.FLYTEC_SENSBOX_SECOND_GPS_CHARACTERISTIC);
-      if (c != null)
-        enableNotification(c);
-
-      c = service.getCharacteristic(BluetoothUuids.FLYTEC_SENSBOX_SYSTEM_CHARACTERISTIC);
-      if (c != null)
-        enableNotification(c);
+    /** Check if we know the discovered characteristics, if known,
+    * enable notification. Consecutive calls to getServices() 
+    * might fail, so we do it just once and handle the lookups in 
+    * the loops.
+    */
+    List<BluetoothGattService> services = gatt.getServices();
+    for (BluetoothGattService s : services) {
+        List<BluetoothGattCharacteristic> characteristics = s.getCharacteristics();
+        for (BluetoothGattCharacteristic c : characteristics) {
+            UUID id = c.getUuid();
+            for (UUID supported_id : BluetoothUuids.getAllCharacteristicsUuids()) {
+              if(id.equals(supported_id)){
+                setStateSafe(STATE_READY);
+                enableNotification(c);                
+              }
+            }
+       }
     }
 
     if (state == STATE_LIMBO)

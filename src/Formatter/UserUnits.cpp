@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Formatter/UserUnits.hpp"
 #include "Formatter/Units.hpp"
@@ -28,29 +8,27 @@ Copyright_License {
 
 #include <stdio.h>
 
-
 void
-FormatUserWingLoading(double value, TCHAR *buffer, bool include_unit)
+FormatUserWingLoading(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatWingLoading(buffer, value, Units::GetUserWingLoadingUnit(),
                     include_unit);
 }
 
 void
-FormatUserMass(double value, TCHAR *buffer, bool include_unit)
+FormatUserMass(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatMass(buffer, value, Units::GetUserMassUnit(), include_unit);
 }
 
 void
-FormatUserAltitude(double value, TCHAR *buffer, bool include_unit)
+FormatUserAltitude(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatAltitude(buffer, value, Units::GetUserAltitudeUnit(), include_unit);
 }
 
-[[gnu::const]]
-static Unit
-GetAlternateAltitudeUnit(Unit unit)
+static constexpr Unit
+GetAlternateAltitudeUnit(Unit unit) noexcept
 {
   switch (unit) {
   case Unit::METER:
@@ -65,7 +43,7 @@ GetAlternateAltitudeUnit(Unit unit)
 }
 
 void
-FormatAlternateUserAltitude(double value, TCHAR *buffer, bool include_unit)
+FormatAlternateUserAltitude(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatAltitude(buffer, value,
                  GetAlternateAltitudeUnit(Units::GetUserAltitudeUnit()),
@@ -73,14 +51,14 @@ FormatAlternateUserAltitude(double value, TCHAR *buffer, bool include_unit)
 }
 
 void
-FormatRelativeUserAltitude(double value, TCHAR *buffer, bool include_unit)
+FormatRelativeUserAltitude(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatRelativeAltitude(buffer, value, Units::GetUserAltitudeUnit(),
                          include_unit);
 }
 
 void
-FormatUserDistance(double value, TCHAR *buffer, bool include_unit, int precision)
+FormatUserDistance(double value, TCHAR *buffer, bool include_unit, int precision) noexcept
 {
   FormatDistance(buffer, value, Units::GetUserDistanceUnit(),
                  include_unit, precision);
@@ -88,7 +66,7 @@ FormatUserDistance(double value, TCHAR *buffer, bool include_unit, int precision
 
 Unit
 FormatSmallUserDistance(TCHAR *buffer, double value, bool include_unit,
-                        int precision)
+                        int precision) noexcept
 {
   return FormatSmallDistance(buffer, value, Units::GetUserDistanceUnit(),
                              include_unit, precision);
@@ -96,7 +74,7 @@ FormatSmallUserDistance(TCHAR *buffer, double value, bool include_unit,
 
 Unit
 FormatUserDistanceSmart(double value, TCHAR *buffer, bool include_unit,
-                        double small_unit_threshold, double precision_threshold)
+                        double small_unit_threshold, double precision_threshold) noexcept
 {
   return FormatDistanceSmart(buffer, value, Units::GetUserDistanceUnit(),
                              include_unit, small_unit_threshold,
@@ -104,14 +82,14 @@ FormatUserDistanceSmart(double value, TCHAR *buffer, bool include_unit,
 }
 
 Unit
-FormatUserMapScale(double value, TCHAR *buffer, bool include_unit)
+FormatUserMapScale(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   return FormatDistanceSmart(buffer, value, Units::GetUserDistanceUnit(),
                              include_unit, 1000, 9.999);
 }
 
 void
-FormatUserSpeed(double value, TCHAR *buffer, bool include_unit, bool precision)
+FormatUserSpeed(double value, TCHAR *buffer, bool include_unit, bool precision) noexcept
 {
   FormatSpeed(buffer, value, Units::GetUserSpeedUnit(), include_unit,
               precision);
@@ -119,7 +97,7 @@ FormatUserSpeed(double value, TCHAR *buffer, bool include_unit, bool precision)
 
 void
 FormatUserWindSpeed(double value, TCHAR *buffer, bool include_unit,
-                    bool precision)
+                    bool precision) noexcept
 {
   FormatSpeed(buffer, value, Units::GetUserWindSpeedUnit(), include_unit,
               precision);
@@ -127,35 +105,35 @@ FormatUserWindSpeed(double value, TCHAR *buffer, bool include_unit,
 
 void
 FormatUserTaskSpeed(double value, TCHAR *buffer, bool include_unit,
-                    bool precision)
+                    bool precision) noexcept
 {
   FormatSpeed(buffer, value, Units::GetUserTaskSpeedUnit(), include_unit,
               precision);
 }
 
-const TCHAR*
-GetUserVerticalSpeedFormat(bool include_unit, bool include_sign)
+const TCHAR *
+GetUserVerticalSpeedFormat(bool include_unit, bool include_sign) noexcept
 {
   return GetVerticalSpeedFormat(Units::GetUserVerticalSpeedUnit(), include_unit,
                                 include_sign);
 }
 
 double
-GetUserVerticalSpeedStep()
+GetUserVerticalSpeedStep() noexcept
 {
   return GetVerticalSpeedStep(Units::GetUserVerticalSpeedUnit());
 }
 
 void
 FormatUserVerticalSpeed(double value, TCHAR *buffer, bool include_unit,
-                        bool include_sign)
+                        bool include_sign) noexcept
 {
   FormatVerticalSpeed(buffer, value, Units::GetUserVerticalSpeedUnit(),
                       include_unit, include_sign);
 }
 
 void
-FormatUserTemperature(double value, TCHAR *buffer, bool include_unit)
+FormatUserTemperature(double value, TCHAR *buffer, bool include_unit) noexcept
 {
   FormatTemperature(buffer, value, Units::GetUserTemperatureUnit(),
                     include_unit);
@@ -163,19 +141,19 @@ FormatUserTemperature(double value, TCHAR *buffer, bool include_unit)
 
 void
 FormatUserPressure(AtmosphericPressure pressure, TCHAR *buffer,
-                   bool include_unit)
+                   bool include_unit) noexcept
 {
   FormatPressure(buffer, pressure, Units::GetUserPressureUnit(), include_unit);
 }
 
-const TCHAR*
-GetUserPressureFormat(bool include_unit)
+const TCHAR *
+GetUserPressureFormat(bool include_unit) noexcept
 {
   return GetPressureFormat(Units::GetUserPressureUnit(), include_unit);
 }
 
 double
-GetUserPressureStep()
+GetUserPressureStep() noexcept
 {
   return GetPressureStep(Units::current.pressure_unit);
 }

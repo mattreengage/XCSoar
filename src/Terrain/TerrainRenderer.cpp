@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Terrain/TerrainRenderer.hpp"
 #include "Terrain/RasterTerrain.hpp"
@@ -258,7 +238,52 @@ static constexpr ColorRamp terrain_colors[][NUM_COLOR_RAMP_LEVELS] = {
     {7000, { 255, 255, 255 }},
     {8500, { 255, 255, 255 }},
     {9000, { 255, 255, 255 }}
-  }
+  },
+  { // High Contrast
+    {0, { 255, 247, 239 }},
+    {200, { 225, 225, 225 }},
+    {300, { 242, 242, 242 }},
+    {400, { 204, 223, 192 }},
+    {500, { 153, 199, 144 }},
+    {700, { 51, 151, 48 }},
+    {900, { 255, 255, 0 }},
+    {1500, { 192, 128, 0 }},
+    {2000, { 139, 22, 0 }},
+    {3500, { 255, 255, 255 }},
+    {4500, { 175, 202, 242 }},
+    {5500, { 175, 202, 242 }},
+    {6000, { 175, 202, 242 }},
+   },
+   { // High Contrast low lands
+    {0, { 255, 247, 239 }},
+    {20, { 225, 225, 225 }},
+    {30, { 242, 242, 242 }},
+    {40, { 204, 223, 192 }},
+    {50, { 153, 199, 144 }},
+    {70, { 51, 151, 48 }},
+    {90, { 255, 255, 0 }},
+    {110, { 192, 128, 0 }},
+    {130, { 139, 22, 0 }},
+    {150, { 255, 255, 255 }},
+    {170, { 175, 202, 242 }},
+    {190, { 175, 202, 242 }},
+    {210, { 175, 202, 242 }},
+   },
+   { // Very low lands
+    {0, { 2, 77, 17 }}, 
+    {15,  { 2, 122, 58 }},
+    {25,  { 11, 128, 66 }},
+    {35,  { 6, 97, 19 }},
+    {45,  { 9, 110, 23 }},
+    {60,  { 11, 125, 27 }},
+    {70,  { 14, 140, 32 }},
+    {80,  { 18, 163, 39 }},
+    {95,  { 22, 196, 47}},
+    {105, { 122, 184, 29 }},
+    {115, { 186, 186, 17 }},
+    {130, { 135, 134, 134 }},
+    {145, { 232, 230, 230 }},
+   }
 };
 static_assert(ARRAY_SIZE(terrain_colors) == TerrainRendererSettings::NUM_RAMPS,
               "mismatched size");

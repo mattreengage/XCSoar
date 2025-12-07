@@ -1,25 +1,6 @@
-/* Copyright_License {
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
- */
- 
 #pragma once
 
 #include "util/TriState.hpp"
@@ -30,6 +11,7 @@
 #include "Geo/GeoPoint.hpp"
 #include "Geo/SearchPointVector.hpp"
 #include "RadioFrequency.hpp"
+#include "TransponderCode.hpp"
 
 #ifdef DO_PRINT
 #include <iosfwd>
@@ -58,7 +40,7 @@ private:
   const Shape shape;
 
   /** Airspace class */
-  AirspaceClass type;
+  AirspaceClass asclass;
 
 protected:
   mutable TriState is_convex;
@@ -73,8 +55,17 @@ protected:
   /** Airspace name (identifier) */
   tstring name;
 
+  /** Airspace type */
+  AirspaceClass astype;
+
+  /** Airspace Station name */
+  tstring station_name;
+
   /** Radio frequency (optional) */
   RadioFrequency radio_frequency = RadioFrequency::Null();
+
+  /** Transponder code (optional) */
+  TransponderCode transponder_code = TransponderCode::Null();
 
   /** Actual border */
   SearchPointVector m_border;
@@ -208,15 +199,23 @@ public:
    * Set fundamental properties of airspace
    *
    * @param _Name Name of airspace
-   * @param _Type Type/class
+   * @param _classs Class
+   * @param _type Type
    * @param _base Lower limit
    * @param _top Upper limit
    */
-  void SetProperties(tstring &&_name, const AirspaceClass _Type,
+
+  void SetProperties(tstring &&_name, tstring &&_station_name,
+                     TransponderCode &&_transponder_code,
+                     const AirspaceClass _class, const AirspaceClass _type,
                      const AirspaceAltitude &_base,
-                     const AirspaceAltitude &_top) noexcept {
+                     const AirspaceAltitude &_top) noexcept
+  {
     name = std::move(_name);
-    type = _Type;
+    station_name = std::move(_station_name);
+    transponder_code = std::move(_transponder_code);
+    asclass = _class;
+    astype = _type;
     altitude_base = _base;
     altitude_top = _top;
   }
@@ -231,6 +230,16 @@ public:
   }
 
   /**
+   * Set transponder code of airspace
+   *
+   * @param _code Radio frequency of airspace
+   */
+  void SetTransponderCode(TransponderCode _code) noexcept
+  {
+    transponder_code = _code;
+  }
+
+  /**
    * Set activation setting of the airspace
    *
    * @param _active New activation setting of airspace
@@ -240,12 +249,41 @@ public:
   }
 
   /**
-   * Get type of airspace
+   * Get asclass of airspace
    *
-   * @return Type/class of airspace
+   * @return Class of airspace
+   */
+  AirspaceClass GetClass() const noexcept {
+    return asclass;
+  }
+
+  /**
+   * Get Type of airspace
+   *
+   * @return Type of airspace
    */
   AirspaceClass GetType() const noexcept {
-    return type;
+    return astype;
+  }
+
+  /**
+    * Returns the airspace class type. If GetType() is AirspaceClass::OTHER,
+    * returns GetClass(), otherwise returns GetType()
+    *
+    * @return  AirspaceClass - The determined airspace class type
+    */
+  AirspaceClass GetTypeOrClass() const noexcept {
+    return GetType() == AirspaceClass::OTHER ? GetClass() : GetType();
+  }
+
+  /**
+    * Returns the airspace type. If GetClass() is AirspaceClass::UNCLASSIFIED,
+    * returns GetType(), otherwise returns GetClass()
+    *
+    * @return  AirspaceClass - The determined airspace class or type
+    */
+  AirspaceClass GetClassOrType() const noexcept {
+    return GetClass() == AirspaceClass::UNCLASSIFIED ? GetType() : GetClass();
   }
 
   /**
@@ -327,7 +365,12 @@ public:
     return name.c_str();
   }
 
-  /**
+  [[gnu::pure]]
+  const TCHAR *GetStationName() const noexcept {
+    return station_name.c_str();
+  }
+
+   /**
    * Returns true if the name begins with the specified string.
    */
   [[gnu::pure]]
@@ -336,6 +379,11 @@ public:
   [[gnu::pure]]
   RadioFrequency GetRadioFrequency() const noexcept {
     return radio_frequency;
+  }
+
+  [[gnu::pure]] TransponderCode GetTransponderCode() const noexcept
+  {
+    return transponder_code;
   }
 
   /**

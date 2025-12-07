@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "TaskEditPanel.hpp"
 #include "Internal.hpp"
@@ -49,6 +29,8 @@ Copyright_License {
 #include "util/Macros.hpp"
 #include "util/StringCompare.hxx"
 #include "UIGlobals.hpp"
+#include "Components.hpp"
+#include "DataComponents.hpp"
 
 #include <cassert>
 
@@ -147,12 +129,12 @@ TaskEditPanel::UpdateButtons()
 {
   const unsigned index = GetList().GetCursorIndex();
 
-  mutate_button->SetVisible(index > 0 &&
+  mutate_button->SetEnabled(index > 0 &&
                             (index == ordered_task->TaskSize() - 1) &&
                             !ordered_task->HasFinish());
-  down_button->SetVisible((int)index < ((int)(ordered_task->TaskSize()) - 1));
-  up_button->SetVisible(index > 0 && index < ordered_task->TaskSize());
-  reverse_button->SetVisible(ordered_task->TaskSize() >= 2);
+  down_button->SetEnabled((int)index < ((int)(ordered_task->TaskSize()) - 1));
+  up_button->SetEnabled(index > 0 && index < ordered_task->TaskSize());
+  reverse_button->SetEnabled(ordered_task->TaskSize() >= 2);
 }
 
 void
@@ -256,8 +238,8 @@ TaskEditPanel::OnPaintItem(Canvas &canvas, const PixelRect rc,
 
   if (show_leg_info) {
     // Draw leg distance
-    FormatUserDistanceSmart(leg.distance, buffer, true);
-    const int x1 = row_renderer.DrawRightFirstRow(canvas, rc, buffer);
+    const int x1 = row_renderer.DrawRightFirstRow(canvas, rc,
+                                                  FormatUserDistanceSmart(leg.distance));
 
     // Draw leg bearing
     FormatBearing(buffer, ARRAY_SIZE(buffer), leg.bearing);
@@ -313,7 +295,8 @@ TaskEditPanel::EditTaskPoint(unsigned ItemIndex)
 
     AbstractTaskFactory &factory = ordered_task->GetFactory();
     auto way_point =
-      ShowWaypointListDialog(ordered_task->TaskSize() > 0
+      ShowWaypointListDialog(*data_components->waypoints,
+                             ordered_task->TaskSize() > 0
                              ? ordered_task->GetPoint(ordered_task->TaskSize() - 1).GetLocation()
                              : CommonInterface::Basic().location,
                         ordered_task, ItemIndex);

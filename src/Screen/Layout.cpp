@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Screen/Layout.hpp"
 #include "ui/dim/Size.hpp"
@@ -29,21 +9,21 @@ Copyright_License {
 
 #include <algorithm>
 
-namespace Layout
-{
-  bool landscape = false;
-  unsigned min_screen_pixels = 512;
-  unsigned scale = 1;
-  unsigned scale_1024 = 1024;
-  unsigned pen_width_scale = 1024;
-  unsigned fine_pen_width_scale = 1024;
-  unsigned pt_scale = 1024;
-  unsigned vpt_scale = 1024;
-  unsigned font_scale = 1024;
-  unsigned text_padding = 2;
-  unsigned minimum_control_height = 20, maximum_control_height = 44;
-  unsigned hit_radius = 10;
-}
+namespace Layout {
+
+bool landscape = false;
+unsigned min_screen_pixels = 512;
+unsigned scale = 1;
+unsigned scale_1024 = 1024;
+unsigned pen_width_scale = 1024;
+unsigned fine_pen_width_scale = 1024;
+unsigned vdpi = 72;
+unsigned pt_scale = 1024;
+unsigned vpt_scale = 1024;
+unsigned font_scale = 1024;
+unsigned text_padding = 2;
+unsigned minimum_control_height = 20, maximum_control_height = 44;
+unsigned hit_radius = 10;
 
 /**
  * Is the given pixel size smaller than 5 inch?
@@ -87,8 +67,8 @@ GetDisplaySize([[maybe_unused]] const UI::Display &display, [[maybe_unused]] Pix
 }
 
 void
-Layout::Initialise(const UI::Display &display, PixelSize new_size,
-                   unsigned ui_scale, unsigned custom_dpi) noexcept
+Initialise(const UI::Display &display, PixelSize new_size,
+           unsigned ui_scale, unsigned custom_dpi) noexcept
 {
   const unsigned width = new_size.width, height = new_size.height;
 
@@ -96,34 +76,36 @@ Layout::Initialise(const UI::Display &display, PixelSize new_size,
   landscape = width > height;
   const bool square = width == height;
 
-  if (!ScaleSupported())
+  if constexpr (!ScaleSupported())
     return;
 
   const auto dpi = Display::GetDPI(display, custom_dpi);
   const bool is_small_screen = IsSmallScreen(GetDisplaySize(display, new_size),
                                              dpi);
 
+  const auto SmallScreenAdjust = [is_small_screen](unsigned value) constexpr noexcept {
+    if (is_small_screen)
+      /* small screens (on portable devices) use a smaller font because
+         the viewing distance is usually smaller */
+      value =  value * 2 / 3;
+    return value;
+  };
+
   // always start w/ shortest dimension
   // square should be shrunk
   scale_1024 = std::max(1024U, min_screen_pixels * 1024 / (square ? 320 : 240));
   scale = scale_1024 / 1024;
+
+  vdpi = SmallScreenAdjust(dpi.y);
 
   pen_width_scale = std::max(1024u, dpi.x * 1024u / 80u);
   fine_pen_width_scale = std::max(1024u, dpi.x * 1024u / 160u);
 
   pt_scale = 1024 * dpi.y / 72;
 
-  vpt_scale = pt_scale;
-  if (is_small_screen)
-    /* small screens (on portable devices) use a smaller font because
-       the viewing distance is usually smaller */
-    vpt_scale = vpt_scale * 2 / 3;
+  vpt_scale = SmallScreenAdjust(pt_scale);
 
-  font_scale = 1024 * dpi.y * ui_scale / 72 / 100;
-  if (is_small_screen)
-    /* small screens (on portable devices) use a smaller font because
-       the viewing distance is usually smaller */
-    font_scale = font_scale * 2 / 3;
+  font_scale = SmallScreenAdjust(1024 * dpi.y * ui_scale / 72 / 100);
 
   text_padding = VptScale(2);
 
@@ -139,5 +121,7 @@ Layout::Initialise(const UI::Display &display, PixelSize new_size,
     maximum_control_height = minimum_control_height;
   }
 
-  hit_radius = PtScale(HasTouchScreen() ? 24 : 6);
+  hit_radius = PtScale(HasTouchScreen() ? 28 : 6);
 }
+
+} // namespace Layout

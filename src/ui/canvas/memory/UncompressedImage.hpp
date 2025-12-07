@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -64,14 +44,14 @@ ConvertImage(WritableImageBuffer<PixelTraits> buffer,
   typename PixelTraits::rpointer dest = buffer.data;
 
   if (flipped) {
-    src += src_pitch * (buffer.height - 1);
+    src += src_pitch * (buffer.size.height - 1);
     src_pitch = -src_pitch;
   }
 
-  for (unsigned i = 0; i < buffer.height; ++i,
+  for (unsigned i = 0; i < buffer.size.height; ++i,
          dest = PixelTraits::NextRow(dest, buffer.pitch, 1),
          src += src_pitch)
-    ConvertLine<PixelTraits>(dest, Format{src}, buffer.width);
+    ConvertLine<PixelTraits>(dest, Format{src}, buffer.size.width);
 }
 
 /**
@@ -84,7 +64,7 @@ static inline void
 ImportSurface(WritableImageBuffer<PixelTraits> &buffer,
               const UncompressedImage &uncompressed) noexcept
 {
-  buffer.Allocate(uncompressed.GetWidth(), uncompressed.GetHeight());
+  buffer.Allocate(uncompressed.GetSize());
 
   switch (uncompressed.GetFormat()) {
   case UncompressedImage::Format::INVALID:

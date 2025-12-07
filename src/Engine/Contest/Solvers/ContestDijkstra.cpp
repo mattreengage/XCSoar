@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ContestDijkstra.hpp"
 #include "../ContestResult.hpp"
@@ -329,12 +309,12 @@ ContestDijkstra::AddIncrementalEdges(unsigned first_point) noexcept
   AddStartEdges();
 }
 
-void
-ContestDijkstra::CopySolution(ContestTraceVector &result) const noexcept
+const ContestTraceVector &
+ContestDijkstra::GetCurrentPath() const noexcept
 {
   assert(num_stages <= MAX_STAGES);
 
-  result = solution;
+  return solution;
 }
 
 void
@@ -373,7 +353,8 @@ OLC league:
 - Sprint arrival height is the altitude at the sprint end point.
 - The average speed (points) of each individual flight is the sum of
   the distances from sprint start, around up to three turnpoints, to the
-  sprint end divided DAeC index increased by 100, multiplied by 200 and
-  divided by 2.5h: [formula: Points = km / 2,5 * 200 / (Index+100)
+  sprint end divided by weighted (75%) DAeC index increased by 100, multiplied by 100 and
+  divided by 2h: [formula: Points = (km / 2.0) * 100 / ((Index-100) * 0.75 + 100)
 
+  https://www.onlinecontest.org/olc-3.0/segelflugszene/cms.html?url=rules_overview/b5_de
 */

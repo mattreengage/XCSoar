@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #define ENABLE_RESOURCE_LOADER
 #define ENABLE_PROFILE
@@ -27,25 +7,27 @@ Copyright_License {
 #define ENABLE_MAIN_WINDOW
 #define ENABLE_CLOSE_BUTTON
 #define ENABLE_LOOK
+#include "Airspace/AirspaceGlue.hpp"
+#include "Airspace/Patterns.hpp"
+#include "Blackboard/DeviceBlackboard.hpp"
+#include "Engine/Airspace/Airspaces.hpp"
+#include "Engine/Waypoint/Waypoints.hpp"
+#include "LogFile.hpp"
 #include "Main.hpp"
 #include "MapWindow/MapWindow.hpp"
-#include "Terrain/RasterTerrain.hpp"
-#include "Terrain/Loader.hpp"
-#include "Profile/ProfileKeys.hpp"
-#include "Profile/ComputerProfile.hpp"
-#include "Profile/MapProfile.hpp"
-#include "Profile/Current.hpp"
-#include "Waypoint/WaypointGlue.hpp"
-#include "Topography/TopographyStore.hpp"
-#include "Topography/TopographyGlue.hpp"
-#include "Blackboard/DeviceBlackboard.hpp"
-#include "Airspace/AirspaceParser.hpp"
-#include "Engine/Waypoint/Waypoints.hpp"
-#include "Engine/Airspace/Airspaces.hpp"
-#include "LogFile.hpp"
-#include "io/ConfiguredFile.hpp"
-#include "io/LineReader.hpp"
 #include "Operation/ConsoleOperationEnvironment.hpp"
+#include "Profile/ComputerProfile.hpp"
+#include "Profile/Current.hpp"
+#include "Profile/Keys.hpp"
+#include "Profile/MapProfile.hpp"
+#include "Terrain/Loader.hpp"
+#include "Terrain/RasterTerrain.hpp"
+#include "Topography/TopographyGlue.hpp"
+#include "Topography/TopographyStore.hpp"
+#include "Waypoint/WaypointGlue.hpp"
+#include "io/BufferedReader.hxx"
+#include "io/ConfiguredFile.hpp"
+#include "io/FileReader.hxx"
 #include "thread/Debug.hpp"
 
 void
@@ -119,7 +101,7 @@ LoadFiles(PlacesOfInterestSettings &poi_settings,
   ConsoleOperationEnvironment operation;
 
   topography = new TopographyStore();
-  LoadConfiguredTopography(*topography, operation);
+  LoadConfiguredTopography(*topography);
 
   terrain = RasterTerrain::OpenTerrain(nullptr, operation).release();
 
@@ -127,12 +109,13 @@ LoadFiles(PlacesOfInterestSettings &poi_settings,
   WaypointGlue::SetHome(way_points, terrain, poi_settings, team_code_settings,
                         NULL, false);
 
-  auto reader = OpenConfiguredTextFile(ProfileKeys::AirspaceFile,
-                                       Charset::AUTO);
-  if (reader) {
-    ParseAirspaceFile(airspace_database, *reader, operation);
-    airspace_database.Optimise();
+  const auto paths = Profile::GetMultiplePaths(ProfileKeys::AirspaceFileList,
+                                               AIRSPACE_FILE_PATTERNS);
+  for (auto it = paths.begin(); it < paths.end(); it++) {
+    ParseAirspaceFile(airspace_database, *it, operation);
   }
+
+  airspace_database.Optimise();
 }
 
 static void

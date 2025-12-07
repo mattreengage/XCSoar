@@ -1,24 +1,5 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
- */
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "AbortTask.hpp"
 #include "AbortIntersectionTest.hpp"
@@ -28,7 +9,6 @@
 #include "Task/Solvers/TaskSolution.hpp"
 #include "GlideSolvers/GlidePolar.hpp"
 #include "Waypoint/Waypoints.hpp"
-#include "util/Clamp.hpp"
 
 /** min search range in m */
 static constexpr double min_search_range = 50000;
@@ -104,8 +84,8 @@ AbortTask::GetAbortRange(const AircraftState &state,
                          const GlidePolar &glide_polar) const noexcept
 {
   // always scan at least min range or approx glide range
-  return Clamp(state.altitude * glide_polar.GetBestLD(),
-               min_search_range, max_search_range);
+  return std::clamp(state.altitude * glide_polar.GetBestLD(),
+                    min_search_range, max_search_range);
 }
 
 [[gnu::pure]]
@@ -166,11 +146,21 @@ AbortTask::FillReachable(const AircraftState &state,
     ++v;
   }
 
-  /* sort by arrival time */
-  std::sort(q.begin(), q.end(), [](const auto &x, const auto &y){
-    return x.solution.time_elapsed + x.solution.time_virtual <
-      y.solution.time_elapsed + y.solution.time_virtual;
-  });
+  /**
+   * If dealing with reachable points, sort by arrival altitude.
+   * Otherwise, sort by arrival time, which takes into account the wind
+   * drift while circling to gain the altitude needed to reach the point.
+   */
+  if (final_glide) {
+    std::sort(q.begin(), q.end(), [](const auto &x, const auto &y){
+      return x.solution.altitude_difference > y.solution.altitude_difference;
+    });
+  } else {
+    std::sort(q.begin(), q.end(), [](const auto &x, const auto &y){
+      return x.solution.time_elapsed + x.solution.time_virtual <
+        y.solution.time_elapsed + y.solution.time_virtual;
+    });
+  }
 
   const auto n = std::min(q.size(), max_abort - task_points.size());
   for (std::size_t j = 0; j < n; ++j) {
@@ -229,21 +219,44 @@ AbortTask::UpdateSample(const AircraftState &state,
     return false;
   }
 
-  // sort by arrival time
-
-  // first try with final glide only
+  /**
+   * First, get only reachable airfields (no outlanding sites), sort them by
+   * arrival altitude, and put them in task_points.
+   */
   reachable_landable |=  FillReachable(state, approx_waypoints, glide_polar,
                                        true, true, true);
+
+  /**
+   * Now add to task_points reachable outlanding sites, sorted by arrival
+   * altitude.
+   */
   reachable_landable |=  FillReachable(state, approx_waypoints, glide_polar,
                                        false, true, true);
 
-  // inform clients that the landable reachable scan has been performed 
+  /**
+   * Add to the "alternates" list the reachable airfield and outlanding site
+   * waypoints just added to task_points, sorted according to the "Alternates
+   * mode" setting.
+   */
   ClientUpdate(state, true);
 
-  // now try without final glide constraint and not preferring airports
+  /**
+   * Finally, add to task_points unreachable landable waypoints (both
+   * airfields and outlanding sites, with no preference for either),
+   * sorted by arrival time. This sort is done by arrival time instead of
+   * by arrival altitude, because for an unreachable point, climbing is
+   * required. Because any wind will cause drifting while climbing, the
+   * point requiring the least climbing is the one with the earliest
+   * arrival time, not necessarily the one with the greatest arrival
+   * altitude.
+   */
   FillReachable(state, approx_waypoints, glide_polar, false, false, false);
 
-  // inform clients that the landable unreachable scan has been performed 
+  /**
+   * Add to the "alternates" list the unreachable landable waypoints
+   * just added to task_points, sorted according to the "Alternates mode"
+   * setting.
+   */
   ClientUpdate(state, false);
 
   if (task_points.size()) {

@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WaypointCommandsWidget.hpp"
 #include "WaypointDialogs.hpp"
@@ -34,12 +14,15 @@ Copyright_License {
 #include "Interface.hpp"
 #include "Protection.hpp"
 #include "Components.hpp"
+#include "BackendComponents.hpp"
+#include "DataComponents.hpp"
 #include "Waypoint/WaypointGlue.hpp"
 #include "Pan.hpp"
 #include "Blackboard/DeviceBlackboard.hpp"
 #include "Operation/MessageOperationEnvironment.hpp"
 #include "Profile/Current.hpp"
 #include "ActionInterface.hpp"
+#include "Widget/RowFormWidget.hpp"
 
 static bool
 ReplaceInTask(ProtectedTaskManager &task_manager,
@@ -198,16 +181,17 @@ RemoveFromTask(ProtectedTaskManager &task_manager,
 }
 
 static void
-SetHome(const Waypoint &waypoint)
+SetHome(Waypoints *way_points, const Waypoint &waypoint)
 {
   ComputerSettings &settings_computer = CommonInterface::SetComputerSettings();
   settings_computer.poi.SetHome(waypoint);
 
   {
     ScopeSuspendAllThreads suspend;
-    WaypointGlue::SetHome(way_points, terrain,
-                          settings_computer.poi, settings_computer.team_code,
-                          device_blackboard, false);
+    if (way_points != nullptr)
+      WaypointGlue::SetHome(*way_points, data_components->terrain.get(),
+                            settings_computer.poi, settings_computer.team_code,
+                            backend_components->device_blackboard.get(), false);
     WaypointGlue::SaveHome(Profile::map,
                            settings_computer.poi, settings_computer.team_code);
   }
@@ -220,77 +204,91 @@ ActivatePan(const Waypoint &waypoint)
 }
 
 void
+WaypointCommandsWidget::UpdateButtons()
+{
+  has_freq = waypoint->radio_frequency.IsDefined();
+  SetRowEnabled(REPLACE_IN_TASK, task_manager != nullptr);
+  SetRowEnabled(INSERT_IN_TASK, task_manager != nullptr);
+  SetRowEnabled(APPEND_TO_TASK, task_manager != nullptr);
+  SetRowEnabled(REMOVE_FROM_TASK, task_manager != nullptr && MapTaskManager::GetIndexInTask(*waypoint) >= 0);
+  
+  SetRowEnabled(SET_ACTIVE_FREQUENCY, has_freq);
+  SetRowEnabled(SET_STANDBY_FREQUENCY, has_freq);
+  
+  SetRowEnabled(EDIT, allow_edit && waypoints != nullptr);
+}
+
+void
 WaypointCommandsWidget::Prepare(ContainerWindow &parent,
                                 const PixelRect &rc) noexcept
 {
+
   RowFormWidget::Prepare(parent, rc);
+  
+  replace_button = AddButton(_("Replace in Task"), [this](){
+    if (ReplaceInTask(*task_manager, waypoint) && form != nullptr)
+      form->SetModalResult(mrOK);
+  });
 
-  if (task_manager != nullptr) {
-    AddButton(_("Replace in Task"), [this](){
-      if (ReplaceInTask(*task_manager, waypoint) && form != nullptr)
+  insert_button = AddButton(_("Insert in Task"), [this](){
+    if (InsertInTask(*task_manager, waypoint) && form != nullptr)
+      form->SetModalResult(mrOK);
+  });
+
+  append_button = AddButton(_("Append to Task"), [this](){
+    if (AppendToTask(*task_manager, waypoint) && form != nullptr)
+      form->SetModalResult(mrOK);
+  });
+    
+  remove_button = AddButton(_("Remove from Task"), [this](){
+      if (RemoveFromTask(*task_manager, *waypoint) && form != nullptr)
         form->SetModalResult(mrOK);
     });
-
-    AddButton(_("Insert in Task"), [this](){
-      if (InsertInTask(*task_manager, waypoint) && form != nullptr)
-        form->SetModalResult(mrOK);
-    });
-
-    AddButton(_("Append to Task"), [this](){
-      if (AppendToTask(*task_manager, waypoint) && form != nullptr)
-        form->SetModalResult(mrOK);
-    });
-
-    if (MapTaskManager::GetIndexInTask(*waypoint) >= 0)
-      AddButton(_("Remove from Task"), [this](){
-        if (RemoveFromTask(*task_manager, *waypoint) && form != nullptr)
-          form->SetModalResult(mrOK);
-      });
-  }
-
-  AddButton(_("Set as New Home"), [this](){
-    SetHome(*waypoint);
+  
+  home_button = AddButton(_("Set as New Home"), [this](){
+    SetHome(waypoints, *waypoint);
     if (form != nullptr)
       form->SetModalResult(mrOK);
   });
 
-  AddButton(_("Pan to Waypoint"), [this](){
+  pan_button = AddButton(_("Pan to Waypoint"), [this](){
     if (ActivatePan(*waypoint) && form != nullptr)
       form->SetModalResult(mrOK);
   });
+  
 
-  AddButton(_("Set Active Frequency"), [this](){
+  set_active_button = AddButton(_("Set Active Frequency"), [this](){
     ActionInterface::SetActiveFrequency(waypoint->radio_frequency,
                                         waypoint->name.c_str());
   });
 
-  AddButton(_("Set Standby Frequency"), [this](){
+  set_standby_button = AddButton(_("Set Standby Frequency"), [this](){
     ActionInterface::SetStandbyFrequency(waypoint->radio_frequency,
                                          waypoint->name.c_str());
   });
+  
+  edit_button = AddButton(_("Edit"), [this](){
+    Waypoint wp_copy = *waypoint;
 
-  if (allow_edit)
-    AddButton(_("Edit"), [this](){
-      Waypoint wp_copy = *waypoint;
+  /* move to user.cup */
+  wp_copy.origin = WaypointOrigin::USER;
 
-      /* move to user.cup */
-      wp_copy.origin = WaypointOrigin::USER;
+  if (dlgWaypointEditShowModal(wp_copy) == WaypointEditResult::MODIFIED) {
+    // TODO: refresh data instead of closing dialog?
+    form->SetModalResult(mrOK);
 
-      if (dlgWaypointEditShowModal(wp_copy) == WaypointEditResult::MODIFIED) {
-        // TODO: refresh data instead of closing dialog?
-        form->SetModalResult(mrOK);
+    {
+      ScopeSuspendAllThreads suspend;
+      waypoints->Replace(waypoint, std::move(wp_copy));
+      waypoints->Optimise();
+    }
 
-        {
-          ScopeSuspendAllThreads suspend;
-          way_points.Replace(waypoint, std::move(wp_copy));
-          way_points.Optimise();
-        }
-
-        try {
-          WaypointGlue::SaveWaypoints(way_points);
-        } catch (...) {
-          ShowError(std::current_exception(), _("Failed to save waypoints"));
-        }
-      }
-    });
+    try {
+      WaypointGlue::SaveWaypoints(*waypoints);
+    } catch (...) {
+      ShowError(std::current_exception(), _("Failed to save waypoints"));
+    }
+    }
+  });
+  UpdateButtons();
 }

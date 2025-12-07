@@ -1,32 +1,15 @@
-/*
-  Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
 #include "ui/window/PaintWindow.hpp"
+#include "Renderer/RadarRenderer.hpp"
 #include "FLARM/List.hpp"
 #include "TeamCode/Settings.hpp"
 #include "Math/FastRotation.hpp"
+#include "Renderer/TextInBox.hpp"
+#include "ui/canvas/Pen.hpp"
 
 #include <cstdint>
 
@@ -41,6 +24,8 @@ class FlarmTrafficWindow : public PaintWindow {
 protected:
   const FlarmTrafficLook &look;
 
+  RadarRenderer radar_renderer;
+
   /**
    * The distance of the biggest circle in meters.
    */
@@ -48,18 +33,6 @@ protected:
 
   int selection = -1;
   int warning = -1;
-  PixelPoint radar_mid;
-
-  /**
-   * The minimum distance between the window boundary and the biggest
-   * circle in pixels.
-   */
-  const unsigned h_padding, v_padding;
-
-  /**
-   * The radius of the biggest circle in pixels.
-   */
-  unsigned radius;
 
   const bool small;
 
@@ -70,7 +43,6 @@ protected:
   FastRotation fr;
   FastIntegerRotation fir;
   TrafficList data;
-  Validity data_modified;
   TeamCodeSettings settings;
 
 public:
@@ -143,4 +115,18 @@ protected:
 
   /* virtual methods from class PaintWindow */
   void OnPaint(Canvas &canvas) noexcept override;
+
+private:
+  /**
+   * Renders a FLARM target that has no position data.
+   * Draws an optional distance ring, a dot, and an exclamation mark.
+   */
+  void PaintNoPositionTarget(Canvas &canvas,
+                           const PixelPoint &target_point,
+                           const PixelPoint &radar_center,
+                           double scale,
+                           bool small,
+                           const PixelSize &sx,
+                           const Pen *target_pen,
+                           const Color *text_color) const noexcept;
 };

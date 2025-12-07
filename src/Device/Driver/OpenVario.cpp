@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/OpenVario.hpp"
 #include "Device/Driver.hpp"
@@ -31,6 +11,8 @@ Copyright_License {
 #include "Units/System.hpp"
 #include "Operation/Operation.hpp"
 #include "LogFile.hpp"
+
+using std::string_view_literals::operator""sv;
 
 class OpenVarioDevice : public AbstractDevice {
   Port &port;
@@ -295,17 +277,22 @@ OpenVarioDevice::POV(NMEAInputLine &line, NMEAInfo &info)
 
     if (type == '?') {
       NullOperationEnvironment env;
-      char query_item[5];
 
       for (int i=0;i < 10;i++) { // not more than 10 loops!
-        line.Read(query_item,sizeof(query_item));
-        if (strlen(query_item) == 0) return true;
+        const auto query_item = line.ReadView();
+        if (query_item.empty())
+          return true;
 
-        if (StringIsEqual(query_item,"WL")) RepeatBallast(env);
-        else if (StringIsEqual(query_item,"BU")) RepeatBugs(env);
-        else if (StringIsEqual(query_item,"MC")) RepeatMacCready(env);
-        else if (StringIsEqual(query_item,"IPO")) RepeatIdealPolar(env);
-        else if (StringIsEqual(query_item,"RPO")) RepeatRealPolar(env);
+        if (query_item == "WL"sv)
+          RepeatBallast(env);
+        else if (query_item == "BU"sv)
+          RepeatBugs(env);
+        else if (query_item == "MC"sv)
+          RepeatMacCready(env);
+        else if (query_item == "IPO"sv)
+          RepeatIdealPolar(env);
+        else if (query_item == "RPO"sv)
+          RepeatRealPolar(env);
       }
       return false;
     }

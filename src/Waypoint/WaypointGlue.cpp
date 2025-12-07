@@ -1,39 +1,20 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WaypointGlue.hpp"
 #include "Factory.hpp"
-#include "WaypointFileType.hpp"
-#include "Profile/Profile.hpp"
-#include "LogFile.hpp"
-#include "Waypoint/Waypoints.hpp"
-#include "WaypointReader.hpp"
 #include "Language/Language.hpp"
 #include "LocalPath.hpp"
+#include "LogFile.hpp"
 #include "Operation/Operation.hpp"
-#include "system/Path.hpp"
+#include "Patterns.hpp"
+#include "Profile/Profile.hpp"
+#include "Waypoint/Waypoints.hpp"
+#include "WaypointFileType.hpp"
+#include "WaypointReader.hpp"
 #include "io/MapFile.hpp"
 #include "io/ZipArchive.hpp"
+#include "system/Path.hpp"
 
 namespace WaypointGlue {
 
@@ -96,27 +77,21 @@ LoadWaypoints(Waypoints &way_points, const RasterTerrain *terrain,
   // Delete old waypoints
   way_points.Clear();
 
-  LoadWaypointFile(way_points, LocalPath(_T("user.cup")),
-                   WaypointFileType::SEEYOU,
-                   WaypointOrigin::USER, terrain, progress);
-
   // ### FIRST FILE ###
-  auto path = Profile::GetPath(ProfileKeys::WaypointFile);
-  if (path != nullptr)
+  auto paths = Profile::GetMultiplePaths(ProfileKeys::WaypointFileList,
+                                         WAYPOINT_FILE_PATTERNS);
+  for (const auto &path : paths) {
     found |= LoadWaypointFile(way_points, path, WaypointOrigin::PRIMARY,
                               terrain, progress);
-
-  // ### SECOND FILE ###
-  path = Profile::GetPath(ProfileKeys::AdditionalWaypointFile);
-  if (path != nullptr)
-    found |= LoadWaypointFile(way_points, path, WaypointOrigin::ADDITIONAL,
-                              terrain, progress);
+  }
 
   // ### WATCHED WAYPOINT/THIRD FILE ###
-  path = Profile::GetPath(ProfileKeys::WatchedWaypointFile);
-  if (path != nullptr)
+  paths = Profile::GetMultiplePaths(ProfileKeys::WatchedWaypointFileList,
+                                    WAYPOINT_FILE_PATTERNS);
+  for (const auto &path : paths) {
     found |= LoadWaypointFile(way_points, path, WaypointOrigin::WATCHED,
                               terrain, progress);
+  }
 
   // ### MAP/FOURTH FILE ###
 
@@ -139,7 +114,10 @@ LoadWaypoints(Waypoints &way_points, const RasterTerrain *terrain,
                "Failed to load waypoints from map file");
     }
   }
-
+  //Load user.cup
+  LoadWaypointFile(way_points, LocalPath(_T("user.cup")),
+                   WaypointFileType::SEEYOU,
+                   WaypointOrigin::USER, terrain, progress);
   // Optimise the waypoint list after attaching new waypoints
   way_points.Optimise();
 

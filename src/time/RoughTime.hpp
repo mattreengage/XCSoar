@@ -1,106 +1,71 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
 #include "Stamp.hpp"
+#include "RoughTimeDecl.hpp"
 
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 
 /**
- * This data type stores a time of day with minute granularity.
+ * Data type to define a time of day with parameterized granularity.
  */
-class RoughTime {
-  using Duration = std::chrono::duration<uint16_t,
-                                         std::chrono::minutes::period>;
+template <typename Duration>
+class TimeSinceMidnight {
 
   static constexpr auto INVALID = Duration::max();
   static constexpr Duration MAX = std::chrono::hours{24};
 
   /**
-   * Minute of day.  Must be smaller than 24*60.  The only exception
-   * is the special value #INVALID.
+   * std::chrono::duration since midnight.  
+   * Must be smaller than the equivalet of 24 hours.
+   * The only exception is the special value #INVALID.
    */
   Duration value;
 
-  constexpr RoughTime(Duration _value) noexcept
+  constexpr TimeSinceMidnight(Duration _value) noexcept
     :value(_value) {}
 
-public:
-  RoughTime() noexcept = default;
+  /**
+   * Normalizes any duration since midnight into interval [0, 24h)
+   */
+  template <typename D>
+  static constexpr D NormalizedDuration(D since_midnight) noexcept {
+    constexpr D _24H = std::chrono::duration_cast<D>(MAX);
+    while (since_midnight < D(0) )
+      since_midnight += _24H;
 
-  constexpr RoughTime(unsigned hour, unsigned minute) noexcept
+    if constexpr (std::is_floating_point_v<typename D::rep>)
+      since_midnight= D( std::fmod(since_midnight.count(), _24H.count()) );
+    else
+      since_midnight = since_midnight % _24H;
+
+    return since_midnight;
+  }
+
+public:
+  TimeSinceMidnight() noexcept = default;
+
+  constexpr TimeSinceMidnight(unsigned hour, unsigned minute) noexcept
     :value(std::chrono::duration_cast<Duration>(std::chrono::hours{hour}) +
            std::chrono::duration_cast<Duration>(std::chrono::minutes{minute}))
   {
   }
 
-  static constexpr RoughTime FromMinuteOfDay(unsigned mod) noexcept {
-    assert(std::chrono::minutes{mod} < MAX);
-
-    return RoughTime(std::chrono::minutes{mod});
+  static constexpr TimeSinceMidnight FromMinuteOfDayChecked(int mod) noexcept {
+    return TimeSinceMidnight( NormalizedDuration(std::chrono::minutes(mod)) );
   }
 
-  /**
-   * Construct a #RoughTime object from the specified duration since
-   * midnight.
-   */
-  template<class Rep, class Period>
-  static constexpr RoughTime FromSinceMidnight(const std::chrono::duration<Rep,Period> &since_midnight) noexcept {
-    return FromMinuteOfDay(std::chrono::duration_cast<std::chrono::minutes>(since_midnight).count());
+  explicit constexpr TimeSinceMidnight(TimeStamp t) noexcept 
+    :value( std::chrono::duration_cast<Duration>(NormalizedDuration(t.ToDuration())) )
+  { 
   }
 
-  static constexpr RoughTime FromMinuteOfDayChecked(int mod) noexcept {
-    while (mod < 0)
-      mod += MAX.count();
-
-    return FromMinuteOfDayChecked(unsigned(mod));
-  }
-
-  /**
-   * A wrapper for FromSinceMidnight() which allows values bigger than
-   * one day.
-   */
-  template<class Rep, class Period>
-  static constexpr RoughTime FromSinceMidnightChecked(const std::chrono::duration<Rep,Period> &since_midnight) noexcept {
-    return FromMinuteOfDayChecked((int)std::chrono::duration_cast<std::chrono::minutes>(since_midnight).count());
-  }
-
-  static constexpr RoughTime FromMinuteOfDayChecked(unsigned mod) noexcept {
-    return RoughTime(std::chrono::minutes{mod % MAX.count()});
-  }
-
-  static constexpr RoughTime FromSecondOfDayChecked(unsigned sod) noexcept {
-    return FromMinuteOfDayChecked(sod / 60);
-  }
-
-  explicit constexpr RoughTime(TimeStamp t) noexcept
-    :RoughTime(FromSinceMidnightChecked(t.ToDuration())) {}
-
-  static constexpr RoughTime Invalid() noexcept {
-    return RoughTime(INVALID);
+  static constexpr TimeSinceMidnight Invalid() noexcept {
+    return TimeSinceMidnight(INVALID);
   }
 
   void SetInvalid() noexcept {
@@ -111,28 +76,28 @@ public:
     return value != INVALID;
   }
 
-  constexpr bool operator ==(RoughTime other) const noexcept {
+  constexpr bool operator ==(TimeSinceMidnight other) const noexcept {
     return value == other.value;
   }
 
-  constexpr bool operator !=(RoughTime other) const noexcept {
+  constexpr bool operator !=(TimeSinceMidnight other) const noexcept {
     return value != other.value;
   }
 
-  constexpr bool operator <(RoughTime other) const noexcept {
+  constexpr bool operator <(TimeSinceMidnight other) const noexcept {
     /* this formula supports midnight wraparound */
     return (MAX - Duration{1} + other.value - value) % MAX < MAX / 2;
   }
 
-  constexpr bool operator >(RoughTime other) const noexcept {
+  constexpr bool operator >(TimeSinceMidnight other) const noexcept {
     return other < *this;
   }
 
-  constexpr bool operator <=(RoughTime other) const noexcept {
+  constexpr bool operator <=(TimeSinceMidnight other) const noexcept {
     return !(*this > other);
   }
 
-  constexpr bool operator >=(RoughTime other) const noexcept {
+  constexpr bool operator >=(TimeSinceMidnight other) const noexcept {
     return !(*this < other);
   }
 
@@ -141,14 +106,14 @@ public:
   }
 
   constexpr unsigned GetMinute() const noexcept {
-    return value.count() % 60;
+    return std::chrono::duration_cast<std::chrono::minutes>(value).count() % 60;
   }
 
   constexpr unsigned GetMinuteOfDay() const noexcept {
-    return value.count();
+    return std::chrono::duration_cast<std::chrono::minutes>(value).count();
   }
 
-  RoughTime &operator++() noexcept {
+  TimeSinceMidnight &operator++() noexcept {
     assert(IsValid());
     assert(value < MAX);
 
@@ -156,7 +121,7 @@ public:
     return *this;
   }
 
-  RoughTime &operator--() noexcept {
+  TimeSinceMidnight &operator--() noexcept {
     assert(IsValid());
     assert(value < MAX);
 
@@ -167,58 +132,82 @@ public:
   constexpr operator TimeStamp() const noexcept {
     return TimeStamp{value};
   }
+
+  // Conversions
+  friend constexpr inline FineTime ToFineTime(const RoughTime &t) noexcept;
+  friend constexpr inline RoughTime ToRoughTime(const FineTime &t) noexcept;
 };
 
+constexpr inline FineTime ToFineTime(const RoughTime &t) noexcept {
+  return t.IsValid() ? FineTime( t.value ) : FineTime::Invalid();
+}
+
+constexpr inline RoughTime ToRoughTime(const FineTime &t) noexcept {
+  return t.IsValid() ? RoughTime( std::chrono::duration_cast<UnsignedMinutes>(t.value) ) :
+                       RoughTime::Invalid();
+}
+
 /**
- * A data type that stores a time span: start end end time of day with
- * minute granularity.  This object may be "undefined", i.e. no time
- * span was specified.  Either start or end may be "invalid",
- * i.e. there is no limitation on that side.
+ * A data type that stores a time span: start and end time of day.
+ * This object may be "undefined", i.e. no time span was specified.
+ * Either start or end may be "invalid", i.e. there is no limitation on that side.
  */
-class RoughTimeSpan {
-  RoughTime start;
+class TimeSpan {
+  FineTime start;
 
   /**
    * The end of the span (excluding).  This may be bigger than #start
    * if there's a midnight wraparound.
    */
-  RoughTime end;
+  FineTime end;
 
 public:
-  RoughTimeSpan() noexcept = default;
+  TimeSpan() noexcept = default;
 
-  constexpr RoughTimeSpan(RoughTime _start, RoughTime _end) noexcept
+  constexpr TimeSpan(FineTime _start, FineTime _end) noexcept
     :start(_start), end(_end) {}
 
-  static constexpr RoughTimeSpan Invalid() noexcept {
-    return RoughTimeSpan(RoughTime::Invalid(), RoughTime::Invalid());
+  static constexpr TimeSpan FromRoughTimes(RoughTime _start, RoughTime _end) noexcept {
+    return TimeSpan( ToFineTime(_start), ToFineTime(_end) );
   }
 
-  constexpr const RoughTime &GetStart() const noexcept {
+  static constexpr TimeSpan Invalid() noexcept {
+    return TimeSpan(FineTime::Invalid(), FineTime::Invalid());
+  }
+
+  constexpr FineTime GetStart() const noexcept {
     return start;
   }
 
-  constexpr const RoughTime &GetEnd() const noexcept {
+  constexpr FineTime GetEnd() const noexcept {
     return end;
+  }
+
+  constexpr RoughTime GetRoughStart() const noexcept {
+    return ToRoughTime(start);
+  }
+
+  constexpr RoughTime GetRoughEnd() const noexcept {
+    return ToRoughTime(end);
   }
 
   constexpr bool IsDefined() const noexcept {
     return start.IsValid() || end.IsValid();
   }
 
-  constexpr bool HasBegun(RoughTime now) const noexcept {
+  constexpr bool HasBegun(FineTime now) const noexcept {
     /* if start is invalid, we assume the time span has always already
        begun */
     return !start.IsValid() || now >= start;
   }
 
-  constexpr bool HasEnded(RoughTime now) const noexcept {
+  constexpr bool HasEnded(FineTime now) const noexcept {
     /* if end is invalid, the time span is open-ended, i.e. it will
        never end */
     return end.IsValid() && now >= end;
   }
 
-  constexpr bool IsInside(RoughTime now) const noexcept {
+  constexpr bool IsInside(FineTime now) const noexcept {
     return HasBegun(now) && !HasEnded(now);
   }
 };
@@ -259,7 +248,7 @@ public:
 
   template<class Rep, class Period>
   [[gnu::const]]
-  static RoughTimeDelta FromDuration(const std::chrono::duration<Rep,Period> &d) noexcept {
+  static RoughTimeDelta FromDuration(const std::chrono::duration<Rep,Period> d) noexcept {
     return RoughTimeDelta{std::chrono::duration_cast<Duration>(d)};
   }
 
@@ -303,3 +292,4 @@ operator-(RoughTime t, RoughTimeDelta delta) noexcept
 {
   return t + (-delta);
 }
+

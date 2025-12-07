@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Places.hpp"
 #include "InfoBoxes/Data.hpp"
@@ -29,6 +9,8 @@ Copyright_License {
 #include "Interface.hpp"
 #include "Language/Language.hpp"
 #include "Formatter/Units.hpp"
+#include "Engine/GlideSolvers/GlideState.hpp"
+#include "Engine/GlideSolvers/MacCready.hpp"
 
 void
 UpdateInfoBoxHomeDistance(InfoBoxData &data) noexcept
@@ -49,6 +31,43 @@ UpdateInfoBoxHomeDistance(InfoBoxData &data) noexcept
     data.SetCommentFromBearingDifference(bd);
   } else
     data.SetCommentInvalid();
+}
+
+void
+UpdateInfoBoxHomeAltitudeDiff(InfoBoxData &data) noexcept
+{
+  const NMEAInfo &basic = CommonInterface::Basic();
+  const ComputerSettings &settings = CommonInterface::GetComputerSettings();
+  const CommonStats &common_stats = CommonInterface::Calculated().common_stats;
+  const MoreData &more_data = CommonInterface::Basic();
+  const DerivedInfo &calculated = CommonInterface::Calculated();
+
+  if (!basic.location_available ||
+      !more_data.NavAltitudeAvailable() ||
+      !settings.polar.glide_polar_task.IsValid() ||
+      !common_stats.vector_home.IsValid() ||
+      !settings.poi.home_location_available ||
+      !settings.poi.home_elevation_available) {
+    data.SetInvalid();
+    data.SetCommentInvalid();
+    return;
+  }
+
+  const GlideState glide_state(
+    basic.location.DistanceBearing(settings.poi.home_location),
+    settings.poi.home_elevation + settings.task.safety_height_arrival,
+    more_data.nav_altitude,
+    calculated.GetWindOrZero());
+
+  const GlideResult &result =
+    MacCready::Solve(settings.task.glide,
+                     settings.polar.glide_polar_task,
+                     glide_state);
+
+  // Display altitude difference and distance.
+  data.SetValueFromArrival(result.
+                           SelectAltitudeDifference(settings.task.glide));
+  data.SetCommentFromDistance(common_stats.vector_home.distance);
 }
 
 void

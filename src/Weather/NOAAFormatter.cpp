@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "NOAAFormatter.hpp"
 #include "Units/Units.hpp"
@@ -98,12 +78,9 @@ FormatDecodedMETARLine(const TCHAR *line, unsigned length,
       buffer.Format(_T("%s: "), _("Wind"));
       buffer.append({value, value_length});
     } else {
-      TCHAR wind_speed_buffer[16];
-      FormatUserWindSpeed(parsed.wind.norm, wind_speed_buffer,
-                                 ARRAY_SIZE(wind_speed_buffer));
-
       buffer.Format(_T("%s: %.0f" DEG " %s"), _("Wind"),
-                    (double)parsed.wind.bearing.Degrees(), wind_speed_buffer);
+                    (double)parsed.wind.bearing.Degrees(),
+                    FormatUserWindSpeed(parsed.wind.norm).c_str());
     }
     output += buffer;
     output += '\n';
@@ -118,8 +95,7 @@ FormatDecodedMETARLine(const TCHAR *line, unsigned length,
       buffer.append({value, value_length});
     } else {
       TCHAR temperature_buffer[16];
-      FormatUserTemperature(parsed.temperature, temperature_buffer,
-                                   ARRAY_SIZE(temperature_buffer));
+      FormatUserTemperature(parsed.temperature, temperature_buffer);
 
       buffer.Format(_T("%s: %s"), _("Temperature"), temperature_buffer);
     }
@@ -136,8 +112,7 @@ FormatDecodedMETARLine(const TCHAR *line, unsigned length,
       buffer.append({value, value_length});
     } else {
       TCHAR temperature_buffer[16];
-      FormatUserTemperature(parsed.dew_point, temperature_buffer,
-                                   ARRAY_SIZE(temperature_buffer));
+      FormatUserTemperature(parsed.dew_point, temperature_buffer);
 
       buffer.Format(_T("%s: %s"), _("Dew Point"), temperature_buffer);
     }
@@ -154,7 +129,7 @@ FormatDecodedMETARLine(const TCHAR *line, unsigned length,
       buffer.append({value, value_length});
     } else {
       TCHAR qnh_buffer[16];
-      FormatUserPressure(parsed.qnh, qnh_buffer, ARRAY_SIZE(qnh_buffer));
+      FormatUserPressure(parsed.qnh, qnh_buffer);
 
       buffer.Format(_T("%s: %s"), _("Pressure"), qnh_buffer);
     }

@@ -1,27 +1,5 @@
-/*
-
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "PopupMessage.hpp"
 #include "ui/window/SingleWindow.hpp"
@@ -150,33 +128,21 @@ PopupMessage::CalculateWidth() const noexcept
 {
   if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP_LEFT)
     // TODO code: this shouldn't be hard-coded
-    return Layout::FastScale(206);
+    return rc.GetWidth();
   else
     return unsigned(rc.GetWidth() * 0.9);
 }
 
 PixelRect
-PopupMessage::GetRect(unsigned width, unsigned height) const noexcept
+PopupMessage::GetRect(PixelSize size) const noexcept
 {
-  PixelRect rthis;
-
   if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP_LEFT) {
-    rthis.top = 0;
-    rthis.left = 0;
-    rthis.bottom = height;
-    rthis.right = width;
+    return PixelRect{rc.left, rc.top,
+                     static_cast<int>(rc.left) + static_cast<int>(size.width),
+                     static_cast<int>(rc.top) + static_cast<int>(size.height)};
   } else {
-    const int midx = (rc.right + rc.left) / 2;
-    const int midy = (rc.bottom + rc.top) / 2;
-    const int h1 = height / 2;
-    const int h2 = height - h1;
-    rthis.left = midx-width/2;
-    rthis.right = midx+width/2;
-    rthis.top = midy-h1;
-    rthis.bottom = midy+h2;
+    return PixelRect::Centered(rc.GetCenter(), size);
   }
-
-  return rthis;
 }
 
 PixelRect
@@ -186,7 +152,7 @@ PopupMessage::GetRect() const noexcept
   const unsigned height = renderer.GetHeight(look.text_font, width, text)
     + 2 * Layout::GetTextPadding();
 
-  return GetRect(width, height);
+  return GetRect({width, height});
 }
 
 void
@@ -331,15 +297,17 @@ PopupMessage::Acknowledge(Type type) noexcept
 // DoMessage is designed to delegate what to do for a message
 // The "what to do" can be defined in a configuration file
 // Defaults for each message include:
-//	- Text to display (including multiple languages)
-//	- Text to display extra - NOT multiple language
-//		(eg: If Airspace Warning - what details - airfield name is in data file, already
-//		covers multiple languages).
-//	- ShowStatusMessage - including font size and delay
-//	- Sound to play - What sound to play
-//	- Log - Keep the message on the log/history window (goes to log file and history)
+//  - Text to display (including multiple languages)
+//  - Text to display extra - NOT multiple language
+//    (eg: If Airspace Warning - what details - airfield name is in data file,
+//    already covers multiple languages).
+//  - ShowStatusMessage - including font size and delay
+//  - Sound to play - What sound to play
+//  - Log - Keep the message on the log/history window (goes to log file and
+//  history)
 //
-// TODO code: (need to discuss) Consider moving almost all this functionality into AddMessage ?
+// TODO code: (need to discuss) Consider moving almost all this functionality
+// into AddMessage ?
 
 void
 PopupMessage::AddMessage(const TCHAR* text, const TCHAR *data) noexcept

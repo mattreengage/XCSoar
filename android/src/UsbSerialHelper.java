@@ -1,24 +1,5 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; version 2
-  of the License.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright The XCSoar Project
 
 package org.xcsoar;
 
@@ -38,6 +19,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.hardware.usb.UsbConstants;
 import android.os.Build;
 import android.util.Log;
 
@@ -63,12 +45,20 @@ public final class UsbSerialHelper extends BroadcastReceiver {
     createDevice(0x0403, 0x6015), // Digifly AIR (FT X-Series)
     createDevice(0x0483, 0x5740), // SoftRF Dongle
     createDevice(0x239A, 0x8029), // SoftRF Badge
+    createDevice(0x2341, 0x0069), // SoftRF Academy
+    createDevice(0x2341, 0x1002), // SoftRF Academy
     createDevice(0x2341, 0x804d), // SoftRF Academy
+    createDevice(0x239A, 0xCAFE), // SoftRF Academy
     createDevice(0x1d50, 0x6089), // SoftRF ES
     createDevice(0x2e8a, 0x000a), // SoftRF Lego
     createDevice(0x2e8a, 0xf00a), // SoftRF Lego
     createDevice(0x15ba, 0x0044), // SoftRF Balkan
+    createDevice(0x303a, 0x1001), // SoftRF Eco
     createDevice(0x303a, 0x8133), // SoftRF Prime Mk3
+    createDevice(0x303a, 0x818f), // SoftRF Ham
+    createDevice(0x303a, 0x81a0), // SoftRF Midi
+    createDevice(0x303a, 0x820a), // SoftRF Ink
+    createDevice(0x2886, 0x0057), // SoftRF Card
 
     createDevice(0x0403, 0x6001), // FT232AM, FT232BM, FT232R FT245R,
     createDevice(0x0403, 0x6010), // FT2232D, FT2232H
@@ -180,7 +170,7 @@ public final class UsbSerialHelper extends BroadcastReceiver {
     }
 
     public synchronized void permissionGranted() {
-      if (!port.isOpen())
+      if (port != null && !port.isOpen())
         port.open(usbmanager, device, iface);
     }
 
@@ -318,9 +308,12 @@ public final class UsbSerialHelper extends BroadcastReceiver {
         /* still exists */
         continue;
 
-      UsbDeviceInterface deviface = new UsbDeviceInterface(device, iface);
-      interfaces.add(deviface);
-      broadcastDetectedDeviceInterface(deviface);
+      int iclass = device.getInterface(iface).getInterfaceClass();
+      if (iclass == UsbConstants.USB_CLASS_VENDOR_SPEC || iclass == UsbConstants.USB_CLASS_CDC_DATA) {
+        UsbDeviceInterface deviface = new UsbDeviceInterface(device, iface);
+        interfaces.add(deviface);
+        broadcastDetectedDeviceInterface(deviface);
+      }
     }
   }
 
@@ -377,7 +370,7 @@ public final class UsbSerialHelper extends BroadcastReceiver {
     PendingIntent pi =
       PendingIntent.getBroadcast(context, 0,
                                  new Intent(UsbSerialHelper.ACTION_USB_PERMISSION),
-                                 0);
+                                 PendingIntent.FLAG_IMMUTABLE);
 
     usbmanager.requestPermission(device, pi);
   }

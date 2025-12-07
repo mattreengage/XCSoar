@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Context.hpp"
 #include "java/Class.hxx"
@@ -31,6 +11,7 @@ Copyright_License {
 static Java::TrivialClass cls;
 static jmethodID getExternalFilesDir_method,
   getExternalFilesDirs_method,
+  getExternalMediaDirs_method,
   getExternalCacheDir_method,
   getSystemService_method;
 
@@ -43,6 +24,7 @@ Context::Initialise(JNIEnv *env) noexcept
                                                 "(Ljava/lang/String;)Ljava/io/File;");
   getExternalFilesDirs_method = env->GetMethodID(cls, "getExternalFilesDirs",
                                                  "(Ljava/lang/String;)[Ljava/io/File;");
+  getExternalMediaDirs_method = env->GetMethodID(cls, "getExternalMediaDirs", "()[Ljava/io/File;");
   getExternalCacheDir_method = env->GetMethodID(cls, "getExternalCacheDir",
                                                 "()Ljava/io/File;");
   getSystemService_method = env->GetMethodID(cls, "getSystemService",
@@ -88,6 +70,34 @@ Context::GetExternalFilesDirs(JNIEnv *env) const noexcept
 
   return result;
 }
+
+std::forward_list<AllocatedPath>
+Context::GetExternalMediaDirs(JNIEnv *env) const noexcept
+{
+  assert(env != nullptr);
+
+  const Java::LocalRef<jobjectArray> array{
+    env,
+    (jobjectArray)env->CallObjectMethod(Get(), getExternalMediaDirs_method,
+                                        nullptr),
+  };
+
+  assert(array);
+
+  const jsize n = env->GetArrayLength(array);
+
+  std::forward_list<AllocatedPath> result;
+  auto previous = result.before_begin();
+
+  for (jsize i = 0; i < n; ++i) {
+    Java::File dir{env, env->GetObjectArrayElement(array, i)};
+    if (dir)
+      previous = result.emplace_after(previous, ToPath(dir.GetAbsolutePath()));
+  }
+
+  return result;
+}
+
 
 AllocatedPath
 Context::GetExternalCacheDir(JNIEnv *env) noexcept

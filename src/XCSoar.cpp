@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 /**
  * This is the main entry point for the application
@@ -49,7 +29,7 @@ Copyright_License {
 #include "util/PrintException.hxx"
 
 #ifdef ENABLE_SDL
-/* this is necessary on Mac OS X, to let libSDL bootstrap Quartz
+/* this is necessary on macOS, to let libSDL bootstrap Quartz
    before entering our main() */
 #include <SDL_main.h>
 #endif
@@ -64,6 +44,7 @@ Copyright_License {
 #include <cassert>
 
 static const char *const Usage = "\n"
+  "  -version       display version information and exit\n"
   "  -datapath=      path to XCSoar data can be defined\n"
 #ifdef SIMULATOR_AVAILABLE
   "  -simulator      bypass startup-screen, use simulator mode directly\n"
@@ -146,11 +127,6 @@ try {
   ResourceLoader::Init(hInstance);
 #endif
 
-  InitialiseDataPath();
-
-  // Write startup note + version to logfile
-  LogFormat(_T("Starting XCSoar %s"), XCSoar_ProductToken);
-
   // Read options from the command line
   {
 #ifdef _WIN32
@@ -160,6 +136,11 @@ try {
 #endif
     CommandLine::Parse(args);
   }
+
+  InitialiseDataPath();
+
+  // Write startup note + version to logfile
+  LogFormat(_T("Starting %s"), XCSoar_ProductToken);
 
   int ret = Main();
 

@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Kernel.hpp"
 
@@ -111,9 +91,12 @@ bool
 IsKoboCustomKernel()
 try {
 #ifdef KOBO
-  /* All Kobo except Clara HD and Libra 2 have a factory kernel without OTG mode so
+  KoboModel kobo_model = DetectKoboModel();
+  /* All Kobo except Clara HD, Clara 2E, Libra 2 and Libra H2O have a factory kernel without OTG mode so
      a custom kernel is installed for OTG. */
-  if (DetectKoboModel() == KoboModel::CLARA_HD || DetectKoboModel() == KoboModel::LIBRA2) return false;
+  if (kobo_model == KoboModel::CLARA_HD || kobo_model == KoboModel::CLARA_2E
+      || kobo_model == KoboModel::LIBRA2 || kobo_model == KoboModel::LIBRA_H2O)
+        return false;
 
   FileReader file(Path("/proc/config.gz"));
   GunzipReader gunzip(file);
@@ -134,8 +117,11 @@ bool
 IsKoboOTGHostMode()
 {
 #ifdef KOBO
-  if (DetectKoboModel() != KoboModel::CLARA_HD && DetectKoboModel() != KoboModel::LIBRA2) return IsKoboCustomKernel();
-  /* for Clara HD and Libra 2, read the mode from the debugfs */
+  KoboModel kobo_model = DetectKoboModel();
+  if (kobo_model != KoboModel::CLARA_HD && kobo_model != KoboModel::CLARA_2E
+      && kobo_model != KoboModel::LIBRA2 && kobo_model != KoboModel::LIBRA_H2O)
+        return IsKoboCustomKernel();
+  /* for Clara HD, Libra 2 and Libra H2O read the mode from the debugfs */
   char buffer[5];
   bool success = File::ReadString(Path("/sys/kernel/debug/ci_hdrc.0/role"),
                    buffer, 5);

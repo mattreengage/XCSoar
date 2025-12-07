@@ -1,25 +1,5 @@
-/*
-  Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "BigTrafficWidget.hpp"
 #include "Dialogs/Traffic/TrafficDialogs.hpp"
@@ -51,14 +31,17 @@
 class FlarmTrafficControl : public FlarmTrafficWindow {
 protected:
   bool enable_auto_zoom = true, dragging = false;
-  unsigned zoom = 2;
+  bool init_defaults = false;
+  unsigned zoom = 3;
+  unsigned last_zoom;
+  static constexpr unsigned num_zoom_options = 5;
   Angle task_direction = Angle::Degrees(-1);
   GestureManager gestures;
 
 public:
   FlarmTrafficControl(const FlarmTrafficLook &look)
     :FlarmTrafficWindow(look, Layout::Scale(10),
-                        Layout::GetMinimumControlHeight() + Layout::Scale(2)) {}
+                        Layout::GetMinimumControlHeight() + Layout::Scale(10)) {}
 
 protected:
   void CalcAutoZoom();
@@ -91,12 +74,14 @@ public:
 
   void SetAutoZoom(bool enabled);
 
+  void SaveZoom(unsigned value);
+
   void ToggleAutoZoom() {
     SetAutoZoom(!GetAutoZoom());
   }
 
   bool CanZoomOut() const {
-    return zoom < 4;
+    return zoom < num_zoom_options;
   }
 
   bool CanZoomIn() const {
@@ -152,6 +137,9 @@ FlarmTrafficControl::OnCreate() noexcept
   Profile::GetEnum(ProfileKeys::FlarmSideData, side_display_type);
   enable_auto_zoom = settings.auto_zoom;
   enable_north_up = settings.north_up;
+  last_zoom = settings.radar_zoom;
+
+  SetZoom(last_zoom);
 }
 
 unsigned
@@ -159,14 +147,16 @@ FlarmTrafficControl::GetZoomDistance(unsigned zoom)
 {
   switch (zoom) {
   case 0:
-    return 500;
+    return 100;
   case 1:
-    return 1000;
-  case 3:
-    return 5000;
-  case 4:
-    return 10000;
+    return 500;
   case 2:
+    return 1000;
+  case 4:
+    return 5000;
+  case 5:
+    return 10000;
+  case 3:
   default:
     return 2000;
   }
@@ -190,6 +180,17 @@ FlarmTrafficControl::SetAutoZoom(bool enabled)
   //auto_zoom->SetState(enabled);
 }
 
+/**
+ * save the zoom range in TrafficSettings and profile
+ */
+void
+FlarmTrafficControl::SaveZoom(unsigned zoom_value)
+{
+  TrafficSettings &settings = CommonInterface::SetUISettings().traffic;
+  settings.radar_zoom = zoom_value;
+  Profile::Set(ProfileKeys::FlarmRadarZoom, zoom_value);
+}
+
 void
 FlarmTrafficControl::CalcAutoZoom()
 {
@@ -205,8 +206,8 @@ FlarmTrafficControl::CalcAutoZoom()
   }
 
   double zoom_dist2 = zoom_dist;
-  for (unsigned i = 0; i <= 4; i++) {
-    if (i == 4 || GetZoomDistance(i) >= zoom_dist2) {
+  for (unsigned i = 0; i <= num_zoom_options; i++) {
+    if (i == num_zoom_options || GetZoomDistance(i) >= zoom_dist2) {
       SetZoom(i);
       break;
     }
@@ -219,8 +220,17 @@ FlarmTrafficControl::Update(Angle new_direction, const TrafficList &new_data,
 {
   FlarmTrafficWindow::Update(new_direction, new_data, new_settings);
 
-  if (enable_auto_zoom || WarningMode())
+  if (enable_auto_zoom || WarningMode()) {
+    if (!init_defaults)
+      SaveZoom(zoom);
     CalcAutoZoom();
+    init_defaults = true;
+  } else {
+    if (init_defaults) {
+      OnCreate();
+      init_defaults = false;
+    }
+  }
 }
 
 void
@@ -241,9 +251,11 @@ FlarmTrafficControl::ZoomOut()
   if (WarningMode())
     return;
 
-  if (zoom < 4)
+  if (zoom < num_zoom_options)
     SetZoom(zoom + 1);
 
+  SaveZoom(zoom);
+  init_defaults = false;
   SetAutoZoom(false);
 }
 
@@ -259,6 +271,8 @@ FlarmTrafficControl::ZoomIn()
   if (zoom > 0)
     SetZoom(zoom - 1);
 
+  SaveZoom(zoom);
+  init_defaults = false;
   SetAutoZoom(false);
 }
 
@@ -277,13 +291,13 @@ FlarmTrafficControl::PaintTaskDirection(Canvas &canvas) const
 
   BulkPixelPoint triangle[3];
   triangle[0].x = 0;
-  triangle[0].y = -radius / Layout::FastScale(1) + 15;
+  triangle[0].y = -(int)radar_renderer.GetRadius() / Layout::FastScale(1) + 15;
   triangle[1].x = 7;
   triangle[1].y = triangle[0].y + 30;
   triangle[2].x = -triangle[1].x;
   triangle[2].y = triangle[1].y;
 
-  PolygonRotateShift(triangle, radar_mid,
+  PolygonRotateShift(triangle, radar_renderer.GetCenter(),
                      task_direction - (enable_north_up ?
                                        Angle::Zero() : heading),
                      Layout::FastScale(100u));
@@ -302,9 +316,8 @@ FlarmTrafficControl::PaintClimbRate(Canvas &canvas, PixelRect rc,
   canvas.DrawText(rc.GetTopRight().At(-(int)label_width, 0), _("Vario"));
 
   // Format climb rate
-  TCHAR buffer[20];
   Unit unit = Units::GetUserVerticalSpeedUnit();
-  FormatUserVerticalSpeed(climb_rate, buffer, false);
+  const auto buffer = FormatUserVerticalSpeed(climb_rate, false);
 
   // Calculate unit size
   canvas.Select(look.info_units_font);
@@ -317,7 +330,7 @@ FlarmTrafficControl::PaintClimbRate(Canvas &canvas, PixelRect rc,
   // Calculate value size
   canvas.Select(look.info_values_font);
   const unsigned value_height = look.info_values_font.GetAscentHeight();
-  const unsigned value_width = canvas.CalcTextSize(buffer).width;
+  const unsigned value_width = canvas.CalcTextSize(buffer.c_str()).width;
 
   // Calculate positions
   const int max_height = std::max(unit_height, value_height);
@@ -330,7 +343,7 @@ FlarmTrafficControl::PaintClimbRate(Canvas &canvas, PixelRect rc,
   const int value_y = y - value_height;
 
   // Paint value
-  canvas.DrawText({value_x, value_y}, buffer);
+  canvas.DrawText({value_x, value_y}, buffer.c_str());
 
   // Paint unit
   canvas.Select(look.info_units_font);
@@ -539,7 +552,7 @@ FlarmTrafficControl::PaintTrafficInfo(Canvas &canvas) const
 void
 FlarmTrafficControl::OnPaint(Canvas &canvas) noexcept
 {
-  canvas.ClearWhite();
+  canvas.Clear(look.background_color);
 
   PaintTaskDirection(canvas);
   FlarmTrafficWindow::Paint(canvas);

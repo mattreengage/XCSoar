@@ -1,30 +1,10 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "../TopWindow.hpp"
 #include "../Features.hpp"
 #include "ui/canvas/custom/TopCanvas.hpp"
-#include "util/RuntimeError.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "util/UTF8.hpp"
 
 #ifdef UNICODE
@@ -34,10 +14,18 @@ Copyright_License {
 #include <SDL_video.h>
 #include <SDL_events.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #if defined(__MACOSX__) && __MACOSX__
 #include <SDL_syswm.h>
 #import <AppKit/AppKit.h>
 #include <alloca.h>
+#endif
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#include "UtilsSystem.hpp"
 #endif
 
 namespace UI {
@@ -60,11 +48,6 @@ MakeSDLFlags([[maybe_unused]] bool full_screen, bool resizable) noexcept
 
   if (resizable)
     flags |= SDL_WINDOW_RESIZABLE;
-
-#if defined(__IPHONEOS__) && __IPHONEOS__
-  /* Hide status bar on iOS devices */
-  flags |= SDL_WINDOW_BORDERLESS;
-#endif
 
 #ifdef HAVE_HIGHDPI_SUPPORT
   flags |= SDL_WINDOW_ALLOW_HIGHDPI;
@@ -91,11 +74,11 @@ TopWindow::CreateNative(const TCHAR *_text, PixelSize new_size,
                               SDL_WINDOWPOS_UNDEFINED, new_size.width,
                               new_size.height, flags);
   if (window == nullptr)
-    throw FormatRuntimeError("SDL_CreateWindow(%s, %u, %u, %u, %u, %#x) has failed: %s\n",
-                             text, (unsigned) SDL_WINDOWPOS_UNDEFINED,
-                             (unsigned) SDL_WINDOWPOS_UNDEFINED, new_size.width,
-                             new_size.height, (unsigned)flags,
-                             ::SDL_GetError());
+    throw FmtRuntimeError("SDL_CreateWindow('{}', {}, {}, {}, {}, {:#x}) has failed: {}",
+                          text, SDL_WINDOWPOS_UNDEFINED,
+                          SDL_WINDOWPOS_UNDEFINED, new_size.width,
+                          new_size.height, flags,
+                          ::SDL_GetError());
 
 #if defined(__MACOSX__) && __MACOSX__
   SDL_SysWMinfo *wm_info =
@@ -239,8 +222,14 @@ TopWindow::OnEvent(const SDL_Event &event)
           h = real_h;
 #endif
 #ifdef ENABLE_OPENGL
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+          PixelSize size = SystemWindowSize();
+          if (screen->CheckResize(size))
+            Resize(size);
+#else
           if (screen->CheckResize(PixelSize(w, h)))
             Resize(screen->GetSize());
+#endif
 #else
           Resize({w, h});
 #endif

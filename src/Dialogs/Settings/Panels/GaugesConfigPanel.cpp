@@ -1,28 +1,8 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "GaugesConfigPanel.hpp"
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Interface.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "Form/DataField/Enum.hpp"
@@ -34,6 +14,7 @@ Copyright_License {
 enum ControlIndex {
   EnableFLARMGauge,
   AutoCloseFlarmDialog,
+  AppFlarmLocation,
   TAPosition,
   EnableThermalProfile,
   FinalGlideBarDisplayModeControl,
@@ -41,6 +22,7 @@ enum ControlIndex {
   EnableVarioBar,
   EnableNavRibbon,
   EnableGlideRibbon
+  NoPositionTargetDistanceRing
 };
 
 static constexpr StaticEnumChoice final_glide_bar_display_mode_list[] = {
@@ -53,6 +35,36 @@ static constexpr StaticEnumChoice final_glide_bar_display_mode_list[] = {
   nullptr
 };
 
+static constexpr StaticEnumChoice flarm_display_location_list[] = {
+  { TrafficSettings::GaugeLocation::AUTO,
+    N_("Auto (follow InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::TOP_LEFT,
+    N_("Top left") },
+  { TrafficSettings::GaugeLocation::TOP_RIGHT,
+    N_("Top right") },
+  { TrafficSettings::GaugeLocation::BOTTOM_LEFT,
+    N_("Bottom left") },
+  { TrafficSettings::GaugeLocation::BOTTOM_RIGHT,
+    N_("Bottom right") },
+  { TrafficSettings::GaugeLocation::CENTER_TOP,
+    N_("Center top") },
+  { TrafficSettings::GaugeLocation::CENTER_BOTTOM,
+    N_("Center bottom") },
+  { TrafficSettings::GaugeLocation::TOP_LEFT_AVOID_IB,
+    N_("Top left (avoid InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::TOP_RIGHT_AVOID_IB,
+    N_("Top right (avoid InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::BOTTOM_LEFT_AVOID_IB,
+    N_("Bottom left (avoid InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::BOTTOM_RIGHT_AVOID_IB,
+    N_("Bottom right (avoid InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::CENTER_TOP_AVOID_IB,
+    N_("Center top (avoid InfoBoxes)") },
+  { TrafficSettings::GaugeLocation::CENTER_BOTTOM_AVOID_IB,
+    N_("Center bottom (avoid InfoBoxes)") },
+  nullptr
+};
+
 static constexpr StaticEnumChoice thermal_assistant_position_list[] = {
   { UISettings::ThermalAssistantPosition::OFF,
     N_("Off"),
@@ -61,14 +73,32 @@ static constexpr StaticEnumChoice thermal_assistant_position_list[] = {
     N_("Bottom left"),
     N_("Show thermal assistant in bottom left.") },
   { UISettings::ThermalAssistantPosition::BOTTOM_LEFT_AVOID_IB,
-    N_("Bottom left (avoid infoboxes)"),
-    N_("Show thermal assistant in bottom left, above/to right of infoboxes (if there).") },
+    N_("Bottom left (avoid InfoBoxes)"),
+    N_("Show thermal assistant in bottom left, above or to the right of InfoBoxes (if present).") },
   { UISettings::ThermalAssistantPosition::BOTTOM_RIGHT,
     N_("Bottom right"),
     N_("Show thermal assistant in bottom right.") },
   { UISettings::ThermalAssistantPosition::BOTTOM_RIGHT_AVOID_IB,
-    N_("Bottom right (avoid infoboxes)"),
-    N_("Show thermal assistant in bottom right above/to left of infoboxes (if there).") },
+    N_("Bottom right (avoid InfoBoxes)"),
+    N_("Show thermal assistant in bottom right, above or to the left of InfoBoxes (if present).") },
+  { UISettings::ThermalAssistantPosition::TOP_LEFT,
+    N_("Top left"),
+    N_("Show thermal assistant in top left.") },
+  { UISettings::ThermalAssistantPosition::TOP_RIGHT,
+    N_("Top right"),
+    N_("Show thermal assistant in top right.") },
+  { UISettings::ThermalAssistantPosition::CENTER_TOP,
+    N_("Center top"),
+    N_("Show thermal assistant in center top.") },
+  { UISettings::ThermalAssistantPosition::TOP_LEFT_AVOID_IB,
+    N_("Top left (avoid InfoBoxes)"),
+    N_("Show thermal assistant in top left (avoid InfoBoxes).") },
+  { UISettings::ThermalAssistantPosition::TOP_RIGHT_AVOID_IB,
+    N_("Top right (avoid InfoBoxes)"),
+    N_("Show thermal assistant in top right (avoid InfoBoxes).") },
+  { UISettings::ThermalAssistantPosition::CENTER_TOP_AVOID_IB,
+    N_("Center top (avoid InfoBoxes)"),
+    N_("Show thermal assistant in center top (avoid InfoBoxes).") },
   nullptr
 };
 
@@ -133,6 +163,11 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
              ui_settings.traffic.auto_close_dialog);
   SetExpertRow(AutoCloseFlarmDialog);
 
+  AddEnum(_("FLARM display"), _("Choose a location for the FLARM display."),
+          flarm_display_location_list,
+          (unsigned)ui_settings.traffic.gauge_location);
+  SetExpertRow(AppFlarmLocation);
+
   AddEnum(_("Thermal assistant"),
             _("Enable and select the position of the thermal assistant when overlayed on the main screen."),
             thermal_assistant_position_list,
@@ -151,7 +186,7 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
   SetExpertRow(FinalGlideBarDisplayModeControl);
 
   AddBoolean(_("Final glide bar MC0"),
-             _("If set to ON the final glide bar will show a second arrow indicating the required height "
+             _("If set to \"On\" the final glide bar will show a second arrow indicating the required height "
                  "to reach the final waypoint at MC zero."),
              map_settings.final_glide_bar_mc0_enabled);
   SetExpertRow(EnableFinalGlideBarMC0);
@@ -161,8 +196,12 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
                   FinalGlideBarDisplayMode::OFF);
 
   AddBoolean(_("Vario bar"),
-             _("If set to ON the vario bar will be shown"),
+             _("If set to \"On\" the vario bar will be shown."),
              map_settings.vario_bar_enabled);
+
+  AddBoolean(_("No Position Target Distance Ring"),
+             _("This parameter enables or disables the No Position Target Distance Ring in Flarm Radar"),
+             ui_settings.traffic.no_position_target_distance_ring);
 
   SetExpertRow(EnableVarioBar);
 
@@ -195,7 +234,9 @@ GaugesConfigPanel::Save(bool &_changed) noexcept
                        ui_settings.traffic.auto_close_dialog);
 
   if (SaveValueEnum(TAPosition, ProfileKeys::TAPosition,
-                    ui_settings.thermal_assistant_position))
+                    ui_settings.thermal_assistant_position) ||
+      SaveValueEnum(AppFlarmLocation, ProfileKeys::FlarmLocation,
+                    ui_settings.traffic.gauge_location))
     CommonInterface::main_window->ReinitialiseLayout();
 
   changed |= SaveValue(EnableThermalProfile, ProfileKeys::EnableThermalProfile,
@@ -219,6 +260,8 @@ GaugesConfigPanel::Save(bool &_changed) noexcept
                        map_settings.glide_ribbon_mode);
 
   changed |= ribbon_geometry_changed;
+  changed |= SaveValue(NoPositionTargetDistanceRing, ProfileKeys::NoPositionTargetDistanceRing,
+                       ui_settings.traffic.no_position_target_distance_ring);
 
   _changed |= changed;
 

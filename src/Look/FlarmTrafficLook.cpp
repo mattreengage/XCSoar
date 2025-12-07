@@ -1,25 +1,5 @@
-/*
-  Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "FlarmTrafficLook.hpp"
 #include "TrafficLook.hpp"
@@ -33,9 +13,12 @@ FlarmTrafficLook::Initialise(const TrafficLook &other, bool small, bool inverse)
   warning_color = other.warning_color;
   alarm_color = other.alarm_color;
   default_color = inverse ? COLOR_WHITE : COLOR_BLACK;
-  selection_color = COLOR_BLUE;
+  selection_color = default_color;
   background_color = inverse ? COLOR_BLACK : COLOR_WHITE;
   radar_color = COLOR_GRAY;
+  safe_above_color = Color(0x1d,0x9b,0xc5);
+  safe_below_color = Color(0x1d,0xc5,0x10);
+  warning_in_altitude_range_color = Color(0xff,0x00,0xff);
 
   warning_brush.Create(warning_color);
   alarm_brush.Create(alarm_color);
@@ -47,6 +30,10 @@ FlarmTrafficLook::Initialise(const TrafficLook &other, bool small, bool inverse)
   team_brush_blue.Create(other.team_color_blue);
   team_brush_yellow.Create(other.team_color_yellow);
   team_brush_magenta.Create(other.team_color_magenta);
+  safe_above_brush.Create(safe_above_color);
+  safe_below_brush.Create(safe_below_color);
+  warning_in_altitude_range_brush.Create(warning_in_altitude_range_color);
+
 
   unsigned width = Layout::FastScale(small ? 1u : 2u);
   warning_pen.Create(width, warning_color);

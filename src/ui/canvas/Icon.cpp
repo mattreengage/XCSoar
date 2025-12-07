@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Icon.hpp"
 #include "Canvas.hpp"
@@ -58,15 +38,22 @@ IconStretchInteger(unsigned source_dpi) noexcept
 #endif
 
 void
-MaskedIcon::LoadResource(ResourceId id, ResourceId big_id, bool center)
+MaskedIcon::LoadResource(ResourceId id, ResourceId big_id,
+                         ResourceId ultra_id,
+                         bool center)
 {
 #ifdef ENABLE_OPENGL
   unsigned stretch = 1024;
 #endif
 
-  if (Layout::ScaleEnabled()) {
+  if (Layout::vdpi >= 120) {
+    /* switch to larger 160dpi icons at 120dpi */
+
     unsigned source_dpi = 96;
-    if (big_id.IsDefined()) {
+    if (Layout::vdpi >= 220 && ultra_id.IsDefined()) {
+      id = ultra_id;
+      source_dpi = 300;
+    } else if (big_id.IsDefined()) {
       id = big_id;
       source_dpi = 192;
     }
@@ -74,7 +61,6 @@ MaskedIcon::LoadResource(ResourceId id, ResourceId big_id, bool center)
 #ifdef ENABLE_OPENGL
     stretch = IconStretchFixed10(source_dpi);
     bitmap.Load(id);
-    bitmap.EnableInterpolation();
 #else
     bitmap.LoadStretch(id, IconStretchInteger(source_dpi));
 #endif

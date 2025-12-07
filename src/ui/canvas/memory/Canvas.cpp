@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ui/canvas/Canvas.hpp"
 #include "ui/canvas/Bitmap.hpp"
@@ -145,12 +125,12 @@ Canvas::DrawLine(PixelPoint a, PixelPoint b) noexcept
 
   SDLRasterCanvas canvas(buffer);
   const auto color = canvas.Import(pen.GetColor());
-  unsigned mask_position = 0;
-  if (thickness > 1)
+  if (thickness > 1) {
+    unsigned mask_position = 0;
     canvas.DrawThickLine(a.x, a.y, b.x, b.y, thickness, color,
                          mask, mask_position);
-  else
-    canvas.DrawLine(a.x, a.y, b.x, b.y, color, mask);
+  } else
+      canvas.DrawLine(a.x, a.y, b.x, b.y, color, mask);
 }
 
 void
@@ -412,7 +392,7 @@ Canvas::Copy(const Bitmap &_src)
 {
   ConstImageBuffer src = _src.GetNative();
 
-  Copy({0, 0}, {src.width, src.height}, src, {0, 0});
+  Copy({0, 0}, src.size, src, {0, 0});
 }
 
 void
@@ -465,7 +445,7 @@ Canvas::StretchNot(const Bitmap &_src)
 
   canvas.ScaleRectangle({dest_x, dest_y}, dest_size,
                         src.At(src_x, src_y),
-                        src.pitch, {src.width, src.height},
+                        src.pitch, src.size,
                         operations);
 }
 
@@ -518,7 +498,7 @@ Canvas::Stretch(PixelPoint dest_position, PixelSize dest_size,
 
   ConstImageBuffer src = _src.GetNative();
   Stretch(dest_position, dest_size,
-          src, {0, 0}, {src.width, src.height});
+          src, {0, 0}, src.size);
 }
 
 void

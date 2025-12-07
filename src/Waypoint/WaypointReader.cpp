@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WaypointReader.hpp"
 #include "WaypointReaderZander.hpp"
@@ -29,8 +9,11 @@ Copyright_License {
 #include "WaypointReaderOzi.hpp"
 #include "WaypointReaderCompeGPS.hpp"
 #include "WaypointFileType.hpp"
-#include "io/ZipLineReader.hpp"
-#include "io/FileLineReader.hpp"
+#include "system/Path.hpp"
+#include "io/FileReader.hxx"
+#include "io/ZipReader.hpp"
+#include "io/ProgressReader.hpp"
+#include "io/BufferedReader.hxx"
 
 #include <memory>
 
@@ -45,7 +28,7 @@ CreateWaypointReader(WaypointFileType type, WaypointFactory factory)
     return new WaypointReaderWinPilot(factory);
 
   case WaypointFileType::SEEYOU:
-    return new WaypointReaderSeeYou(factory);
+    break;
 
   case WaypointFileType::ZANDER:
     return new WaypointReaderZander(factory);
@@ -63,18 +46,38 @@ CreateWaypointReader(WaypointFileType type, WaypointFactory factory)
   return nullptr;
 }
 
+static void
+ReadWaypointFile(Reader &file_reader, WaypointFileType file_type,
+                 uint_least64_t total_size,
+                 Waypoints &way_points, WaypointFactory factory,
+                 ProgressListener &progress)
+{
+  ProgressReader progress_reader{file_reader, total_size, progress};
+  BufferedReader buffered_reader{progress_reader};
+
+  switch (file_type) {
+  case WaypointFileType::SEEYOU:
+    ParseSeeYou(factory, way_points, buffered_reader);
+    break;
+  default:
+    std::unique_ptr<WaypointReaderBase> reader { CreateWaypointReader(file_type,
+                                                                      factory) };
+    if (!reader)
+      throw std::runtime_error{"Unrecognised waypoint file"};
+
+    reader->Parse(way_points, buffered_reader);
+    break;
+  }
+}
+
 void
 ReadWaypointFile(Path path, WaypointFileType file_type,
                  Waypoints &way_points,
                  WaypointFactory factory, ProgressListener &progress)
 {
-  std::unique_ptr<WaypointReaderBase> reader(CreateWaypointReader(file_type,
-                                                                  factory));
-  if (!reader)
-    throw std::runtime_error{"Unrecognised waypoint file"};
-
-  FileLineReader line_reader(path, Charset::AUTO);
-  reader->Parse(way_points, line_reader, progress);
+  FileReader file_reader{path};
+  ReadWaypointFile(file_reader, file_type, file_reader.GetSize(),
+                   way_points, factory, progress);
 }
 
 void
@@ -90,11 +93,7 @@ ReadWaypointFile(struct zzip_dir *dir, const char *path,
                  WaypointFileType file_type, Waypoints &way_points,
                  WaypointFactory factory, ProgressListener &progress)
 {
-  std::unique_ptr<WaypointReaderBase> reader(CreateWaypointReader(file_type,
-                                                                  factory));
-  if (!reader)
-    throw std::runtime_error{"Unrecognised waypoint file"};
-
-  ZipLineReader line_reader(dir, path, Charset::AUTO);
-  reader->Parse(way_points, line_reader, progress);
+  ZipReader file_reader{dir, path};
+  ReadWaypointFile(file_reader, file_type, file_reader.GetSize(),
+                   way_points, factory, progress);
 }

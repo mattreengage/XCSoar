@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "dlgConfigInfoboxes.hpp"
 #include "Dialogs/WidgetDialog.hpp"
@@ -267,9 +247,9 @@ InfoBoxesConfigWidget::Prepare(ContainerWindow &parent,
   button_style.TabStop();
 
   const auto &button_look = GetLook().button;
-  copy_button.Create(parent, button_look, _("Copy"), layout.copy_button,
+  copy_button.Create(parent, button_look, _("Copy Set"), layout.copy_button,
                      button_style, [this](){ OnCopy(); });
-  paste_button.Create(parent, button_look, _("Paste"), layout.paste_button,
+  paste_button.Create(parent, button_look, _("Paste Set"), layout.paste_button,
                       button_style, [this](){ OnPaste(); });
   close_button.Create(parent, button_look, _("Close"), layout.close_button,
                       button_style, dialog.MakeModalResultCallback(mrOK));
@@ -317,6 +297,7 @@ void
 InfoBoxesConfigWidget::RefreshEditContent()
 {
   LoadValueEnum(CONTENT, data.contents[current_preview]);
+  RefreshEditContentDescription();
 }
 
 void
@@ -334,7 +315,7 @@ InfoBoxesConfigWidget::OnPaste()
   if (clipboard_size == 0)
     return;
 
-  if(ShowMessageBox(_("Overwrite?"), _("InfoBox paste"),
+  if(ShowMessageBox(_("Overwrite all InfoBoxes in this set?"), _("InfoBox paste set"),
                  MB_YESNO | MB_ICONQUESTION) != IDYES)
     return;
 

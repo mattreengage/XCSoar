@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/Condor.hpp"
 #include "Device/Driver.hpp"
@@ -28,34 +8,20 @@ Copyright_License {
 #include "NMEA/Info.hpp"
 #include "NMEA/InputLine.hpp"
 
+using std::string_view_literals::operator""sv;
+
 class CondorDevice : public AbstractDevice {
+private:
+  bool reciprocal_wind;
+
 public:
+  explicit CondorDevice(bool reciprocal = true) : reciprocal_wind(reciprocal) {}
   /* virtual methods from class Device */
   bool ParseNMEA(const char *line, struct NMEAInfo &info) override;
 };
 
 static bool
-ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r)
-{
-  double bearing, norm;
-
-  bool bearing_valid = line.ReadChecked(bearing);
-  bool norm_valid = line.ReadChecked(norm);
-
-  if (bearing_valid && norm_valid) {
-    // Condor 1.1.4 outputs the direction that the wind is going to,
-    // _not_ the direction it is coming from !!
-    //
-    // This seems to differ from the output that the LX devices are giving !!
-    value_r.bearing = Angle::Degrees(bearing).Reciprocal();
-    value_r.norm = Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR);
-    return true;
-  } else
-    return false;
-}
-
-static bool
-cLXWP0(NMEAInputLine &line, NMEAInfo &info)
+cLXWP0(NMEAInputLine &line, NMEAInfo &info, bool reciprocal_wind)
 {
   /*
   $LXWP0,Y,222.3,1665.5,1.71,,,,,,239,174,10.1
@@ -88,10 +54,18 @@ cLXWP0(NMEAInputLine &line, NMEAInfo &info)
 
   line.Skip(6);
 
-  SpeedVector wind;
-  if (ReadSpeedVector(line, wind))
-    info.ProvideExternalWind(wind);
-
+  if (SpeedVector wind; line.ReadSpeedVectorKPH(wind)) {
+    if (reciprocal_wind) {
+      /* Condor 1.1.4 and Condor 2 outputs the direction that the wind is going
+       * to, _not_ the direction it is coming from !! This seems to differ from
+       * the output that the LX devices are giving !!
+       */
+      info.ProvideExternalWind(wind.Reciprocal());
+    } else {
+      /* Condor3 outputs the direction the wind is coming from. */
+      info.ProvideExternalWind(wind);
+    };
+  };
   return true;
 }
 
@@ -102,19 +76,17 @@ CondorDevice::ParseNMEA(const char *String, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$LXWP0"))
-    return cLXWP0(line, info);
-
-  return false;
+  const auto type = line.ReadView();
+  if (type == "$LXWP0"sv) return cLXWP0(line, info, reciprocal_wind);
+  else
+    return false;
 }
 
 static Device *
 CondorCreateOnPort([[maybe_unused]] const DeviceConfig &config, [[maybe_unused]] Port &com_port)
 {
-  return new CondorDevice();
+  return new CondorDevice(true); // Reciprocal wind enabled
 }
 
 const struct DeviceRegister condor_driver = {
@@ -122,4 +94,18 @@ const struct DeviceRegister condor_driver = {
   _T("Condor Soaring Simulator"),
   0,
   CondorCreateOnPort,
+};
+
+static Device *
+Condor3CreateOnPort([[maybe_unused]] const DeviceConfig &config,
+                    [[maybe_unused]] Port &com_port)
+{
+  return new CondorDevice(false); // Reciprocal wind disabled
+}
+
+const struct DeviceRegister condor3_driver = {
+    _T("Condor3"),
+    _T("Condor Soaring Simulator 3"),
+    0,
+    Condor3CreateOnPort,
 };

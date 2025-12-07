@@ -1,29 +1,9 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "LayoutConfigPanel.hpp"
 #include "ui/canvas/Features.hpp" // for DRAW_MOUSE_CURSOR
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Profile/Profile.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Hardware/RotateDisplay.hpp"
@@ -35,7 +15,7 @@ Copyright_License {
 #include "UIGlobals.hpp"
 #include "UtilsSettings.hpp"
 #include "Asset.hpp"
-#include "Menu/ShowMenuButton.hpp"
+#include "Menu/ShowButton.hpp"
 #include "ActionInterface.hpp"
 
 #ifdef ANDROID
@@ -53,16 +33,15 @@ enum ControlIndex {
   FullScreen,
 #endif
   MapOrientation,
+  DarkMode,
   AppInfoBoxGeom,
-  AppFlarmLocation,
+  InfoBoxTitleScale,
   TabDialogStyle,
   AppStatusMessageAlignment,
-  AppInverseInfoBox,
   AppInfoBoxColors,
   AppInfoBoxBorder,
-#ifdef KOBO
   ShowMenuButton,
-#endif
+  ShowZoomButton,
 #ifdef DRAW_MOUSE_CURSOR
   CursorSize,
   CursorInverted,
@@ -129,24 +108,6 @@ static constexpr StaticEnumChoice info_box_geometry_list[] = {
   nullptr
 };
 
-static constexpr StaticEnumChoice flarm_display_location_list[] = {
-  { TrafficSettings::GaugeLocation::Auto,
-    N_("Auto (follow infoboxes)") },
-  { TrafficSettings::GaugeLocation::TopLeft,
-    N_("Top Left") },
-  { TrafficSettings::GaugeLocation::TopRight,
-    N_("Top Right") },
-  { TrafficSettings::GaugeLocation::BottomLeft,
-    N_("Bottom Left") },
-  { TrafficSettings::GaugeLocation::BottomRight,
-    N_("Bottom Right") },
-  { TrafficSettings::GaugeLocation::CentreTop,
-    N_("Centre Top") },
-  { TrafficSettings::GaugeLocation::CentreBottom,
-    N_("Centre Bottom") },
-  nullptr
-};
-
 static constexpr StaticEnumChoice tabdialog_style_list[] = {
   { DialogSettings::TabStyle::Text, N_("Text"),
     N_("Show text on tabbed dialogs.") },
@@ -158,8 +119,8 @@ static constexpr StaticEnumChoice tabdialog_style_list[] = {
 static constexpr StaticEnumChoice popup_msg_position_list[] = {
   { UISettings::PopupMessagePosition::CENTER, N_("Center"),
     N_("Center the status message boxes.") },
-  { UISettings::PopupMessagePosition::TOP_LEFT, N_("Topleft"),
-    N_("Show status message boxes ina the top left corner.") },
+  { UISettings::PopupMessagePosition::TOP_LEFT, N_("Top left"),
+    N_("Show status message boxes in the top left corner.") },
   nullptr
 };
 
@@ -172,6 +133,16 @@ static constexpr StaticEnumChoice infobox_border_list[] = {
     N_("Shaded"), nullptr /* TODO: help text */ },
   { InfoBoxSettings::BorderStyle::GLASS,
     N_("Glass"), nullptr /* TODO: help text */ },
+  nullptr
+};
+
+static constexpr StaticEnumChoice dark_mode_list[] = {
+  { UISettings::DarkMode::AUTO, N_("Auto"),
+    N_("Use the system-wide setting") },
+  { UISettings::DarkMode::OFF, N_("Off"),
+    N_("Black text on white background") },
+  { UISettings::DarkMode::ON, N_("On"),
+    N_("White text on black background") },
   nullptr
 };
 
@@ -204,14 +175,18 @@ LayoutConfigPanel::Prepare(ContainerWindow &parent,
   else
     AddDummy();
 
+  AddEnum(_("Dark mode"), nullptr, dark_mode_list,
+          (unsigned)ui_settings.dark_mode);
+  SetExpertRow(DarkMode);
+
   AddEnum(_("InfoBox geometry"),
           _("A list of possible InfoBox layouts. Do some trials to find the best for your screen size."),
           info_box_geometry_list, (unsigned)ui_settings.info_boxes.geometry);
 
-  AddEnum(_("FLARM display"), _("Choose a location for the FLARM display."),
-          flarm_display_location_list,
-          (unsigned)ui_settings.traffic.gauge_location);
-  SetExpertRow(AppFlarmLocation);
+  AddInteger(_("InfoBox title size"), _("Zoom factor for InfoBox title and comment text"),
+             _T("%d %%"), _T("%d"), 50, 150, 5,
+             ui_settings.info_boxes.scale_title_font);
+  SetExpertRow(InfoBoxTitleScale);
 
   AddEnum(_("Tab dialog style"), nullptr,
           tabdialog_style_list, (unsigned)ui_settings.dialog.tab_style);
@@ -221,13 +196,9 @@ LayoutConfigPanel::Prepare(ContainerWindow &parent,
           (unsigned)ui_settings.popup_message_position);
   SetExpertRow(AppStatusMessageAlignment);
 
-  AddBoolean(_("Inverse InfoBoxes"), _("If true, the InfoBoxes are white on black, otherwise black on white."),
-             ui_settings.info_boxes.inverse);
-  SetExpertRow(AppInverseInfoBox);
-
   if (HasColors()) {
     AddBoolean(_("Colored InfoBoxes"),
-               _("If true, certain InfoBoxes will have coloured text.  For example, the active waypoint "
+               _("If true, certain InfoBoxes will have coloured text. For example, the active waypoint "
                  "InfoBox will be blue when the glider is above final glide."),
                ui_settings.info_boxes.use_colors);
     SetExpertRow(AppInfoBoxColors);
@@ -238,11 +209,12 @@ LayoutConfigPanel::Prepare(ContainerWindow &parent,
           unsigned(ui_settings.info_boxes.border_style));
   SetExpertRow(AppInfoBoxBorder);
 
-#ifdef KOBO
-  AddBoolean(_("Show Menubutton"), _("Show the Menubutton"),
+  AddBoolean(_("Show Menu button"), _("Show the Menu button"),
              ui_settings.show_menu_button);
   SetExpertRow(ShowMenuButton);
-#endif
+  AddBoolean(_("Show Zoom button"), _("Show the Zoom button"),
+             ui_settings.show_zoom_button);
+  SetExpertRow(ShowZoomButton);
 
 #ifdef DRAW_MOUSE_CURSOR
   AddInteger(_("Cursor zoom"), _("Cursor zoom factor"), _T("%d x"), _T("%d x"), 1, 10, 1,
@@ -274,15 +246,17 @@ LayoutConfigPanel::Save(bool &_changed) noexcept
     changed |= orientation_changed;
   }
 
+  changed |= SaveValueEnum(DarkMode, ProfileKeys::DarkMode,
+                           ui_settings.dark_mode);
+
   bool info_box_geometry_changed = false;
 
   info_box_geometry_changed |=
     SaveValueEnum(AppInfoBoxGeom, ProfileKeys::InfoBoxGeometry,
                   ui_settings.info_boxes.geometry);
-
   info_box_geometry_changed |=
-    SaveValueEnum(AppFlarmLocation, ProfileKeys::FlarmLocation,
-                  ui_settings.traffic.gauge_location);
+    SaveValueInteger(InfoBoxTitleScale, ProfileKeys::InfoBoxTitleScale,
+                  ui_settings.info_boxes.scale_title_font);
 
   changed |= info_box_geometry_changed;
 
@@ -292,19 +266,15 @@ LayoutConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValueEnum(AppInfoBoxBorder, ProfileKeys::AppInfoBoxBorder,
                            ui_settings.info_boxes.border_style);
 
-  if (SaveValue(AppInverseInfoBox, ProfileKeys::AppInverseInfoBox,
-                ui_settings.info_boxes.inverse))
-    require_restart = changed = true;
+  if (HasColors())
+    changed |= SaveValue(AppInfoBoxColors, ProfileKeys::AppInfoBoxColors,
+                         ui_settings.info_boxes.use_colors);
 
-  if (HasColors() &&
-      SaveValue(AppInfoBoxColors, ProfileKeys::AppInfoBoxColors,
-                ui_settings.info_boxes.use_colors))
-    require_restart = changed = true;
-
-#ifdef KOBO
   if (SaveValue(ShowMenuButton, ProfileKeys::ShowMenuButton,ui_settings.show_menu_button))
     require_restart = changed = true;
-#endif
+  if (SaveValue(ShowZoomButton, ProfileKeys::ShowZoomButton,
+		ui_settings.show_zoom_button))
+    require_restart = changed = true;
 
   DialogSettings &dialog_settings = CommonInterface::SetUISettings().dialog;
   changed |= SaveValueEnum(TabDialogStyle, ProfileKeys::AppDialogTabStyle, dialog_settings.tab_style);
@@ -325,7 +295,7 @@ LayoutConfigPanel::Save(bool &_changed) noexcept
       Display::RotateRestore();
     else {
       if (!Display::Rotate(ui_settings.display.orientation))
-        LogFormat("Display rotation failed");
+        LogString("Display rotation failed");
     }
 
 #ifdef USE_POLL_EVENT

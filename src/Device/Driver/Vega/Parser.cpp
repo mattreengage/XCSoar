@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Internal.hpp"
 #include "Message.hpp"
@@ -32,6 +12,8 @@ Copyright_License {
 #ifdef _UNICODE
 #include <stringapiset.h>
 #endif
+
+using std::string_view_literals::operator""sv;
 
 static bool
 PDSWC(NMEAInputLine &line, NMEAInfo &info, Vega::VolatileData &volatile_data)
@@ -103,26 +85,24 @@ PDAAV(NMEAInputLine &line, [[maybe_unused]] NMEAInfo &info)
 bool
 VegaDevice::PDVSC(NMEAInputLine &line, [[maybe_unused]] NMEAInfo &info)
 {
-  char responsetype[10];
-  line.Read(responsetype, 10);
+  [[maybe_unused]] const auto responsetype = line.ReadView();
 
-  char name[80];
-  line.Read(name, 80);
+  const auto name = line.ReadView();
 
-  if (StringIsEqual(name, "ERROR"))
+  if (name == "ERROR"sv)
     // ignore error responses...
     return true;
 
   int value = line.Read(0);
 
-  if (StringIsEqual(name, "ToneDeadbandCruiseLow"))
+  if (name == "ToneDeadbandCruiseLow"sv)
     value = std::max(value, -value);
-  if (StringIsEqual(name, "ToneDeadbandCirclingLow"))
+  else if (name == "ToneDeadbandCirclingLow"sv)
     value = std::max(value, -value);
 
   {
     const std::lock_guard<Mutex> lock(settings);
-    settings.Set(name, value);
+    settings.Set(std::string{name}, value);
   }
 
   return true;
@@ -206,7 +186,7 @@ PDTSM(NMEAInputLine &line, [[maybe_unused]] NMEAInfo &info)
   const auto message = line.Rest();
 
   StaticString<256> buffer;
-  buffer.SetASCII(message.begin(), message.end());
+  buffer.SetASCII(message);
 
   // todo duration handling
   Message::AddMessage(_T("VEGA:"), buffer);
@@ -218,31 +198,31 @@ bool
 VegaDevice::ParseNMEA(const char *String, NMEAInfo &info)
 {
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (memcmp(type, "$PD", 3) == 0)
+  const auto type = line.ReadView();
+
+  if (type.starts_with("$PD"sv))
     detected = true;
 
-  if (StringIsEqual(type, "$PDSWC"))
+  if (type == "$PDSWC"sv)
     return PDSWC(line, info, volatile_data);
-  else if (StringIsEqual(type, "$PDAAV"))
+  else if (type == "$PDAAV"sv)
     return PDAAV(line, info);
-  else if (StringIsEqual(type, "$PDVSC"))
+  else if (type == "$PDVSC"sv)
     return PDVSC(line, info);
-  else if (StringIsEqual(type, "$PDVDV"))
+  else if (type == "$PDVDV"sv)
     return PDVDV(line, info);
-  else if (StringIsEqual(type, "$PDVDS"))
+  else if (type == "$PDVDS"sv)
     return PDVDS(line, info);
-  else if (StringIsEqual(type, "$PDVVT"))
+  else if (type == "$PDVVT"sv)
     return PDVVT(line, info);
-  else if (StringIsEqual(type, "$PDVSD")) {
+  else if (type == "$PDVSD"sv) {
     const auto message = line.Rest();
     StaticString<256> buffer;
-    buffer.SetASCII(message.begin(), message.end());
+    buffer.SetASCII(message);
     Message::AddMessage(buffer);
     return true;
-  } else if (StringIsEqual(type, "$PDTSM"))
+  } else if (type == "$PDTSM"sv)
     return PDTSM(line, info);
   else
     return false;

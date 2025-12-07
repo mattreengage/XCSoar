@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "LocalPath.hpp"
 #include "system/Path.hpp"
@@ -57,6 +37,10 @@ Copyright_License {
 #include <android/log.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
+
+#ifdef __APPLE__
+#import <Foundation/Foundation.h>
 #endif
 
 #define XCSDATADIR "XCSoarData"
@@ -228,11 +212,35 @@ FindDataPaths() noexcept
 #ifdef ANDROID
     const auto env = Java::GetEnv();
 
+    bool external_files_dirs_path_added = false;
     for (auto &path : context->GetExternalFilesDirs(env)) {
       __android_log_print(ANDROID_LOG_DEBUG, "XCSoar",
                           "Context.getExternalFilesDirs()='%s'",
                           path.c_str());
-      result.emplace_back(std::move(path));
+      auto xcsoarlog_path = AllocatedPath::Build(Path(path), Path("xcsoar.log"));
+      if(File::Exists(xcsoarlog_path)) {
+        /*
+         * Old Android user will keep using getExternalFilesDirs() if they already have data in it
+         * Otherwise we should default them to the new getExternalMediaDirs
+         * 
+         * This is for backward compatibility so user won't surprise when
+         * all their config suddenly gone after upgrade the app
+         */
+        __android_log_print(ANDROID_LOG_DEBUG, "XCSoar",
+          "Found xcsoar.log in '%s', keep using Android private storage.",
+          xcsoarlog_path.c_str());
+        result.emplace_back(std::move(path));
+        external_files_dirs_path_added = true;
+      }
+    }
+
+    if(!external_files_dirs_path_added) {
+      for (auto &path : context->GetExternalMediaDirs(env)) {
+        __android_log_print(ANDROID_LOG_DEBUG, "XCSoar",
+                            "Context.getExternalMediaDirs()='%s'",
+                            path.c_str());
+        result.emplace_back(std::move(path));
+      }
     }
 
     if (auto path = Environment::GetExternalStoragePublicDirectory(env,
@@ -276,14 +284,14 @@ FindDataPaths() noexcept
   /* on Unix, use ~/.xcsoar */
   if (const char *home = getenv("HOME"); home != nullptr) {
 #ifdef __APPLE__
-    /* Mac OS X users are not used to dot-files in their home
+    /* macOS users are not used to dot-files in their home
        directory - make it a little bit easier for them to find the
        files.  If target is an iOS device, use the already existing
        "Documents" folder inside the application's sandbox.  This
        folder can also be accessed via iTunes, if
        UIFileSharingEnabled is set to YES in Info.plist */
 #if (TARGET_OS_IPHONE)
-    constexpr const char *in_home = "Documents" XCSDATADIR;
+    constexpr const char *in_home = "Documents/" XCSDATADIR;
 #else
     constexpr const char *in_home = XCSDATADIR;
 #endif
@@ -297,7 +305,12 @@ FindDataPaths() noexcept
 #ifndef __APPLE__
   /* Linux (and others): allow global configuration in /etc/xcsoar */
   if (Directory::Exists(Path{"/etc/xcsoar"}))
-    data_paths.emplace_back(Path{"/etc/xcsoar"});
+    result.emplace_back(Path{"/etc/xcsoar"});
+#else
+  if (!Directory::Exists(Path{result.back()})) {
+    id fileManager = [NSFileManager defaultManager];
+      [fileManager createDirectoryAtPath:[NSString stringWithCString:result.back().c_str()] withIntermediateDirectories:YES attributes:nil error:nil];
+  }
 #endif // !APPLE
 #endif // HAVE_POSIX
 
@@ -329,9 +342,13 @@ MakeCacheDirectory(const TCHAR *name) noexcept
 void
 InitialiseDataPath()
 {
-  data_paths = FindDataPaths();
-  if (data_paths.empty())
-    throw std::runtime_error("No data path found");
+  // If data_paths is already set (e.g., by -datapath= command line option),
+  // don't overwrite it with default paths
+  if (data_paths.empty()) {
+    data_paths = FindDataPaths();
+    if (data_paths.empty())
+      throw std::runtime_error("No data path found");
+  }
 
 #ifdef ANDROID
   cache_path = context->GetExternalCacheDir(Java::GetEnv());

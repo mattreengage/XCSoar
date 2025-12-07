@@ -1,31 +1,12 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
 #include "io/BufferedOutputStream.hxx"
 #include "io/BufferedReader.hxx"
 #include "util/ByteOrder.hxx"
+#include "util/SpanCast.hxx"
 
 #include <string>
 #include <chrono>
@@ -42,7 +23,7 @@ public:
 
   template<typename T>
   void WriteT(const T &value) {
-    Write(&value, sizeof(value));
+    Write(ReferenceAsBytes(value));
   }
 
   void Write8(uint8_t value) {
@@ -86,11 +67,7 @@ public:
     Write64(u.i);
   }
 
-  void WriteString(const char *s);
-
-  void WriteString(const std::string &s) {
-    WriteString(s.c_str());
-  }
+  void WriteString(std::string_view s);
 
   Serialiser &operator<<(std::chrono::system_clock::time_point t) {
     Write64(std::chrono::system_clock::to_time_t(t));

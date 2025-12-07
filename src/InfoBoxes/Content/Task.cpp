@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "InfoBoxes/Content/Task.hpp"
 #include "InfoBoxes/Panel/Panel.hpp"
@@ -32,25 +12,29 @@ Copyright_License {
 #include "Engine/Waypoint/Waypoint.hpp"
 #include "Units/Units.hpp"
 #include "Formatter/TimeFormatter.hpp"
+#include "Formatter/UserUnits.hpp"
 #include "Language/Language.hpp"
 #include "Widget/CallbackWidget.hpp"
 #include "Renderer/NextArrowRenderer.hpp"
 #include "UIGlobals.hpp"
 #include "Look/Look.hpp"
+#include "BackendComponents.hpp"
+#include "DataComponents.hpp"
 
 #include <tchar.h>
 
 static void
 ShowNextWaypointDetails() noexcept
 {
-  if (protected_task_manager == nullptr)
+  if (!backend_components->protected_task_manager)
     return;
 
-  auto wp = protected_task_manager->GetActiveWaypoint();
+  auto wp = backend_components->protected_task_manager->GetActiveWaypoint();
   if (wp == nullptr)
     return;
 
-  dlgWaypointDetailsShowModal(std::move(wp), false);
+  dlgWaypointDetailsShowModal(data_components->waypoints.get(),
+                              std::move(wp), false);
 }
 
 static std::unique_ptr<Widget>
@@ -124,8 +108,8 @@ InfoBoxContentNextWaypoint::Update(InfoBoxData &data) noexcept
 {
   // use proper non-terminal next task stats
 
-  const auto way_point = protected_task_manager != nullptr
-    ? protected_task_manager->GetActiveWaypoint()
+  const auto way_point = backend_components->protected_task_manager
+    ? backend_components->protected_task_manager->GetActiveWaypoint()
     : nullptr;
 
   if (!way_point) {
@@ -139,8 +123,8 @@ InfoBoxContentNextWaypoint::Update(InfoBoxData &data) noexcept
   // Set Comment
   if (way_point->radio_frequency.IsDefined()) {
     const unsigned freq = way_point->radio_frequency.GetKiloHertz();
-    data.FormatComment(_T("%u.%03u %s"),
-                       freq / 1000, freq % 1000, way_point->comment.c_str());
+    data.FmtComment(_T("{}.{:03} {}"),
+                    freq / 1000, freq % 1000, way_point->comment);
   }
   else
     data.SetComment(way_point->comment.c_str());
@@ -173,8 +157,8 @@ InfoBoxContentNextWaypoint::GetDialogContent() noexcept
 void
 UpdateInfoBoxNextDistance(InfoBoxData &data) noexcept
 {
-  const auto way_point = protected_task_manager != nullptr
-    ? protected_task_manager->GetActiveWaypoint()
+  const auto way_point = backend_components->protected_task_manager
+    ? backend_components->protected_task_manager->GetActiveWaypoint()
     : nullptr;
 
   // Set title
@@ -207,8 +191,8 @@ UpdateInfoBoxNextDistance(InfoBoxData &data) noexcept
 void
 UpdateInfoBoxNextDistanceNominal(InfoBoxData &data) noexcept
 {
-  const auto way_point = protected_task_manager != nullptr
-    ? protected_task_manager->GetActiveWaypoint()
+  const auto way_point = backend_components->protected_task_manager
+    ? backend_components->protected_task_manager->GetActiveWaypoint()
     : nullptr;
 
   if (!way_point) {
@@ -271,10 +255,10 @@ UpdateInfoBoxNextETA(InfoBoxData &data) noexcept
     std::chrono::duration_cast<std::chrono::seconds>(task_stats.current_leg.solution_remaining.time_elapsed);
 
   // Set Value
-  data.UnsafeFormatValue(_T("%02u:%02u"), t.hour, t.minute);
+  data.FmtValue(_T("{:02}:{:02}"), t.hour, t.minute);
 
   // Set Comment
-  data.UnsafeFormatComment(_T("%02u"), t.second);
+  data.FmtComment(_T("{:02}"), t.second);
 }
 
 static void
@@ -419,10 +403,10 @@ UpdateInfoBoxFinalETA(InfoBoxData &data) noexcept
     std::chrono::duration_cast<std::chrono::seconds>(task_stats.total.solution_remaining.time_elapsed);
 
   // Set Value
-  data.UnsafeFormatValue(_T("%02u:%02u"), t.hour, t.minute);
+  data.FmtValue(_T("{:02}:{:02}"), t.hour, t.minute);
 
   // Set Comment
-  data.UnsafeFormatComment(_T("%02u"), t.second);
+  data.FmtComment(_T("{:02}"), t.second);
 }
 
 void
@@ -469,6 +453,19 @@ UpdateInfoBoxTaskSpeed(InfoBoxData &data) noexcept
 }
 
 void
+UpdateInfoBoxTaskSpeedLeg(InfoBoxData &data) noexcept
+{
+  const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
+  if (!task_stats.task_valid || !task_stats.current_leg.travelled.IsDefined()) {
+    data.SetInvalid();
+    return;
+  }
+
+  // Set Value and unit
+  data.SetValueFromTaskSpeed(task_stats.current_leg.travelled.GetSpeed());
+}
+
+void
 UpdateInfoBoxTaskSpeedAchieved(InfoBoxData &data) noexcept
 {
   const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
@@ -504,13 +501,27 @@ UpdateInfoBoxTaskSpeedHour(InfoBoxData &data) noexcept
 {
   const WindowStats &window =
     CommonInterface::Calculated().task_stats.last_hour;
-  if (window.duration < 0) {
+  if (!window.IsDefined()) {
     data.SetInvalid();
     return;
   }
 
   // Set Value and unit
   data.SetValueFromTaskSpeed(window.speed);
+}
+
+void
+UpdateInfoBoxTaskSpeedEst(InfoBoxData &data) noexcept
+{
+  const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
+  if (!task_stats.task_valid || !task_stats.total.planned.IsDefined() ||
+      !task_stats.total.IsAchievable()) {
+    data.SetInvalid();
+    return;
+  }
+
+  // Set Value and unit
+  data.SetValueFromTaskSpeed(task_stats.total.planned.GetSpeed());
 }
 
 void
@@ -581,15 +592,32 @@ UpdateInfoBoxTaskAADistance(InfoBoxData &data) noexcept
 {
   const auto &calculated = CommonInterface::Calculated();
   const TaskStats &task_stats = calculated.ordered_task_stats;
+  const MapSettings &map_settings = CommonInterface::GetMapSettings();
 
   if (!task_stats.has_targets ||
       !task_stats.total.planned.IsDefined()) {
     data.SetInvalid();
+    data.SetCommentInvalid();
+    data.SetAllColors(0);
     return;
   }
 
   // Set Value
-  data.SetValueFromDistance(task_stats.total.planned.GetDistance());
+  double distance = task_stats.total.planned.GetDistance();
+  data.SetValueFromDistance(distance);
+
+  if (map_settings.show_95_percent_rule_helpers) {
+    double fractionTotal = distance / task_stats.distance_max_total;
+    data.SetCommentFromPercent(fractionTotal*100.0);
+
+    if (fractionTotal > 0.95) data.SetAllColors(3);       // green
+    else if (fractionTotal > 0.85) data.SetAllColors(4);  // yellow
+    else data.SetAllColors(0);                            // normal
+  }
+  else {
+    data.SetCommentInvalid();
+    data.SetAllColors(0);
+  }
 }
 
 void
@@ -597,14 +625,25 @@ UpdateInfoBoxTaskAADistanceMax(InfoBoxData &data) noexcept
 {
   const auto &calculated = CommonInterface::Calculated();
   const TaskStats &task_stats = calculated.ordered_task_stats;
+  const MapSettings &map_settings = CommonInterface::GetMapSettings();
 
   if (!task_stats.has_targets) {
     data.SetInvalid();
+    data.SetCommentInvalid();
     return;
   }
 
   // Set Value
   data.SetValueFromDistance(task_stats.distance_max);
+
+  if (map_settings.show_95_percent_rule_helpers) {
+    auto distance = FormatUserDistanceSmart(0.95*task_stats.distance_max_total);
+    auto comment = std::basic_string<TCHAR>( _T("95% ") ) + distance.data();
+    data.SetComment(comment.data());
+  }
+  else {
+    data.SetCommentInvalid();
+  }
 }
 
 void
@@ -677,10 +716,10 @@ UpdateInfoBoxTaskTimeUnderMaxHeight(InfoBoxData &data) noexcept
   const auto &calculated = CommonInterface::Calculated();
   const auto &task_stats = calculated.ordered_task_stats;
   const auto &common_stats = calculated.common_stats;
-  const double maxheight = protected_task_manager->GetOrderedTaskSettings().start_constraints.max_height;
+  const double maxheight = backend_components->protected_task_manager->GetOrderedTaskSettings().start_constraints.max_height;
 
   if (!task_stats.task_valid || maxheight <= 0
-      || !protected_task_manager
+      || !backend_components->protected_task_manager
       || !common_stats.TimeUnderStartMaxHeight.IsDefined()) {
     data.SetInvalid();
     return;
@@ -740,8 +779,8 @@ UpdateInfoBoxNextETAVMG(InfoBoxData &data) noexcept
   if (now_local.IsPlausible()) {
     const std::chrono::seconds dd{long(d/v)};
     const BrokenTime t = now_local + dd;
-    data.UnsafeFormatValue(_T("%02u:%02u"), t.hour, t.minute);
-    data.UnsafeFormatComment(_T("%02u"), t.second);
+    data.FmtValue(_T("{:02}:{:02}"), t.hour, t.minute);
+    data.FmtComment(_T("{:02}"), t.second);
   }
 
 }
@@ -774,7 +813,7 @@ void
 UpdateInfoBoxCruiseEfficiency(InfoBoxData &data) noexcept
 {
   const TaskStats &task_stats = CommonInterface::Calculated().task_stats;
-  if (!task_stats.task_valid || !task_stats.start.task_started) {
+  if (!task_stats.task_valid || !task_stats.start.HasStarted()) {
     data.SetInvalid();
     return;
   }
@@ -784,7 +823,7 @@ UpdateInfoBoxCruiseEfficiency(InfoBoxData &data) noexcept
 }
 
 static constexpr unsigned
-SecondsUntil(TimeStamp now, RoughTime until) noexcept
+SecondsUntil(TimeStamp now, FineTime until) noexcept
 {
   auto d = TimeStamp{until} - now;
   if (d.count() < 0)
@@ -799,7 +838,7 @@ UpdateInfoBoxStartOpen(InfoBoxData &data) noexcept
   const auto &calculated = CommonInterface::Calculated();
   const TaskStats &task_stats = calculated.ordered_task_stats;
   const CommonStats &common_stats = CommonInterface::Calculated().common_stats;
-  const RoughTimeSpan &open = common_stats.start_open_time_span;
+  const TimeSpan &open = common_stats.start_open_time_span;
 
   /* reset color that may have been set by a previous call */
   data.SetValueColor(0);
@@ -812,7 +851,7 @@ UpdateInfoBoxStartOpen(InfoBoxData &data) noexcept
   }
 
   const auto now_s = basic.time;
-  const RoughTime now{now_s};
+  const FineTime now{now_s};
 
   if (open.HasEnded(now)) {
     data.SetValueInvalid();
@@ -820,7 +859,7 @@ UpdateInfoBoxStartOpen(InfoBoxData &data) noexcept
   } else if (open.HasBegun(now)) {
     if (open.GetEnd().IsValid()) {
       unsigned seconds = SecondsUntil(now_s, open.GetEnd());
-      data.UnsafeFormatValue(_T("%02u:%02u"), seconds / 60, seconds % 60);
+      data.FmtValue(_T("{:02}:{:02}"), seconds / 60, seconds % 60);
       data.SetValueColor(3);
     } else
       data.SetValueInvalid();
@@ -828,7 +867,7 @@ UpdateInfoBoxStartOpen(InfoBoxData &data) noexcept
     data.SetComment(_("Open"));
   } else {
     unsigned seconds = SecondsUntil(now_s, open.GetStart());
-    data.UnsafeFormatValue(_T("%02u:%02u"), seconds / 60, seconds % 60);
+    data.FmtValue(_T("{:02}:{:02}"), seconds / 60, seconds % 60);
     data.SetValueColor(2);
     data.SetComment(_("Waiting"));
   }
@@ -843,7 +882,7 @@ UpdateInfoBoxStartOpenArrival(InfoBoxData &data) noexcept
   const GlideResult &current_remaining =
     task_stats.current_leg.solution_remaining;
   const CommonStats &common_stats = CommonInterface::Calculated().common_stats;
-  const RoughTimeSpan &open = common_stats.start_open_time_span;
+  const TimeSpan &open = common_stats.start_open_time_span;
 
   /* reset color that may have been set by a previous call */
   data.SetValueColor(0);
@@ -857,7 +896,7 @@ UpdateInfoBoxStartOpenArrival(InfoBoxData &data) noexcept
   }
 
   const auto arrival_s = basic.time + current_remaining.time_elapsed;
-  const RoughTime arrival{arrival_s};
+  const FineTime arrival{arrival_s};
 
   if (open.HasEnded(arrival)) {
     data.SetValueInvalid();
@@ -865,7 +904,7 @@ UpdateInfoBoxStartOpenArrival(InfoBoxData &data) noexcept
   } else if (open.HasBegun(arrival)) {
     if (open.GetEnd().IsValid()) {
       unsigned seconds = SecondsUntil(arrival_s, open.GetEnd());
-      data.UnsafeFormatValue(_T("%02u:%02u"), seconds / 60, seconds % 60);
+      data.FmtValue(_T("{:02}:{:02}"), seconds / 60, seconds % 60);
       data.SetValueColor(3);
     } else
       data.SetValueInvalid();
@@ -873,7 +912,7 @@ UpdateInfoBoxStartOpenArrival(InfoBoxData &data) noexcept
     data.SetComment(_("Open"));
   } else {
     unsigned seconds = SecondsUntil(arrival_s, open.GetStart());
-    data.UnsafeFormatValue(_T("%02u:%02u"), seconds / 60, seconds % 60);
+    data.FmtValue(_T("{:02}:{:02}"), seconds / 60, seconds % 60);
     data.SetValueColor(2);
     data.SetComment(_("Waiting"));
   }
@@ -896,8 +935,8 @@ InfoBoxContentNextArrow::Update(InfoBoxData &data) noexcept
   bool angle_valid = distance_valid && basic.track_available;
 
   // Set title. Use waypoint name if available.
-  const auto way_point = protected_task_manager != nullptr
-    ? protected_task_manager->GetActiveWaypoint()
+  const auto way_point = backend_components->protected_task_manager
+    ? backend_components->protected_task_manager->GetActiveWaypoint()
     : nullptr;
   if (!way_point)
     data.SetTitle(_("Next arrow"));
@@ -941,6 +980,29 @@ InfoBoxContentNextArrow::OnCustomPaint(Canvas &canvas,
 
   Angle bd = vector_remaining.bearing - basic.track;
 
-  NextArrowRenderer renderer(UIGlobals::GetLook().wind_arrow_info_box);
+  NextArrowRenderer renderer(UIGlobals::GetLook().next_arrow_info_box);
   renderer.DrawArrow(canvas, rc, bd);
+}
+
+/*
+ * This infobox shows either AAT dT + ETA, or only ETA depending on task type
+ */
+void
+UpdateInfoTaskETAorAATdT(InfoBoxData& data) noexcept
+{
+  const auto& calculated = CommonInterface::Calculated();
+  const TaskStats& task_stats = calculated.ordered_task_stats;
+
+  // Always call the ETA infobox function. If task is AAT, the value of
+  // ETA infobox will be used as the comment of AATdT infobox
+  UpdateInfoBoxFinalETA(data);
+  if (task_stats.has_targets) { // Is AAT
+    // save the HH:MM ETA to use it as a comment of AATdT infobox
+    auto eta_text = data.value;
+    UpdateInfoBoxTaskAATimeDelta(data);
+    data.SetComment(eta_text);
+
+    data.SetTitle(_T("AAT delta time"));
+  } else
+    data.SetTitle(_T("Task arrival time"));
 }

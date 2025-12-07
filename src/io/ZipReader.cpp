@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ZipReader.hpp"
 
@@ -48,7 +28,7 @@ ZipReader::~ZipReader()
     zzip_close(file);
 }
 
-uint64_t
+uint_least64_t
 ZipReader::GetSize() const
 {
   ZZIP_STAT st;
@@ -57,16 +37,16 @@ ZipReader::GetSize() const
     : 0;
 }
 
-uint64_t
+uint_least64_t
 ZipReader::GetPosition() const
 {
   return zzip_tell(file);
 }
 
 std::size_t
-ZipReader::Read(void *data, std::size_t size)
+ZipReader::Read(std::span<std::byte> dest)
 {
-  zzip_ssize_t nbytes = zzip_file_read(file, data, size);
+  zzip_ssize_t nbytes = zzip_file_read(file, dest.data(), dest.size());
   if (nbytes < 0)
     throw std::runtime_error("Failed to read from ZIP file");
   return nbytes;

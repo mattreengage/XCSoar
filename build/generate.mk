@@ -4,7 +4,20 @@ PERL = perl
 
 $(OUT)/include/MathTables.h: $(HOST_OUTPUT_DIR)/tools/GenerateSineTables$(HOST_EXEEXT) | $(OUT)/include/dirstamp
 	@$(NQ)echo "  GEN     $@"
-	$(Q)$(HOST_OUTPUT_DIR)/tools/GenerateSineTables$(HOST_EXEEXT) >$@
+	# Generate into a temporary file to avoid leaving a truncated/empty header on interruption
+	$(Q)$(HOST_OUTPUT_DIR)/tools/GenerateSineTables$(HOST_EXEEXT) >$@.tmp
+	# Basic validation: file must be non-empty and contain an expected token.
+	@if [ ! -s "$@.tmp" ]; then \
+	  echo "Generation failed: $@.tmp is empty" >&2; \
+	  rm -f "$@.tmp"; \
+	  exit 1; \
+	fi
+	@if ! grep -q 'THERMALRECENCY{' "$@.tmp"; then \
+	  echo "Generation failed: expected token THERMALRECENCY{ not found in $@.tmp" >&2; \
+	  rm -f "$@.tmp"; \
+	  exit 1; \
+	fi
+	@mv $@.tmp $@
 
 $(call SRC_TO_OBJ,$(SRC)/Math/FastMath.cpp): $(OUT)/include/MathTables.h
 $(call SRC_TO_OBJ,$(SRC)/Math/FastTrig.cpp): $(OUT)/include/MathTables.h
@@ -73,35 +86,19 @@ generate:: $(OUT)/include/MathTables.h $(XCI_HEADERS) \
 
 ifeq ($(USE_WIN32_RESOURCES),n)
 
-$(TARGET_OUTPUT_DIR)/XCSoar.rc: Data/XCSoar.rc $(OUT)/include/resource.h | $(TARGET_OUTPUT_DIR)/dirstamp
-	@$(NQ)echo "  CPP     $@"
-	$(Q)cat $< | $(HOSTCC) -E -o $@ -I$(OUT)/include $(TARGET_CPPFLAGS) $(OPENGL_CPPFLAGS) -
+ifeq ($(TARGET_IS_ANDROID),n)
 
-$(TARGET_OUTPUT_DIR)/include/resource_data.h: $(TARGET_OUTPUT_DIR)/XCSoar.rc \
+$(TARGET_OUTPUT_DIR)/include/resource_data.h: $(TARGET_OUTPUT_DIR)/resources.txt \
 	$(RESOURCE_FILES) \
 	tools/GenerateResources.pl | $(TARGET_OUTPUT_DIR)/include/dirstamp
 	@$(NQ)echo "  GEN     $@"
 	$(Q)$(PERL) tools/GenerateResources.pl $< >$@.tmp
 	@mv $@.tmp $@
 
-$(TARGET_OUTPUT_DIR)/XCSoar-drawable.rc: Data/XCSoar.rc $(OUT)/include/resource.h | $(TARGET_OUTPUT_DIR)/dirstamp
-	@$(NQ)echo "  CPP     $@"
-	$(Q)cat $< | $(HOSTCC) -E -o $@ $< -I$(OUT)/include $(TARGET_CPPFLAGS) -DANDROID_DRAWABLE -
-
-$(TARGET_OUTPUT_DIR)/include/android_drawable.h: $(TARGET_OUTPUT_DIR)/XCSoar-drawable.rc \
-	$(RESOURCE_FILES) \
-	tools/GenerateAndroidResources.pl | $(TARGET_OUTPUT_DIR)/include/dirstamp
-	@$(NQ)echo "  GEN     $@"
-	$(Q)$(PERL) tools/GenerateAndroidResources.pl $< >$@.tmp
-	@mv $@.tmp $@
-
 $(call SRC_TO_OBJ,$(SRC)/ResourceLoader.cpp): $(TARGET_OUTPUT_DIR)/include/resource_data.h
 
 generate:: $(TARGET_OUTPUT_DIR)/include/resource_data.h
 
-ifeq ($(TARGET),ANDROID)
-$(call SRC_TO_OBJ,$(SRC)/ui/canvas/android/Bitmap.cpp): $(TARGET_OUTPUT_DIR)/include/android_drawable.h
-generate:: $(TARGET_OUTPUT_DIR)/include/android_drawable.h
-endif
+endif # !TARGET_IS_ANDROID
 
 endif

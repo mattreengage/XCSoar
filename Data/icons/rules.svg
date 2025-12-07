@@ -1,106 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!-- Created with Inkscape (http://www.inkscape.org/) -->
-
-<svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="32"
-   height="32"
-   id="svg2985"
-   version="1.1"
-   inkscape:version="0.48.3.1 r9886"
-   inkscape:export-filename="C:\Documents and Settings\Administrator\Desktop\task.png"
-   inkscape:export-xdpi="180"
-   inkscape:export-ydpi="180"
-   sodipodi:docname="rules.svg"
-   sodipodi:version="0.32"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape">
-  <defs
-     id="defs2987">
-    <pattern
-       inkscape:stockid="Checkerboard"
-       id="Checkerboard"
-       patternTransform="matrix(4.0389826,0,0,4.0389826,0.9643344,-1.8597877)"
-       height="2"
-       width="2"
-       patternUnits="userSpaceOnUse"
-       inkscape:collect="always">
-      <rect
-         id="rect6562"
-         height="1"
-         width="1"
-         y="0"
-         x="0"
-         style="fill:black;stroke:none" />
-      <rect
-         id="rect6564"
-         height="1"
-         width="1"
-         y="1"
-         x="1"
-         style="fill:black;stroke:none" />
-    </pattern>
-  </defs>
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="14.517786"
-     inkscape:cx="16"
-     inkscape:cy="16"
-     inkscape:current-layer="layer1"
-     showgrid="true"
-     inkscape:grid-bbox="true"
-     inkscape:document-units="px"
-     inkscape:window-width="1440"
-     inkscape:window-height="874"
-     inkscape:window-x="265"
-     inkscape:window-y="36"
-     inkscape:window-maximized="1">
-    <inkscape:grid
-       type="xygrid"
-       id="grid2993"
-       empspacing="5"
-       visible="true"
-       enabled="true"
-       snapvisiblegridlinesonly="true" />
-  </sodipodi:namedview>
-  <metadata
-     id="metadata2990">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     id="layer1"
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     transform="translate(0,16)">
-    <rect
-       style="opacity:1;fill:url(#Checkerboard);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
-       id="rect5765"
-       width="24.17724"
-       height="15.980398"
-       x="5.0283151"
-       y="1.9678725"
-       transform="translate(0,-16)" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.00000024;stroke-linecap:butt;stroke-linejoin:miter;marker-start:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 3.7860062,-14.56994 L 3.7860062,15.16019"
-       id="path7206" />
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(-.32588 -441.19)" stroke-linejoin="round" stroke-miterlimit="3">
+  <g transform="matrix(.6875 0 0 .6875 -126.29 432.44)" stroke-width="1.4546">
+   <g transform="translate(186.68 5.524)" stroke-width=".90857">
+    <path d="m8.7509 7.3096c-0.40313 0.00754-0.82197 0.03245-1.2585 0.079545l-0.48864 0.053978-4.2244 14.952 1.0426-0.085228c3.5022-0.28399 4.4587 0.09051 6.9744 1.4773 2.5488 1.405 3.8025 2.0847 5.1847 2.608 1.5539 0.58829 2.9112 0.8159 4.0142 0.86648l-3.9801 13.983 2.642 0.75284 8.4432-29.668-2.642-0.75-0.22443 0.78977c-1.2827-0.0017-2.552-0.29186-3.8523-0.71307-1.1572-0.43917-2.2972-1.0422-3.4659-1.679l-0.58239-0.31818-0.02557 0.036932c-2.8334-1.5366-4.9285-2.4355-7.5568-2.3864zm0.27841 2.0085c1.3671-0.00463 2.5521 0.29801 3.6506 0.7358l-0.9858 3.4773c1.1688 0.4658 2.291 1.0804 3.4233 1.7017l0.98011-3.4545c1.4381 0.78275 2.4926 1.324 3.5966 1.7415 0.01676 0.0063 0.03432 0.01083 0.05114 0.01705l-0.98012 3.4659c1.2178 0.45481 2.5055 0.76648 3.9205 0.78693l-1.1534 4.0653c-1.4153-0.01896-2.6981-0.32889-3.9148-0.78693l-0.98296 3.4517c-1.0465-0.40035-2.0984-0.94222-3.642-1.7841l0.97443-3.4347c-1.1352-0.62096-2.2597-1.241-3.4261-1.7102l-0.97443 3.4403c-1.1858-0.45232-2.5005-0.75032-4.142-0.7358l0.99716-3.517c1.4734-0.04598 2.8201 0.2926 4.1165 0.81534l1.1562-4.0625c-1.292-0.52478-2.6406-0.86469-4.1222-0.81818l0.95739-3.3807c0.16967-0.0096 0.33567-0.013648 0.5-0.014204z" style="-inkscape-stroke:none;paint-order:stroke markers fill"/>
+   </g>
   </g>
+  <g transform="matrix(.6875 0 0 .6875 -108.61 432.83)" stroke-width="1.4546"></g>
+  <path d="m12.448 446.71c0.45591 0.24744 0.91451 0.49589 1.384 0.72469 0.21014 0.1024 0.42249 0.20087 0.63775 0.29361 0.16027 0.0691 0.32213 0.13493 0.48396 0.20089l-0.78897 2.7943c-0.8734-0.32953-1.6955-0.77248-2.5081-1.2147z" color="#000000" stroke-width=".99701" style="-inkscape-stroke:none;paint-order:stroke markers fill"/>
+ </g>
 </svg>

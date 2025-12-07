@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/Leonardo.hpp"
 #include "Device/Driver.hpp"
@@ -27,27 +7,13 @@ Copyright_License {
 #include "NMEA/InputLine.hpp"
 #include "Units/System.hpp"
 
+using std::string_view_literals::operator""sv;
+
 class LeonardoDevice : public AbstractDevice {
 public:
   /* virtual methods from class Device */
   bool ParseNMEA(const char *line, struct NMEAInfo &info) override;
 };
-
-static bool
-ReadSpeedVector(NMEAInputLine &line, SpeedVector &value_r)
-{
-  double norm, bearing;
-
-  bool norm_valid = line.ReadChecked(norm);
-  bool bearing_valid = line.ReadChecked(bearing);
-
-  if (bearing_valid && norm_valid) {
-    value_r.norm = Units::ToSysUnit(norm, Unit::KILOMETER_PER_HOUR);
-    value_r.bearing = Angle::Degrees(bearing);
-    return true;
-  } else
-    return false;
-}
 
 /**
  * Parse a "$C" sentence.
@@ -90,8 +56,7 @@ LeonardoParseC(NMEAInputLine &line, NMEAInfo &info)
 
   // 10 = wind speed [km/h]
   // 11 = wind direction [degrees]
-  SpeedVector wind;
-  if (ReadSpeedVector(line, wind))
+  if (SpeedVector wind; line.ReadSwappedSpeedVectorKPH(wind))
     info.ProvideExternalWind(wind);
 
   return true;
@@ -185,8 +150,7 @@ PDGFTL1(NMEAInputLine &line, NMEAInfo &info)
 
   //  Wind Speed  28       km/h         28 km/h
   //  Wind Direction  65       degree       65 degree
-  SpeedVector wind;
-  if (ReadSpeedVector(line, wind))
+  if (SpeedVector wind; line.ReadSwappedSpeedVectorKPH(wind))
     info.ProvideExternalWind(wind);
 
   //  Main Lithium Battery Voltage   382      0.01 volts   3,82 volts
@@ -204,22 +168,19 @@ bool
 LeonardoDevice::ParseNMEA(const char *_line, NMEAInfo &info)
 {
   NMEAInputLine line(_line);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$C") ||
-      StringIsEqual(type, "$c"))
+  const auto type = line.ReadView();
+  if (type == "$C"sv || type == "$c"sv)
     return LeonardoParseC(line, info);
 
-  else if (StringIsEqual(type, "$D") ||
-           StringIsEqual(type, "$d"))
+  else if (type == "$D"sv || type == "$d"sv)
     return LeonardoParseD(line, info);
 
-  else if (StringIsEqual(type, "$PDGFTL1") ||
-           StringIsEqual(type, "$PDGFTTL"))
+  else if (type == "$PDGFTL1"sv || type == "$PDGFTTL"sv)
     return PDGFTL1(line, info);
 
-  return false;
+  else
+    return false;
 }
 
 static Device *

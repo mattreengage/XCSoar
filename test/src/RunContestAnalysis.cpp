@@ -1,24 +1,5 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Engine/Trace/Trace.hpp"
 #include "Contest/ContestManager.hpp"
@@ -37,11 +18,11 @@ using namespace std::chrono;
 #ifdef BENCHMARK_LK8000
 static Trace full_trace({}, Trace::null_time, 100);
 static Trace triangle_trace({}, Trace::null_time, 100);
-static Trace sprint_trace({}, minutes{150}, 50);
+static Trace sprint_trace({}, minutes{120}, 50);
 #else
 static Trace full_trace({}, Trace::null_time, 512);
 static Trace triangle_trace({}, Trace::null_time, 1024);
-static Trace sprint_trace({}, minutes{150}, 128);
+static Trace sprint_trace({}, minutes{120}, 128);
 #endif
 
 static ContestManager olc_classic(Contest::OLC_CLASSIC,
@@ -60,8 +41,6 @@ static ContestManager xcontest(Contest::XCONTEST,
                                full_trace, triangle_trace, sprint_trace);
 static ContestManager sis_at(Contest::SIS_AT,
                              full_trace, triangle_trace, sprint_trace);
-static ContestManager olc_netcoupe(Contest::NET_COUPE,
-                                   full_trace, triangle_trace, sprint_trace);
 static ContestManager weglide_free(Contest::WEGLIDE_FREE,
                                full_trace, triangle_trace, sprint_trace);
 static ContestManager charron(Contest::CHARRON,
@@ -107,7 +86,6 @@ TestContest(DebugReplay &replay)
   dmst.SolveExhaustive();
   xcontest.SolveExhaustive();
   sis_at.SolveExhaustive();
-  olc_netcoupe.SolveExhaustive();
   weglide_free.SolveExhaustive();
   charron.SolveExhaustive();
 
@@ -144,8 +122,6 @@ TestContest(DebugReplay &replay)
   std::cout << "sis_at\n";
   PrintHelper::print(sis_at.GetStats().GetResult(0));
 
-  std::cout << "netcoupe\n";
-  PrintHelper::print(olc_netcoupe.GetStats().GetResult());
 
   std::cout << "weglide\n";
   std::cout << "# distance\n";
@@ -167,7 +143,6 @@ TestContest(DebugReplay &replay)
   olc_league.Reset();
   olc_plus.Reset();
   dmst.Reset();
-  olc_netcoupe.Reset();
   weglide_free.Reset();
   charron.Reset();
   full_trace.clear();

@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ManageFlarmDialog.hpp"
 #include "FLARM/ConfigWidget.hpp"
@@ -29,8 +9,10 @@ Copyright_License {
 #include "UIGlobals.hpp"
 #include "Language/Language.hpp"
 #include "Operation/MessageOperationEnvironment.hpp"
+#include "Operation/PopupOperationEnvironment.hpp"
 #include "Device/Driver/FLARM/Device.hpp"
 #include "FLARM/Version.hpp"
+#include "FLARM/Hardware.hpp"
 
 class ManageFLARMWidget final
   : public RowFormWidget {
@@ -41,20 +23,63 @@ class ManageFLARMWidget final
 
   FlarmDevice &device;
   const FlarmVersion version;
+  FlarmHardware hardware;
 
 public:
   ManageFLARMWidget(const DialogLook &look, FlarmDevice &_device,
-                    const FlarmVersion &version)
-    :RowFormWidget(look), device(_device), version(version) {}
+                    const FlarmVersion &version,
+                    FlarmHardware &hardware)
+    :RowFormWidget(look), device(_device), version(version), hardware(hardware) {}
 
   /* virtual methods from Widget */
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
+};
+
+static const char *const flarm_config_names[] = {
+  "DEVTYPE",
+  "CAP",
+  "RADIOID",
+  NULL
 };
 
 void
 ManageFLARMWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
                            [[maybe_unused]] const PixelRect &rc) noexcept
 {
+  PopupOperationEnvironment env;
+  if(device.RequestAllSettings(flarm_config_names, env)) {
+    if (const auto x = device.GetSetting("DEVTYPE"))
+      hardware.device_type = *x;
+
+    if (const auto x = device.GetSetting("CAP"))
+      hardware.capabilities = *x;
+
+    if (const auto x = device.GetSetting("RADIOID")) {
+      if (const char *id = strchr(x->c_str(), ',')) {
+        hardware.radio_id = FlarmId::Parse(id + 1, nullptr);
+      }
+    }
+
+    hardware.available.Update(TimeStamp{FloatDuration{1}});
+  }
+
+  if (hardware.available) {
+    StaticString<64> buffer;
+
+    if (!hardware.device_type.empty()) {
+      buffer.clear();
+      buffer.UnsafeAppendASCII(hardware.device_type.c_str());
+      AddReadOnly(_("Hardware type"), NULL, buffer.c_str());
+    }
+
+    if (hardware.radio_id.IsDefined()) {
+      char tmp_id[10];    
+      buffer.clear();
+      buffer.UnsafeAppendASCII(hardware.radio_id.Format(tmp_id));
+      AddReadOnly(_("Flarm ID"), NULL, buffer.c_str());
+    }
+  }
+
   if (version.available) {
     StaticString<64> buffer;
 
@@ -78,7 +103,7 @@ ManageFLARMWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   }
 
   AddButton(_("Setup"), [this](){
-    FLARMConfigWidget widget(GetLook(), device);
+    FLARMConfigWidget widget(GetLook(), device, hardware);
     DefaultWidgetDialog(UIGlobals::GetMainWindow(), GetLook(),
                         _T("FLARM"), widget);
   });
@@ -95,13 +120,13 @@ ManageFLARMWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
 }
 
 void
-ManageFlarmDialog(Device &device, const FlarmVersion &version)
+ManageFlarmDialog(Device &device, const FlarmVersion &version, FlarmHardware &hardware)
 {
   WidgetDialog dialog(WidgetDialog::Auto{}, UIGlobals::GetMainWindow(),
                       UIGlobals::GetDialogLook(),
                       _T("FLARM"),
                       new ManageFLARMWidget(UIGlobals::GetDialogLook(),
-                                            (FlarmDevice &)device, version));
+                                            (FlarmDevice &)device, version, hardware));
   dialog.AddButton(_("Close"), mrCancel);
   dialog.ShowModal();
 }

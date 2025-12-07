@@ -17,12 +17,34 @@ Thanks for understanding, and for contributing to the project!
 -->
 
 
-XCSoar versions having and not having the problem
+XCSoar versions having the problem
 -------------------------------------------------
 
 <!--
 Which XCSoar version are you using when seeing the problem?
+-->
+
+XCSoar versions not having the problem
+-------------------------------------------------
+
+<!--
 Which XCSoar version is the last one you know that did not show the problem?
+-->
+
+System information
+------------------
+
+<!--
+Please include the device, version of the operating system, and any other relevant information.
+-->
+
+
+Steps to reproduce the behavior
+-------------------------------
+
+<!--
+The more time you spend describing an easy way to reproduce the behavior (if
+this is possible), the easier it is for the project developers to fix it!
 -->
 
 
@@ -39,15 +61,6 @@ Actual behavior
 
 <!--
 Please describe the exact symptoms that you were seeing instead.
--->
-
-
-Steps to reproduce the behavior
--------------------------------
-
-<!--
-The more time you spend describing an easy way to reproduce the behavior (if
-this is possible), the easier it is for the project developers to fix it!
 -->
 
 

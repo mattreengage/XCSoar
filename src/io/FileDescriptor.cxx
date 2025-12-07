@@ -1,31 +1,5 @@
-/*
- * Copyright 2012-2022 Max Kellermann <max.kellermann@gmail.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * - Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-2-Clause
+// author: Max Kellermann <max.kellermann@gmail.com>
 
 #include "FileDescriptor.hxx"
 #include "UniqueFileDescriptor.hxx"
@@ -39,11 +13,6 @@
 
 #ifndef _WIN32
 #include <poll.h>
-#endif
-
-#ifdef __linux__
-#include <sys/eventfd.h>
-#include <sys/signalfd.h>
 #endif
 
 #ifndef O_NOCTTY
@@ -262,28 +231,6 @@ FileDescriptor::CheckDuplicate(FileDescriptor new_fd) const noexcept
 
 #endif
 
-#ifdef __linux__
-
-bool
-FileDescriptor::CreateEventFD(unsigned initval) noexcept
-{
-	fd = ::eventfd(initval, EFD_NONBLOCK|EFD_CLOEXEC);
-	return fd >= 0;
-}
-
-bool
-FileDescriptor::CreateSignalFD(const sigset_t *mask) noexcept
-{
-	int new_fd = ::signalfd(fd, mask, SFD_NONBLOCK|SFD_CLOEXEC);
-	if (new_fd < 0)
-		return false;
-
-	fd = new_fd;
-	return true;
-}
-
-#endif
-
 bool
 FileDescriptor::Rewind() const noexcept
 {
@@ -302,38 +249,32 @@ FileDescriptor::GetSize() const noexcept
 }
 
 void
-FileDescriptor::FullRead(void *_buffer, std::size_t length) const
+FileDescriptor::FullRead(std::span<std::byte> dest) const
 {
-	auto buffer = (std::byte *)_buffer;
-
-	while (length > 0) {
-		ssize_t nbytes = Read(buffer, length);
+	while (!dest.empty()) {
+		ssize_t nbytes = Read(dest.data(), dest.size());
 		if (nbytes <= 0) {
 			if (nbytes < 0)
 				throw MakeErrno("Failed to read");
 			throw std::runtime_error("Unexpected end of file");
 		}
 
-		buffer += nbytes;
-		length -= nbytes;
+		dest = dest.subspan(nbytes);
 	}
 }
 
 void
-FileDescriptor::FullWrite(const void *_buffer, std::size_t length) const
+FileDescriptor::FullWrite(std::span<const std::byte> src) const
 {
-	auto buffer = (const std::byte *)_buffer;
-
-	while (length > 0) {
-		ssize_t nbytes = Write(buffer, length);
+	while (!src.empty()) {
+		ssize_t nbytes = Write(src.data(), src.size());
 		if (nbytes <= 0) {
 			if (nbytes < 0)
 				throw MakeErrno("Failed to write");
 			throw std::runtime_error("Failed to write");
 		}
 
-		buffer += nbytes;
-		length -= nbytes;
+		src = src.subspan(nbytes);
 	}
 }
 

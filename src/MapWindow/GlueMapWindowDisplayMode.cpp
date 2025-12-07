@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "GlueMapWindow.hpp"
 #include "Terrain/RasterTerrain.hpp"
@@ -28,23 +8,25 @@ Copyright_License {
 #include "Interface.hpp"
 #include "Profile/Profile.hpp"
 #include "Screen/Layout.hpp"
-#include "util/Clamp.hpp"
+#include "PageActions.hpp"
+
+#include <algorithm> // for std::clamp()
 
 void
-OffsetHistory::Reset()
+OffsetHistory::Reset() noexcept
 {
   offsets.fill(PixelPoint{0, 0});
 }
 
 inline void
-OffsetHistory::Add(PixelPoint p)
+OffsetHistory::Add(PixelPoint p) noexcept
 {
   offsets[pos] = p;
   pos = (pos + 1) % offsets.size();
 }
 
 inline PixelPoint
-OffsetHistory::GetAverage() const
+OffsetHistory::GetAverage() const noexcept
 {
   int x = 0;
   int y = 0;
@@ -62,7 +44,7 @@ OffsetHistory::GetAverage() const
 }
 
 void
-GlueMapWindow::SetPan(bool enable)
+GlueMapWindow::SetPan(bool enable) noexcept
 {
   switch (follow_mode) {
   case FOLLOW_SELF:
@@ -84,7 +66,7 @@ GlueMapWindow::SetPan(bool enable)
 }
 
 void
-GlueMapWindow::TogglePan()
+GlueMapWindow::TogglePan() noexcept
 {
   switch (follow_mode) {
   case FOLLOW_SELF:
@@ -100,7 +82,7 @@ GlueMapWindow::TogglePan()
 }
 
 void
-GlueMapWindow::PanTo(const GeoPoint &location)
+GlueMapWindow::PanTo(const GeoPoint &location) noexcept
 {
   follow_mode = FOLLOW_PAN;
   SetLocation(location);
@@ -109,7 +91,7 @@ GlueMapWindow::PanTo(const GeoPoint &location)
 }
 
 void
-GlueMapWindow::UpdateScreenBounds()
+GlueMapWindow::UpdateScreenBounds() noexcept
 {
   visible_projection.UpdateScreenBounds();
 
@@ -127,7 +109,7 @@ GlueMapWindow::UpdateScreenBounds()
 }
 
 void
-GlueMapWindow::SetMapScale(double scale)
+GlueMapWindow::SetMapScale(double scale) noexcept
 {
   MapWindow::SetMapScale(scale);
   OnProjectionModified();
@@ -146,7 +128,7 @@ GlueMapWindow::SetMapScale(double scale)
 }
 
 void
-GlueMapWindow::RestoreMapScale()
+GlueMapWindow::RestoreMapScale() noexcept
 {
   const MapSettings &settings = CommonInterface::GetMapSettings();
   const bool circling =
@@ -159,7 +141,7 @@ GlueMapWindow::RestoreMapScale()
 }
 
 inline void
-GlueMapWindow::SaveDisplayModeScales()
+GlueMapWindow::SaveDisplayModeScales() noexcept
 {
   const MapSettings &settings = CommonInterface::GetMapSettings();
 
@@ -168,7 +150,7 @@ GlueMapWindow::SaveDisplayModeScales()
 }
 
 inline void
-GlueMapWindow::SwitchZoomClimb()
+GlueMapWindow::SwitchZoomClimb() noexcept
 {
   const MapSettings &settings = CommonInterface::GetMapSettings();
 
@@ -177,7 +159,7 @@ GlueMapWindow::SwitchZoomClimb()
 }
 
 void
-GlueMapWindow::UpdateDisplayMode()
+GlueMapWindow::UpdateDisplayMode() noexcept
 {
   /* not using MapWindowBlackboard here because these methods are
      called by the main thread */
@@ -196,7 +178,7 @@ GlueMapWindow::UpdateDisplayMode()
 }
 
 void
-GlueMapWindow::UpdateScreenAngle()
+GlueMapWindow::UpdateScreenAngle() noexcept
 {
   /* not using MapWindowBlackboard here because these methods are
      called by the main thread */
@@ -204,6 +186,15 @@ GlueMapWindow::UpdateScreenAngle()
   const DerivedInfo &calculated = CommonInterface::Calculated();
   const MapSettings &settings = CommonInterface::GetMapSettings();
   const UIState &ui_state = CommonInterface::GetUIState();
+
+  // force north-up if the current page is MAP_NORTH_UP
+  const PageLayout &layout = PageActions::GetConfiguredLayout();
+  if (layout.main == PageLayout::Main::MAP_NORTH_UP) {
+    visible_projection.SetScreenAngle(Angle::Zero());
+    OnProjectionModified();
+    compass_visible = false;
+    return;
+  }
 
   MapOrientation orientation =
     ui_state.display_mode == DisplayMode::CIRCLING
@@ -234,7 +225,7 @@ GlueMapWindow::UpdateScreenAngle()
 }
 
 void
-GlueMapWindow::UpdateMapScale()
+GlueMapWindow::UpdateMapScale() noexcept
 {
   /* not using MapWindowBlackboard here because these methods are
      called by the main thread */
@@ -265,8 +256,8 @@ GlueMapWindow::UpdateMapScale()
     distance /= auto_zoom_factor / 100.;
 
     // Clip map auto zoom range to reasonable values
-    distance = Clamp(distance, 525.,
-                     settings.max_auto_zoom_distance / 10.);
+    distance = std::clamp(distance, 525.,
+                          settings.max_auto_zoom_distance / 10.);
 
     visible_projection.SetFreeMapScale(distance);
     settings.cruise_scale = visible_projection.GetScale();
@@ -276,14 +267,14 @@ GlueMapWindow::UpdateMapScale()
 }
 
 void
-GlueMapWindow::SetLocation(const GeoPoint location)
+GlueMapWindow::SetLocation(const GeoPoint location) noexcept
 {
   MapWindow::SetLocation(location);
   OnProjectionModified();
 }
 
 void
-GlueMapWindow::SetLocationLazy(const GeoPoint location)
+GlueMapWindow::SetLocationLazy(const GeoPoint location) noexcept
 {
   if (!visible_projection.IsValid()) {
     SetLocation(location);
@@ -299,7 +290,7 @@ GlueMapWindow::SetLocationLazy(const GeoPoint location)
 }
 
 void
-GlueMapWindow::UpdateProjection()
+GlueMapWindow::UpdateProjection() noexcept
 {
   const PixelRect rc = GetClientRect();
 
@@ -314,7 +305,7 @@ GlueMapWindow::UpdateProjection()
   const auto center = rc.GetCenter();
 
   if (circling || !IsNearSelf())
-    visible_projection.SetScreenOrigin(center.x, center.y);
+    visible_projection.SetScreenOrigin(center);
   else if (settings_map.cruise_orientation == MapOrientation::NORTH_UP ||
            settings_map.cruise_orientation == MapOrientation::WIND_UP) {
     PixelPoint offset{0, 0};
@@ -348,7 +339,7 @@ GlueMapWindow::UpdateProjection()
       offset_history.Add(offset);
       offset = offset_history.GetAverage();
     }
-    visible_projection.SetScreenOrigin(center.x + offset.x, center.y + offset.y);
+    visible_projection.SetScreenOrigin(center + offset);
   } else
     visible_projection.SetScreenOrigin(center.x,
         ((rc.top - rc.bottom) * settings_map.glider_screen_position / 100) + rc.bottom);

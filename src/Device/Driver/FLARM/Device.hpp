@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -71,6 +51,13 @@ public:
                    OperationEnvironment &env);
 
   /**
+   * Request an array of settings from FLARM.
+   * 
+   * @return true if successful.
+   */
+  bool RequestAllSettings(const char* const* settings, OperationEnvironment &env);
+
+  /**
    * Request a setting from the FLARM.  The FLARM will send the value,
    * but this method will not wait for that.
    *
@@ -80,12 +67,32 @@ public:
   void RequestSetting(const char *name, OperationEnvironment &env);
 
   /**
+   * Wait for FLARM to send a setting.
+   * @timeout the timeout in milliseconds.
+   *
+   * @return true if the settings were received, false if a timeout occured.
+   */
+  bool WaitForSetting(const char *name, unsigned int timeout_ms);
+
+  /**
+   * Check if setting exists
+   * 
+   * @return true if setting exists
+   */
+  bool SettingExists(const char *name) noexcept;
+
+  /**
    * Look up the given setting in the table of received values.  The
    * first element is a "found" flag, and if that is true, the second
    * element is the value.
    */
   [[gnu::pure]]
   std::optional<std::string> GetSetting(const char *name) const noexcept;
+
+  /**
+   * Get unsigned value from setting string.
+   */
+  unsigned GetUnsignedValue(const char *name, unsigned default_value);
 
 protected:
   bool TextMode(OperationEnvironment &env);
@@ -155,16 +162,16 @@ private:
   bool DeclareInternal(const Declaration &declaration,
                        OperationEnvironment &env);
 
-  void SendEscaped(const void *data, size_t length,
+  void SendEscaped(std::span<const std::byte> src,
                    OperationEnvironment &env,
                    std::chrono::steady_clock::duration timeout) {
-    FLARM::SendEscaped(port, data, length, env, timeout);
+    FLARM::SendEscaped(port, src, env, timeout);
   }
 
-  bool ReceiveEscaped(void *data, size_t length,
+  bool ReceiveEscaped(std::span<std::byte> dest,
                       OperationEnvironment &env,
                       std::chrono::steady_clock::duration timeout) {
-    return FLARM::ReceiveEscaped(port, data, length, env, timeout);
+    return FLARM::ReceiveEscaped(port, dest, env, timeout);
   }
 
   /**
@@ -191,8 +198,7 @@ private:
    * @return An initialized FrameHeader instance
    */
   FLARM::FrameHeader PrepareFrameHeader(FLARM::MessageType message_type,
-                                        const void *data = nullptr,
-                                        size_t length = 0);
+                                        std::span<const std::byte> payload={}) noexcept;
 
   /**
    * Sends a FrameHeader to the port. Remember that a StartByte should be
@@ -223,7 +229,7 @@ private:
    * @return Message type if N(ACK) was received properly, otherwise 0x00
    */
   FLARM::MessageType
-  WaitForACKOrNACK(uint16_t sequence_number, AllocatedArray<uint8_t> &data,
+  WaitForACKOrNACK(uint16_t sequence_number, AllocatedArray<std::byte> &data,
                    uint16_t &length,
                    OperationEnvironment &env,
                    std::chrono::steady_clock::duration timeout);

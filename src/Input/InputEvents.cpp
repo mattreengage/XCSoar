@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 /*
 
@@ -40,7 +20,8 @@ It also covers the configuration side of on screen labels.
 For further information on config file formats see
 
 source/Common/Data/Input/ALL
-doc/html/advanced/input/ALL		http://xcsoar.sourceforge.net/advanced/input/
+doc/html/advanced/input/ALL
+https://xcsoar.readthedocs.io/en/latest/input_events.html
 
 */
 
@@ -50,12 +31,12 @@ doc/html/advanced/input/ALL		http://xcsoar.sourceforge.net/advanced/input/
 #include "Interface.hpp"
 #include "MainWindow.hpp"
 #include "Protection.hpp"
-#include "LogFile.hpp"
 #include "Menu/ButtonLabel.hpp"
-#include "Profile/ProfileKeys.hpp"
+#include "Profile/Keys.hpp"
 #include "Menu/MenuData.hpp"
 #include "io/ConfiguredFile.hpp"
-#include "io/LineReader.hpp"
+#include "io/FileReader.hxx"
+#include "io/BufferedReader.hxx"
 #include "Pan.hpp"
 #include "Dialogs/LockScreen.hpp"
 #include "Menu/MenuBar.hpp"
@@ -123,17 +104,17 @@ static InputConfig input_config;
 void
 InputEvents::readFile()
 {
-  LogFormat("Loading input events file");
-
   // clear the GCE and NMEA queues
   ClearQueues();
 
   LoadDefaults(input_config);
 
   // Read in user defined configuration file
-  auto reader = OpenConfiguredTextFile(ProfileKeys::InputFile);
-  if (reader)
-    ::ParseInputFile(input_config, *reader);
+  auto reader = OpenConfiguredFile(ProfileKeys::InputFile);
+  if (reader) {
+    BufferedReader buffered_reader{*reader};
+    ::ParseInputFile(input_config, buffered_reader);
+  }
 }
 
 void
@@ -224,13 +205,17 @@ InputEvents::drawButtons(Mode mode, bool full) noexcept
   CommonInterface::main_window->ShowMenu(menu, overlay_menu, full);
 
   GlueMapWindow *map = CommonInterface::main_window->GetMapIfActive();
-  if (map != nullptr){
-      if (mode != MODE_DEFAULT){
-          // Set margin so that GlueMapWindow doesn't draw HUD underneath buttons
-          map->SetBottomMarginFactor(menubar_height_scale_factor);
-      } else {
-          map->SetBottomMarginFactor(0);
-      }
+  if (map != nullptr)
+  {
+    if (mode != MODE_DEFAULT)
+    {
+      /* Adjust the margin to ensure that GlueMapWindow elements,
+       * such as the scale, are not overdraw by the buttons
+       * when in Pan mode. */
+      map->SetBottomMarginFactor(menubar_height_scale_factor);
+    } else {
+      map->SetBottomMarginFactor(0);
+    }
   }
 }
 
@@ -490,11 +475,9 @@ InputEvents::ShowMenu() noexcept
 Menu *
 InputEvents::GetMenu(const TCHAR *mode) noexcept
 {
- int m = input_config.LookupMode(mode);
- if (m >= 0)
-   return &input_config.menus[m];
- else
-   return NULL;
+  int m = input_config.LookupMode(mode);
+  if (m >= 0) return &input_config.menus[m];
+  else return NULL;
 }
 
 void

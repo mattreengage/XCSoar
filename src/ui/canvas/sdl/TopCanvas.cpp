@@ -1,30 +1,10 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ui/canvas/custom/TopCanvas.hpp"
 #include "ui/canvas/Features.hpp"
 #include "ui/dim/Size.hpp"
-#include "util/RuntimeError.hxx"
+#include "lib/fmt/RuntimeError.hxx"
 #include "Asset.hpp"
 
 #ifdef ENABLE_OPENGL
@@ -53,6 +33,10 @@ Copyright_License {
 #include <alloca.h>
 #endif
 
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+#import <UIKit/UIKit.h>
+#endif
+
 #include <cassert>
 
 #ifdef ENABLE_OPENGL
@@ -75,8 +59,8 @@ TopCanvas::TopCanvas(UI::Display &_display, SDL_Window *_window)
 #ifdef USE_MEMORY_CANVAS
   renderer = SDL_CreateRenderer(window, -1, 0);
   if (renderer == nullptr)
-    throw FormatRuntimeError("SDL_CreateRenderer(%p, %d, %d) has failed: %s",
-                             window, -1, 0, ::SDL_GetError());
+    throw FmtRuntimeError("SDL_CreateRenderer({}, {}, {}) has failed: {}",
+                          (const void *)window, -1, 0, ::SDL_GetError());
 
   int width, height;
   SDL_GetRendererOutputSize(renderer, &width, &height);
@@ -84,18 +68,20 @@ TopCanvas::TopCanvas(UI::Display &_display, SDL_Window *_window)
                               SDL_TEXTUREACCESS_STREAMING,
                               width, height);
   if (texture == nullptr)
-    throw FormatRuntimeError("SDL_CreateTexture(%p, %d, %d, %d, %d) has failed: %s",
-                             renderer, (int) SDL_PIXELFORMAT_UNKNOWN,
-                             (int) SDL_TEXTUREACCESS_STREAMING, width, height,
-                             ::SDL_GetError());
+    throw FmtRuntimeError("SDL_CreateTexture({}, {}, {}, {}, {}) has failed: {}",
+                          (const void *)renderer,
+                          (unsigned)SDL_PIXELFORMAT_UNKNOWN,
+                          (unsigned)SDL_TEXTUREACCESS_STREAMING,
+                          width, height,
+                          ::SDL_GetError());
 #endif
 
 #ifdef ENABLE_OPENGL
   if (::SDL_GL_CreateContext(window) == nullptr)
-    throw FormatRuntimeError("SDL_GL_CreateContext(%p) has failed: %s",
-                             window, ::SDL_GetError());
+    throw FmtRuntimeError("SDL_GL_CreateContext({}) has failed: {}",
+                          (const void *)window, ::SDL_GetError());
 
-  LogFormat("GLX config: RGB=%d/%d/%d alpha=%d depth=%d stencil=%d",
+  LogFormat("SDL_GL config: RGB=%d/%d/%d alpha=%d depth=%d stencil=%d",
             GetConfigAttrib(SDL_GL_RED_SIZE, 0),
             GetConfigAttrib(SDL_GL_GREEN_SIZE, 0),
             GetConfigAttrib(SDL_GL_BLUE_SIZE, 0),
@@ -111,7 +97,7 @@ TopCanvas::TopCanvas(UI::Display &_display, SDL_Window *_window)
 #endif
 
 #ifdef GREYSCALE
-  buffer.Allocate(width, height);
+  buffer.Allocate(PixelSize(width, height));
 #endif
 }
 
@@ -176,7 +162,7 @@ TopCanvas::OnResize(PixelSize new_size) noexcept
 
 #ifdef GREYSCALE
   buffer.Free();
-  buffer.Allocate(new_size.width, new_size.height);
+  buffer.Allocate(new_size);
 #endif
 }
 
@@ -184,7 +170,7 @@ TopCanvas::OnResize(PixelSize new_size) noexcept
 
 #ifdef GREYSCALE
 
-#if CLANG_OR_GCC_VERSION(4,8)
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 #endif
@@ -211,8 +197,6 @@ CopyFromGreyscale(
 
   const uint8_t *src_pixels = reinterpret_cast<const uint8_t *>(src.data);
 
-  const unsigned width = src.width, height = src.height;
-
   const unsigned dest_pitch = (unsigned) pitch_as_int;
 
 #ifdef DITHER
@@ -220,10 +204,10 @@ CopyFromGreyscale(
   dither.DitherGreyscale(src_pixels, src.pitch,
                          dest_pixels,
                          dest_pitch / bytes_per_pixel,
-                         width, height);
+                         src.size.width, src.size.height);
   if (bytes_per_pixel == 4) {
     const unsigned n_pixels = (dest_pitch / bytes_per_pixel)
-      * height;
+      * src.size.height;
     int32_t *d = (int32_t *)dest_pixels + n_pixels;
     const int8_t *end = (int8_t *)dest_pixels;
     const int8_t *s = end + n_pixels;
@@ -237,15 +221,15 @@ CopyFromGreyscale(
   const unsigned src_pitch = src.pitch;
 
   if (bytes_per_pixel == 2) {
-    for (unsigned row = height; row > 0;
+    for (unsigned row = src.size.height; row > 0;
          --row, src_pixels += src_pitch, dest_pixels += dest_pitch)
       CopyGreyscaleToRGB565((RGB565Color *)dest_pixels,
-                            (const Luminosity8 *)src_pixels, width);
+                            (const Luminosity8 *)src_pixels, src.size.width);
   } else {
-    for (unsigned row = height; row > 0;
+    for (unsigned row = src.size.height; row > 0;
          --row, src_pixels += src_pitch, dest_pixels += dest_pitch)
       CopyGreyscaleToRGB8((uint32_t *)dest_pixels,
-                           (const Luminosity8 *)src_pixels, width);
+                           (const Luminosity8 *)src_pixels, src.size.width);
   }
 
 #endif
@@ -253,7 +237,7 @@ CopyFromGreyscale(
   ::SDL_UnlockTexture(dest);
 }
 
-#if CLANG_OR_GCC_VERSION(4,8)
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
@@ -273,8 +257,7 @@ TopCanvas::Lock()
     return Canvas();
   buffer.data = (ActivePixelTraits::pointer)pixels;
   buffer.pitch = (unsigned) pitch;
-  buffer.width = (unsigned) width;
-  buffer.height = (unsigned) height;
+  buffer.size = PixelSize(width, height);
 #endif
 
   return Canvas(buffer);
@@ -310,3 +293,33 @@ TopCanvas::Flip()
 
 #endif
 }
+
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+
+bool
+TopCanvas::IsIOSAppActive() const noexcept
+{
+  // Check if the iOS app is in an active state where rendering is appropriate
+  // Attempting to render while the app is in the background will crash the app
+  UIApplicationState appState = [[UIApplication sharedApplication] applicationState];
+  
+  switch (appState) {
+    case UIApplicationStateActive:
+      // App is active and in foreground - safe to render
+      return true;
+      
+    case UIApplicationStateInactive:
+      // App is transitioning between states - avoid rendering
+      return false;
+      
+    case UIApplicationStateBackground:
+      // App is in background - definitely don't render
+      return false;
+      
+    default:
+      // Unknown state - we are conservative and don't render
+      return false;
+  }
+}
+
+#endif

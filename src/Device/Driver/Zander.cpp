@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Device/Driver/Zander.hpp"
 #include "Device/Driver.hpp"
@@ -28,6 +8,8 @@ Copyright_License {
 #include "NMEA/Checksum.hpp"
 #include "Units/System.hpp"
 #include "util/StringAPI.hxx"
+
+using std::string_view_literals::operator""sv;
 
 class ZanderDevice : public AbstractDevice {
 public:
@@ -70,8 +52,9 @@ PZAN3(NMEAInputLine &line, NMEAInfo &info)
 
   line.Skip(3);
 
-  int direction, speed;
-  if (!line.ReadChecked(direction) || !line.ReadChecked(speed))
+  Angle direction;
+  int speed;
+  if (!line.ReadBearing(direction) || !line.ReadChecked(speed))
     return false;
 
   char okay = line.ReadFirstChar();
@@ -87,8 +70,7 @@ PZAN3(NMEAInputLine &line, NMEAInfo &info)
   }
 
   if (okay == 'A') {
-    SpeedVector wind(Angle::Degrees(direction),
-                     Units::ToSysUnit(speed, Unit::KILOMETER_PER_HOUR));
+    SpeedVector wind{direction, Units::ToSysUnit(speed, Unit::KILOMETER_PER_HOUR)};
     info.ProvideExternalWind(wind);
   }
 
@@ -112,12 +94,11 @@ PZAN5(NMEAInputLine &line, NMEAInfo &info)
 {
   // $PZAN5,VA,MUEHL,123.4,KM,T,234*cc
 
-  char state[3];
-  line.Read(state, 3);
+  const auto state = line.ReadView();
 
-  if (StringIsEqual(state, "SF"))
+  if (state == "SF"sv)
     info.switch_state.flight_mode = SwitchState::FlightMode::CRUISE;
-  else if (StringIsEqual(state, "VA"))
+  else if (state == "VA"sv)
     info.switch_state.flight_mode = SwitchState::FlightMode::CIRCLING;
   else
     info.switch_state.flight_mode = SwitchState::FlightMode::UNKNOWN;
@@ -132,25 +113,26 @@ ZanderDevice::ParseNMEA(const char *String, NMEAInfo &info)
     return false;
 
   NMEAInputLine line(String);
-  char type[16];
-  line.Read(type, 16);
 
-  if (StringIsEqual(type, "$PZAN1"))
+  const auto type = line.ReadView();
+
+  if (type == "$PZAN1"sv)
     return PZAN1(line, info);
 
-  if (StringIsEqual(type, "$PZAN2"))
+  else if (type == "$PZAN2"sv)
     return PZAN2(line, info);
 
-  if (StringIsEqual(type, "$PZAN3"))
+  else if (type == "$PZAN3"sv)
     return PZAN3(line, info);
 
-  if (StringIsEqual(type, "$PZAN4"))
+  else if (type == "$PZAN4"sv)
     return PZAN4(line, info);
 
-  if (StringIsEqual(type, "$PZAN5"))
+  else if (type == "$PZAN5"sv)
     return PZAN5(line, info);
 
-  return false;
+  else
+    return false;
 }
 
 static Device *

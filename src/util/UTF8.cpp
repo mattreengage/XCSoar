@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "UTF8.hpp"
 #include "CharUtil.hxx"
@@ -317,20 +297,20 @@ Latin1ToUTF8(unsigned char ch, char *buffer) noexcept
 }
 
 const char *
-Latin1ToUTF8(const char *gcc_restrict src, char *gcc_restrict buffer,
-             std::size_t buffer_size) noexcept
+Latin1ToUTF8(const char *gcc_restrict src,
+             std::span<char> buffer) noexcept
 {
   const char *p = FindNonASCIIOrZero(src);
   if (*p == 0)
     /* everything is plain ASCII, we don't need to convert anything */
     return src;
 
-  if ((std::size_t)(p - src) >= buffer_size)
+  if ((std::size_t)(p - src) >= buffer.size())
     /* buffer too small */
     return nullptr;
 
-  const char *const end = buffer + buffer_size;
-  char *q = std::copy(src, p, buffer);
+  const char *const end = buffer.data() + buffer.size();
+  char *q = std::copy(src, p, buffer.data());
 
   while (*p != 0) {
     unsigned char ch = *p++;
@@ -352,15 +332,63 @@ Latin1ToUTF8(const char *gcc_restrict src, char *gcc_restrict buffer,
   }
 
   *q = 0;
-  return buffer;
+  return buffer.data();
+}
+
+static const char *
+FindNonASCII(std::string_view p) noexcept
+{
+  for (const auto &i : p)
+    if (!IsASCII(i))
+      return &i;
+  return nullptr;
+}
+
+std::string_view
+Latin1ToUTF8(std::string_view src,
+             std::span<char> buffer) noexcept
+{
+  const char *p = FindNonASCII(src);
+  if (p == nullptr)
+    /* everything is plain ASCII, we don't need to convert anything */
+    return src;
+
+  if ((std::size_t)(p - src.data()) > buffer.size())
+    /* buffer too small */
+    return {};
+
+  const char *const end = buffer.data() + buffer.size();
+  char *q = std::copy(src.data(), p, buffer.data());
+
+  const char *const src_end = src.data() + src.size();
+  while (p < src_end) {
+    unsigned char ch = *p++;
+
+    if (IsASCII(ch)) {
+      *q++ = ch;
+
+      if (q >= end)
+        /* buffer too small */
+        return {};
+    } else {
+      if (q + 2 >= end)
+        /* buffer too small */
+        return {};
+
+      *q++ = MakeLeading1(ch >> 6);
+      *q++ = MakeContinuation(ch);
+    }
+  }
+
+  return {buffer.data(), std::size_t(q - buffer.data())};
 }
 
 char *
 UnicodeToUTF8(unsigned ch, char *q) noexcept
 {
-  if (gcc_likely(ch < 0x80)) {
+  if (ch < 0x80) [[likely]] {
     *q++ = (char)ch;
-  } else if (gcc_likely(ch < 0x800)) {
+  } else if (ch < 0x800) [[likely]] {
     *q++ = MakeLeading1(ch >> 6);
     *q++ = MakeContinuation(ch);
   } else if (ch < 0x10000) {
@@ -518,7 +546,7 @@ std::size_t
 TruncateStringUTF8(const char *p,
                    std::size_t max_chars, std::size_t max_bytes) noexcept
 {
-#if !CLANG_CHECK_VERSION(3,6)
+#ifndef __clang__
   /* disabled on clang due to -Wtautological-pointer-compare */
   assert(p != nullptr);
 #endif
@@ -540,16 +568,16 @@ TruncateStringUTF8(const char *p,
 }
 
 char *
-CopyTruncateStringUTF8(char *dest, std::size_t dest_size,
+CopyTruncateStringUTF8(std::span<char> dest,
                        const char *src, std::size_t truncate) noexcept
 {
-  assert(dest != nullptr);
-  assert(dest_size > 0);
+  assert(dest.data() != nullptr);
+  assert(!dest.empty());
   assert(src != nullptr);
   assert(ValidateUTF8(src));
 
-  std::size_t copy = TruncateStringUTF8(src, truncate, dest_size - 1);
-  auto *p = std::copy_n(src, copy, dest);
+  std::size_t copy = TruncateStringUTF8(src, truncate, dest.size() - 1);
+  auto *p = std::copy_n(src, copy, dest.data());
   *p = '\0';
   return p;
 }

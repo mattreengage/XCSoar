@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
@@ -44,18 +24,45 @@ struct FlarmError {
     FATAL_PROBLEM = 0x03,
   };
 
-  enum Code : uint8_t {
+  enum Code : uint16_t {
     FIRMWARE_TIMEOUT = 0x11,
+    FIRMWARE_UPDATE_ERROR = 0x12,
     POWER = 0x21,
+    UI = 0x22,
+    AUDIO = 0x23,
+    ADC = 0x24,
+    SDCARD = 0x25,
+    USB = 0x26,
+    LED = 0x27,
+    EEPROM = 0x28,
+    GENERAL = 0x29,
+    TRANSPONDER_ADSB = 0x2a,
+    GPIO = 0x2c,
     GPS_COMMUNICATION = 0x31,
     GPS_CONFIGURATION = 0x32,
+    GPS_ANTENNA = 0x33,
     RF_COMMUNICATION = 0x41,
+    ID_SAME = 0x42,
+    ID_WRONG = 0x43,
     COMMUNICATION = 0x51,
     FLASH_MEMORY = 0x61,
     PRESSURE_SENSOR = 0x71,
     OBSTACLE_DATABASE = 0x81,
+    OBSTACLE_DATABASE_EXPIRED = 0x82,
     FLIGHT_RECORDER = 0x91,
-    TRANSPONDER_RECEIVER = 0xa1,
+    ENL = 0x93,
+    RANGE_ANALYZER = 0x94,
+    CONFIGURATION_ERROR = 0xa1,
+    INVALID_OBSTACLE_LICENSE = 0xb1,
+    INVALID_IGC_LICENSE = 0xb2,
+    INVALID_AUD_LICENSE = 0xb3,
+    INVALID_ENL_LICENSE = 0xb4,
+    INVALID_RFB_LICENSE = 0xb5,
+    INVALID_TIS_LICENSE = 0xb6,
+    GENERIC = 0x100,
+    FLASH_FS = 0x101,
+    FAILURE_UPDATING_DISPLAY = 0x110,
+    DEVICE_OUTSIDE_REGION = 0x120,
     OTHER = 0xf1,
   };
 

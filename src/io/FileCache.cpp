@@ -1,30 +1,11 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "FileCache.hpp"
 #include "FileReader.hxx"
 #include "FileOutputStream.hxx"
 #include "system/FileUtil.hpp"
+#include "util/SpanCast.hxx"
 
 #ifdef _WIN32
 #include "time/FileTime.hxx"
@@ -126,8 +107,8 @@ FileCache::Load(const TCHAR *name, Path original_path) noexcept
     unsigned magic;
     struct FileInfo old_info;
 
-    r->Read(&magic, sizeof(magic));
-    r->Read(&old_info, sizeof(old_info));
+    r->ReadT(magic);
+    r->ReadT(old_info);
 
     if (magic == FILE_CACHE_MAGIC &&
         old_info == original_info)
@@ -154,7 +135,7 @@ FileCache::Save(const TCHAR *name, Path original_path)
   File::Delete(path);
 
   auto os = std::make_unique<FileOutputStream>(path);
-  os->Write(&FILE_CACHE_MAGIC, sizeof(FILE_CACHE_MAGIC));
-  os->Write(&original_info, sizeof(original_info));
+  os->Write(ReferenceAsBytes(FILE_CACHE_MAGIC));
+  os->Write(ReferenceAsBytes(original_info));
   return os;
 }

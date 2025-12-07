@@ -1,48 +1,32 @@
-/*
- * Copyright 2020-2021 CM4all GmbH
- * All rights reserved.
- *
- * author: Max Kellermann <mk@cm4all.com>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *
- * - Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE
- * FOUNDATION OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright CM4all GmbH
+// author: Max Kellermann <mk@cm4all.com>
 
 #pragma once
 
 #include "Cast.hxx"
+#include "Concepts.hxx"
 #include "MemberPointer.hxx"
 #include "OptionalCounter.hxx"
+#include "OptionalField.hxx"
 #include "ShallowCopy.hxx"
 
 #include <iterator>
 #include <type_traits>
 #include <utility>
 
+struct IntrusiveForwardListOptions {
+	bool constant_time_size = false;
+
+	/**
+	 * Cache a pointer to the last item?  This makes back() and
+	 * push_back() run in constant time.
+	 */
+	bool cache_last = false;
+};
+
 struct IntrusiveForwardListNode {
-	IntrusiveForwardListNode *next = nullptr;
+	IntrusiveForwardListNode *next;
 };
 
 struct IntrusiveForwardListHook {
@@ -120,9 +104,14 @@ struct IntrusiveForwardListMemberHookTraits {
  */
 template<typename T,
 	 typename HookTraits=IntrusiveForwardListBaseHookTraits<T>,
-	 bool constant_time_size=false>
+	 IntrusiveForwardListOptions options=IntrusiveForwardListOptions{}>
 class IntrusiveForwardList {
-	IntrusiveForwardListNode head;
+	static constexpr bool constant_time_size = options.constant_time_size;
+
+	IntrusiveForwardListNode head{nullptr};
+
+	[[no_unique_address]]
+	OptionalField<IntrusiveForwardListNode *, options.cache_last> last_cache{&head};
 
 	[[no_unique_address]]
 	OptionalCounter<constant_time_size> counter;
@@ -152,6 +141,11 @@ class IntrusiveForwardList {
 	}
 
 public:
+	using value_type = T;
+	using reference = T &;
+	using const_reference = const T &;
+	using pointer = T *;
+	using const_pointer = const T *;
 	using size_type = std::size_t;
 
 	IntrusiveForwardList() = default;
@@ -160,6 +154,7 @@ public:
 		:head{std::exchange(src.head.next, nullptr)}
 	{
 		using std::swap;
+		swap(last_cache, src.last_cache);
 		swap(counter, src.counter);
 	}
 
@@ -167,13 +162,15 @@ public:
 		:head(src.head)
 	{
 		// shallow copies mess with the counter
-		static_assert(!constant_time_size);
+		static_assert(!options.constant_time_size);
+		static_assert(!options.cache_last);
 	}
 
 	IntrusiveForwardList &operator=(IntrusiveForwardList &&src) noexcept {
 		using std::swap;
 		swap(head, src.head);
-		swap(counter, counter);
+		swap(last_cache, src.last_cache);
+		swap(counter, src.counter);
 		return *this;
 	}
 
@@ -181,38 +178,84 @@ public:
 		return head.next == nullptr;
 	}
 
-	constexpr size_type size() const noexcept {
-		if constexpr (constant_time_size)
-			return counter;
-		else
-			return std::distance(begin(), end());
+	constexpr size_type size() const noexcept
+		requires(constant_time_size) {
+		return counter;
 	}
 
 	void clear() noexcept {
 		head = {};
+		last_cache = {&head};
 		counter.reset();
 	}
 
-	template<typename D>
-	void clear_and_dispose(D &&disposer) noexcept {
+	void clear_and_dispose(Disposer<value_type> auto disposer) noexcept {
 		while (!empty()) {
 			auto *item = &front();
 			pop_front();
 			disposer(item);
 		}
+
+		last_cache = {&head};
 	}
 
-	const T &front() const noexcept {
+	/**
+	 * @return the number of removed items
+	 */
+	std::size_t remove_and_dispose_if(std::predicate<const_reference> auto pred,
+					  Disposer<value_type> auto dispose) noexcept {
+		std::size_t result = 0;
+
+		for (auto prev = before_begin(), current = std::next(prev);
+		     current != end();) {
+			auto &item = *current;
+
+			if (pred(item)) {
+				++result;
+				++current;
+				erase_after(prev);
+				dispose(&item);
+			} else {
+				prev = current++;
+			}
+		}
+
+		return result;
+	}
+
+	const_reference front() const noexcept {
 		return *Cast(head.next);
 	}
 
-	T &front() noexcept {
+	reference front() noexcept {
 		return *Cast(head.next);
 	}
 
-	void pop_front() noexcept {
+	reference pop_front() noexcept {
+		auto &i = front();
 		head.next = head.next->next;
+
+		if constexpr (options.cache_last)
+			if (head.next == nullptr)
+				last_cache.value = &head;
+
 		--counter;
+		return i;
+	}
+
+	void pop_front_and_dispose(Disposer<value_type> auto disposer) noexcept {
+		auto &i = pop_front();
+		disposer(&i);
+	}
+
+	const_reference back() const noexcept
+		requires(options.cache_last) {
+		return *Cast(last_cache.value);
+	}
+
+	reference back() noexcept
+		requires(options.cache_last) {
+		return *Cast(last_cache.value);
 	}
 
 	class const_iterator;
@@ -243,17 +286,23 @@ public:
 			return !(*this == other);
 		}
 
-		constexpr T &operator*() const noexcept {
+		constexpr reference operator*() const noexcept {
 			return *Cast(cursor);
 		}
 
-		constexpr T *operator->() const noexcept {
+		constexpr pointer operator->() const noexcept {
 			return Cast(cursor);
 		}
 
 		iterator &operator++() noexcept {
 			cursor = cursor->next;
 			return *this;
+		}
+
+		iterator operator++(int) noexcept {
+			auto old = *this;
+			cursor = cursor->next;
+			return old;
 		}
 	};
 
@@ -265,8 +314,17 @@ public:
 		return {head.next};
 	}
 
-	static constexpr iterator end() noexcept {
+	constexpr iterator end() noexcept {
 		return {nullptr};
+	}
+
+	constexpr iterator last() noexcept
+		requires(options.cache_last) {
+		return {last_cache.value};
+	}
+
+	static constexpr iterator iterator_to(reference t) noexcept {
+		return {&ToNode(t)};
 	}
 
 	class const_iterator final {
@@ -297,11 +355,11 @@ public:
 			return !(*this == other);
 		}
 
-		constexpr const T &operator*() const noexcept {
+		constexpr reference operator*() const noexcept {
 			return *Cast(cursor);
 		}
 
-		constexpr const T *operator->() const noexcept {
+		constexpr pointer operator->() const noexcept {
 			return Cast(cursor);
 		}
 
@@ -309,22 +367,61 @@ public:
 			cursor = cursor->next;
 			return *this;
 		}
+
+		const_iterator operator++(int) noexcept {
+			auto old = *this;
+			cursor = cursor->next;
+			return old;
+		}
 	};
 
 	constexpr const_iterator begin() const noexcept {
 		return {head.next};
 	}
 
-	void push_front(T &t) noexcept {
+	constexpr const_iterator end() const noexcept {
+		return {nullptr};
+	}
+
+	constexpr const_iterator last() const noexcept
+		requires(options.cache_last) {
+		return {last_cache.value};
+	}
+
+	static constexpr const_iterator iterator_to(const_reference t) noexcept {
+		return {&ToNode(t)};
+	}
+
+	iterator push_front(reference t) noexcept {
 		auto &new_node = ToNode(t);
+
+		if constexpr (options.cache_last)
+			if (empty())
+				last_cache.value = &new_node;
+
 		new_node.next = head.next;
 		head.next = &new_node;
 		++counter;
+
+		return iterator_to(t);
 	}
 
-	static iterator insert_after(iterator pos, T &t) noexcept {
-		// no counter update in this static method
-		static_assert(!constant_time_size);
+	iterator push_back(reference t) noexcept
+		requires(options.cache_last) {
+		auto &new_node = ToNode(t);
+		new_node.next = nullptr;
+		last_cache.value->next = &new_node;
+		last_cache.value = &new_node;
+
+		++counter;
+
+		return iterator_to(t);
+	}
+
+	static iterator insert_after(iterator pos, reference t) noexcept
+		requires(!constant_time_size && !options.cache_last) {
+		/* if we have no counter, then this method is allowed
+		   to be static */
 
 		auto &pos_node = *pos.cursor;
 		auto &new_node = ToNode(t);
@@ -333,8 +430,28 @@ public:
 		return &new_node;
 	}
 
+	iterator insert_after(iterator pos, reference t) noexcept
+		requires(constant_time_size || options.cache_last) {
+		auto &pos_node = *pos.cursor;
+		auto &new_node = ToNode(t);
+
+		if constexpr (options.cache_last)
+			if (pos_node.next == nullptr)
+				last_cache.value = &new_node;
+
+		new_node.next = pos_node.next;
+		pos_node.next = &new_node;
+		++counter;
+		return &new_node;
+	}
+
 	void erase_after(iterator pos) noexcept {
 		pos.cursor->next = pos.cursor->next->next;
+
+		if constexpr (options.cache_last)
+			if (pos.cursor->next == nullptr)
+				last_cache.value = pos.cursor;
+
 		--counter;
 	}
 

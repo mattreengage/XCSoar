@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "WifiDialog.hpp"
 #include "Dialogs/WidgetDialog.hpp"
@@ -62,7 +42,8 @@ class WifiListWidget final
   struct NetworkInfo {
     StaticString<32> bssid;
     StaticString<256> ssid;
-    int signal_level;
+    bool signal_detected;
+    signed signal_level;
     int id;
 
     enum WifiSecurity security;
@@ -80,6 +61,8 @@ class WifiListWidget final
   WPASupplicant wpa_supplicant;
 
   UI::PeriodicTimer update_timer{[this]{ UpdateList(); }};
+
+  const bool signal_level_in_dbm = !StringIsEqual(GetKoboWifiInterface(), "eth0");
 
 public:
   void CreateButtons(WidgetDialog &dialog) {
@@ -168,7 +151,7 @@ WifiListWidget::UpdateButtons()
     if (info.id >= 0) {
       connect_button->SetCaption(_("Remove"));
       connect_button->SetEnabled(true);
-    } else if (info.signal_level >= 0) {
+    } else if (info.signal_detected) {
       connect_button->SetCaption(_("Connect"));
       connect_button->SetEnabled(true);
     }
@@ -210,18 +193,19 @@ WifiListWidget::OnPaintItem(Canvas &canvas, const PixelRect rc,
     }
   }
   else if (info.id >= 0)
-    state = info.signal_level >= 0
+    state = info.signal_detected
       ? _("Saved and visible")
       : _("Saved, but not visible");
-  else if (info.signal_level >= 0)
+  else if (info.signal_detected)
     state = _("Visible");
 
   if (state != nullptr)
     row_renderer.DrawRightFirstRow(canvas, rc, state);
 
-  if (info.signal_level >= 0) {
-    StaticString<32> text;
-    text.UnsafeFormat(_T("%s %u"), wifi_security[info.security], info.signal_level);
+  if (info.signal_detected) {
+    StaticString<36> text;
+    text.UnsafeFormat(signal_level_in_dbm ? _T("%s %d dBm") : _T("%s %d"),
+                      wifi_security[info.security], info.signal_level);
     row_renderer.DrawRightSecondRow(canvas, rc, text);
   }
 }
@@ -343,7 +327,7 @@ WifiListWidget::FindVisibleBySSID(const char *ssid) noexcept
 {
   auto f = std::find_if(networks.begin(), networks.end(),
                         [ssid](const NetworkInfo &info) {
-                          return info.signal_level >= 0 && info.ssid == ssid;
+                          return info.signal_detected && info.ssid == ssid;
                         });
   if (f == networks.end())
     return nullptr;
@@ -365,6 +349,7 @@ WifiListWidget::MergeList(const WifiVisibleNetwork *p, unsigned n)
     }
 
     info->ssid = found.ssid;
+    info->signal_detected = true;
     info->signal_level = found.signal_level;
     info->security = found.security;
     info->old_visible = false;
@@ -401,7 +386,7 @@ WifiListWidget::Append(const WifiConfiguredNetworkInfo &src)
   dest.bssid = src.bssid;
   dest.ssid = src.ssid;
   dest.id = src.id;
-  dest.signal_level = -1;
+  dest.signal_detected = false;
   dest.old_configured = false;
 }
 
@@ -449,7 +434,7 @@ WifiListWidget::SweepList()
         --cursor;
     } else {
       if (info.old_visible)
-        info.signal_level = -1;
+        info.signal_detected = false;
 
       if (info.old_configured)
         info.id = -1;

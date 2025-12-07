@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Look/AirspaceLook.hpp"
 #include "Screen/Layout.hpp"
@@ -34,12 +14,14 @@ const RGB8Color AirspaceLook::preset_colors[] = {
   RGB8_YELLOW,
   RGB8_MAGENTA,
   RGB8_CYAN,
+  RGB8_GRAYISH_VIOLET,
   RGB8_RED.Darken(),
   RGB8_GREEN.Darken(),
   RGB8_BLUE.Darken(),
   RGB8_YELLOW.Darken(),
   RGB8_MAGENTA.Darken(),
   RGB8_CYAN.Darken(),
+  RGB8_GRAYISH_VIOLET.Darken(),
   RGB8_WHITE,
   RGB8_LIGHT_GRAY,
   RGB8_GRAY,
@@ -90,7 +72,7 @@ AirspaceLook::Initialise(const AirspaceRendererSettings &settings,
 
   thick_pen.Create(Layout::ScalePenWidth(10), COLOR_BLACK);
 
-  intercept_icon.LoadResource(IDB_AIRSPACEI, IDB_AIRSPACEI_HD);
+  intercept_icon.LoadResource(IDB_AIRSPACEI_ALL);
 
   // labels
   label_pen.Create(1, COLOR_BLUE);

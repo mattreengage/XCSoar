@@ -1,24 +1,5 @@
-/* Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
- */
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
  
 #pragma once
 
@@ -116,7 +97,7 @@ public:
   /**
    * Constructs an uninitialized object.
    */
-  GlidePolar() = default;
+  constexpr GlidePolar() noexcept = default;
 
   /**
    * Constructor.  Performs search for best LD at instantiation
@@ -126,13 +107,13 @@ public:
    * @param _ballast Ballast ratio (default empty)
    */
   GlidePolar(const double _mc, const double _bugs=1,
-             const double _ballast=0);
+             const double _ballast=0) noexcept;
 
   /**
    * Constructs a GlidePolar object that is invalid.
    */
   [[gnu::const]]
-  static GlidePolar Invalid() {
+  static GlidePolar Invalid() noexcept {
     GlidePolar gp(0);
     gp.SetInvalid();
     return gp;
@@ -142,7 +123,7 @@ public:
    * Mark this polar as "invalid", but retain the settings (MacCready,
    * bugs, ballast, cruise efficiency).
    */
-  void SetInvalid() {
+  void SetInvalid() noexcept {
     reference_polar.SetInvalid();
     polar.SetInvalid();
     Update();
@@ -151,7 +132,7 @@ public:
   /**
    * Perform basic checks on the validity of the object.
    */
-  bool IsValid() const {
+  constexpr bool IsValid() const noexcept {
     return Vmin < Vmax;
   }
 
@@ -160,8 +141,7 @@ public:
    *
    * @return Sink rate (m/s, positive down)
    */
-  [[gnu::pure]]
-  double GetSMin() const {
+  constexpr double GetSMin() const noexcept {
     assert(IsValid());
     return Smin;
   }
@@ -171,8 +151,7 @@ public:
    *
    * @return Speed (m/s)
    */
-  [[gnu::pure]]
-  double GetVMin() const {
+  constexpr double GetVMin() const noexcept {
     assert(IsValid());
     return Vmin;
   }
@@ -184,13 +163,12 @@ public:
    *
    * @return Speed (m/s)
    */
-  [[gnu::pure]]
-  double GetVMax() const {
+  constexpr double GetVMax() const noexcept {
     assert(IsValid());
     return Vmax;
   }
 
-  void SetVMax(double _v_max, bool update = true) {
+  void SetVMax(double _v_max, bool update = true) noexcept {
     Vmax = _v_max;
 
     if (update) {
@@ -204,8 +182,7 @@ public:
    *
    * @return Sink rate (m/s, positive down)
    */
-  [[gnu::pure]]
-  double GetSMax() const {
+  constexpr double GetSMax() const noexcept {
     assert(IsValid());
 
     return Smax;
@@ -216,8 +193,7 @@ public:
    *
    * @return Speed of best LD (m/s)
    */
-  [[gnu::pure]]
-  double GetVBestLD() const {
+  constexpr double GetVBestLD() const noexcept {
     assert(IsValid());
 
     return VbestLD;
@@ -228,10 +204,7 @@ public:
    *
    * @return Sink rate at best L/D (m/s)
    */
-  [[gnu::pure]]
-  double
-  GetSBestLD() const
-  {
+  constexpr double GetSBestLD() const noexcept {
     assert(IsValid());
 
     return SbestLD;
@@ -242,9 +215,7 @@ public:
    *
    * @return Best L/D ratio
    */
-  [[gnu::pure]]
-  double GetBestLD() const
-  {
+  constexpr double GetBestLD() const noexcept {
     assert(IsValid());
 
     return bestLD;
@@ -255,21 +226,21 @@ public:
    * considering the given head wind.
    */
   [[gnu::pure]]
-  double GetBestGlideRatioSpeed(double head_wind) const;
+  double GetBestGlideRatioSpeed(double head_wind) const noexcept;
 
   /**
    * Takeoff speed
    * @return Takeoff speed threshold (m/s)
    */
   [[gnu::pure]]
-  double GetVTakeoff() const;
+  double GetVTakeoff() const noexcept;
 
   /**
    * Set cruise efficiency value.  1.0 = perfect MacCready speed
    *
    * @param _ce The new cruise efficiency value
    */
-  void SetCruiseEfficiency(const double _ce) {
+  void SetCruiseEfficiency(const double _ce) noexcept {
     cruise_efficiency = _ce;
   }
 
@@ -278,8 +249,7 @@ public:
    *
    * @return Cruise efficiency
    */
-  [[gnu::pure]]
-  double GetCruiseEfficiency() const {
+  constexpr double GetCruiseEfficiency() const noexcept {
     return cruise_efficiency;
   }
 
@@ -288,14 +258,13 @@ public:
    *
    * @param clean The new bugs setting (clean ratio) (0-1]
    */
-  void SetBugs(const double clean);
+  void SetBugs(const double clean) noexcept;
 
   /**
    * Retrieve bugs 
    * @return Cleanliness of glider (0-1]
    */
-  [[gnu::pure]]
-  double GetBugs() const {
+  constexpr double GetBugs() const noexcept {
     return bugs;
   }
 
@@ -304,27 +273,26 @@ public:
    *
    * @param ratio The new ballast setting (proportion of possible ballast, [0-1]
    */
-  void SetBallast(const double ratio);
+  void SetBallast(const double ratio) noexcept;
 
   /**
    * Set ballast value in litres
    * @param litres The new ballast setting (l or kg)
    */
-  void SetBallastLitres(const double litres);
+  void SetBallastLitres(const double litres) noexcept;
 
   /**
    * Retrieve ballast 
    * @return Proportion of possible ballast [0-1]
    */
-  [[gnu::pure]]
-  double GetBallast() const {
+  constexpr double GetBallast() const noexcept {
     return ballast / (ballast_ratio * reference_mass);
   }
 
   /**
    * Retrieve if the glider is ballasted
    */
-  bool HasBallast() const {
+  constexpr bool HasBallast() const noexcept {
     return ballast > 0;
   }
 
@@ -332,16 +300,18 @@ public:
    * Retrieve ballast in litres
    * @return Ballast (l or kg)
    */
-  [[gnu::pure]]
-  double GetBallastLitres() const;
+  constexpr double GetBallastLitres() const noexcept {
+    return ballast;
+  }
 
   /**
    * Determine if glider carries ballast
    *
    * @return True if glider can carry ballast
    */
-  [[gnu::pure]]
-  bool IsBallastable() const;
+  constexpr bool IsBallastable() const noexcept {
+    return ballast_ratio > 0;
+  }
 
   /**
    * Set MacCready value.  Internally this performs search
@@ -349,15 +319,14 @@ public:
    *
    * @param _mc The new MacCready ring setting (m/s)
    */
-  void SetMC(const double _mc);
+  void SetMC(const double _mc) noexcept;
 
   /**
    * Accessor for MC setting
    *
    * @return The current MacCready ring setting (m/s)
    */
-  [[gnu::pure]]
-  double GetMC() const {
+  constexpr double GetMC() const noexcept {
     return mc;
   }
 
@@ -366,8 +335,7 @@ public:
    *
    * @return The inverse of current MacCready ring setting (s/m)
    */
-  [[gnu::pure]]
-  double GetInvMC() const {
+  constexpr double GetInvMC() const noexcept {
     return inv_mc;
   }
 
@@ -377,7 +345,7 @@ public:
    * @return Mass (kg) of aircraft including ballast
    */
   [[gnu::pure]]
-  double GetTotalMass() const;
+  double GetTotalMass() const noexcept;
 
   /**
    * Calculate wing loading
@@ -385,7 +353,7 @@ public:
    * @return Wing loading (all up mass divided by reference area, kg/m^2)
    */
   [[gnu::pure]]
-  double GetWingLoading() const;
+  double GetWingLoading() const noexcept;
 
   /**
    * Sink rate model (actual glide polar) function.
@@ -395,7 +363,7 @@ public:
    * @return Sink rate (m/s, positive down)
    */
   [[gnu::pure]]
-  double SinkRate(double V) const;
+  double SinkRate(double V) const noexcept;
 
   /**
    * Sink rate model (actual glide polar) function.
@@ -415,7 +383,7 @@ public:
    * @return Sink rate (m/s, positive down)
    */
   [[gnu::pure]]
-  double SinkRate(double V, double n) const;
+  double SinkRate(double V, double n) const noexcept;
 
   /**
    * Sink rate model adjusted by MC setting.  This is used
@@ -427,7 +395,7 @@ public:
    * @return Sink rate plus MC setting (m/s, positive down)
    */
   [[gnu::pure]]
-  double MSinkRate(double V) const;
+  double MSinkRate(double V) const noexcept;
 
   /**
    * Quickly determine whether a task is achievable without
@@ -440,7 +408,7 @@ public:
    * @return True if a glide solution is feasible (optimistically)
    */
   [[gnu::pure]]
-  bool IsGlidePossible(const GlideState &task) const;
+  bool IsGlidePossible(const GlideState &task) const noexcept;
 
   /**
    * Calculate speed-to-fly according to MacCready dolphin theory
@@ -454,7 +422,7 @@ public:
    */
   [[gnu::pure]]
   double SpeedToFly(const AircraftState &state, const GlideResult &solution,
-                   const bool block_stf) const;
+                   bool block_stf) const noexcept;
 
   /**
    * Calculate speed-to-fly according to MacCready dolphin theory
@@ -467,7 +435,8 @@ public:
    * @return Speed to fly (true, m/s)SpeedToFly
    */
   [[gnu::pure]]
-  double SpeedToFly(const double stf_sink_rate_vario, const double head_wind) const;
+  double SpeedToFly(double stf_sink_rate_vario,
+                    double head_wind) const noexcept;
 
   /**
    * Compute MacCready ring setting to adjust speeds to incorporate
@@ -480,7 +449,7 @@ public:
    * @return MC value adjusted for risk (m/s)
    */
   [[gnu::pure]]
-  double GetRiskMC(double height_fraction, double riskGamma) const;
+  double GetRiskMC(double height_fraction, double riskGamma) const noexcept;
 
   /**
    * Find LD relative to ground for specified track bearing
@@ -490,7 +459,7 @@ public:
    * @return LD ratio (distance travelled per unit height loss)
    */
   [[gnu::pure]]
-  double GetLDOverGround(Angle track, SpeedVector wind) const;
+  double GetLDOverGround(Angle track, SpeedVector wind) const noexcept;
 
   /**
    * Find LD relative to ground for specified track bearing
@@ -500,7 +469,7 @@ public:
    * @return LD ratio (distance travelled per unit height loss)
    */
   [[gnu::pure]]
-  double GetLDOverGround(const AircraftState &state) const;
+  double GetLDOverGround(const AircraftState &state) const noexcept;
 
   /**
    * Calculates the thermal value of next leg that is equivalent (gives the
@@ -513,25 +482,25 @@ public:
    * some situations it can be negative.
    */
   [[gnu::pure]]
-  double GetNextLegEqThermal(double current_wind, double next_wind) const;
+  double GetNextLegEqThermal(double current_wind, double next_wind) const noexcept;
 
   /** Returns the wing area in m^2 */
-  double GetWingArea() const {
+  constexpr double GetWingArea() const noexcept {
     return wing_area;
   }
 
   /** Sets the wing area in m^2 */
-  void SetWingArea(double _wing_area) {
+  constexpr void SetWingArea(double _wing_area) noexcept {
     wing_area = _wing_area;
   }
 
   /** Returns the reference mass in kg */
-  double GetReferenceMass() const {
+  constexpr double GetReferenceMass() const noexcept {
     return reference_mass;
   }
 
   /** Sets the reference mass in kg */
-  void SetReferenceMass(double _reference_mass, bool update = true) {
+  void SetReferenceMass(double _reference_mass, bool update=true) noexcept {
     reference_mass = _reference_mass;
 
     if (update)
@@ -539,58 +508,58 @@ public:
   }
 
   /** Returns the dry mass in kg */
-  double GetDryMass() const {
+  constexpr double GetDryMass() const noexcept {
     return empty_mass + crew_mass;
   }
   
   /** Returns the empty mass in kg */
-  double GetEmptyMass() const {
+  constexpr double GetEmptyMass() const noexcept {
     return empty_mass;
   }
   
   /** Sets the empty mass in kg */
-  void SetEmptyMass(double _empty_mass, bool update = true) {
+  void SetEmptyMass(double _empty_mass, bool update=true) noexcept {
     empty_mass = _empty_mass;
-    
+
     if (update)
       Update();
   }
   
   /** Sets the crew mass in kg */
-  void SetCrewMass(double _crew_mass, bool update = true) {
+  void SetCrewMass(double _crew_mass, bool update=true) noexcept {
     crew_mass = _crew_mass;
-    
+
     if (update)
       Update();
   }
   
   /** Returns the crew mass in kg */
-  double GetCrewMass() const {
+  constexpr double GetCrewMass() const noexcept {
     return crew_mass;
   }
   
   /** Returns the ballast ratio */
-  double GetBallastRatio() const {
+  constexpr double GetBallastRatio() const noexcept {
     return ballast_ratio;
   }
 
   /** Sets the ballast ratio */
-  void SetBallastRatio(double _ballast_ratio) {
+  constexpr void SetBallastRatio(double _ballast_ratio) noexcept {
     ballast_ratio = _ballast_ratio;
   }
 
   /** Returns the ideal polar coefficients */
-  PolarCoefficients GetCoefficients() const {
+  constexpr const PolarCoefficients &GetCoefficients() const noexcept {
     return reference_polar;
   }
 
   /** Returns the real polar coefficients */
-  PolarCoefficients GetRealCoefficients() const {
+  constexpr const PolarCoefficients &GetRealCoefficients() const noexcept {
     return polar;
   }
 
   /** Sets the ideal polar coefficients */
-  void SetCoefficients(PolarCoefficients coeff, bool update = true) {
+  void SetCoefficients(PolarCoefficients coeff, bool update=true) noexcept {
     reference_polar = coeff;
 
     if (update)
@@ -598,20 +567,21 @@ public:
   }
 
   /** Update glide polar coefficients and values depending on them */
-  void Update();
+  void Update() noexcept;
 
   /** Calculate average speed in still air */
-  double GetAverageSpeed() const;
+  [[gnu::pure]]
+  double GetAverageSpeed() const noexcept;
 
 private:
   /** Update sink rate at max. cruise speed */
-  void UpdateSMax();
+  void UpdateSMax() noexcept;
 
   /** Solve for best LD at current MC/bugs/ballast setting. */
-  void UpdateBestLD();
+  void UpdateBestLD() noexcept;
 
   /** Solve for min sink rate at current bugs/ballast setting. */
-  void UpdateSMin();
+  void UpdateSMin() noexcept;
 };
 
 static_assert(std::is_trivial<GlidePolar>::value, "type is not trivial");

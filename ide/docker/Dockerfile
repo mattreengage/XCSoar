@@ -1,4 +1,4 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -15,3 +15,4 @@ WORKDIR /usr/local/bin
 RUN chmod 755 ./*
 
 WORKDIR /opt/xcsoar
+ENV CCACHE_DIR=/opt/xcsoar/.ccache

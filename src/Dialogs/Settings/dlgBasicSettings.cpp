@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Dialogs/Dialogs.h"
 #include "Dialogs/WidgetDialog.hpp"
@@ -33,7 +13,6 @@ Copyright_License {
 #include "Form/DataField/Listener.hpp"
 #include "UIGlobals.hpp"
 #include "Interface.hpp"
-#include "Components.hpp"
 #include "GlideSolvers/GlidePolar.hpp"
 #include "Task/ProtectedTaskManager.hpp"
 #include "Widget/RowFormWidget.hpp"
@@ -41,6 +20,8 @@ Copyright_License {
 #include "Language/Language.hpp"
 #include "Operation/MessageOperationEnvironment.hpp"
 #include "ui/event/PeriodicTimer.hpp"
+#include "Components.hpp"
+#include "BackendComponents.hpp"
 
 #include <math.h>
 
@@ -82,14 +63,13 @@ public:
     PublishPolarSettings();
     SetBallast();
   }
-  
+
   void SetBallast();
   void SetBallastTimer(bool active);
   void FlipBallastTimer();
 
   void PublishPolarSettings() {
-    if (protected_task_manager != NULL)
-      protected_task_manager->SetGlidePolar(polar_settings.glide_polar_task);
+    backend_components->SetTaskPolar(polar_settings);
   }
 
   void SetBallastLitres(double ballast_litres) {
@@ -133,7 +113,7 @@ private:
 void
 FlightSetupPanel::SetButtons()
 {
-  dump_button->SetVisible(polar_settings.glide_polar_task.HasBallast());
+  dump_button->SetEnabled(polar_settings.glide_polar_task.HasBallast());
 
   const ComputerSettings &settings = CommonInterface::GetComputerSettings();
   dump_button->SetCaption(settings.polar.ballast_timer_active
@@ -153,16 +133,16 @@ FlightSetupPanel::SetBallast()
   if (wl > 0)
     LoadValue(WingLoading, wl, UnitGroup::WING_LOADING);
 
-  if (devices != nullptr) {
+  if (backend_components->devices != nullptr) {
     const Plane &plane = CommonInterface::GetComputerSettings().plane;
     if (plane.empty_mass > 0) {
-      auto dry_mass = plane.empty_mass + polar_settings.glide_polar_task.GetCrewMass();
+      auto dry_mass = polar_settings.glide_polar_task.GetDryMass();
       auto fraction = polar_settings.glide_polar_task.GetBallast();
       auto overload = (dry_mass + fraction * plane.max_ballast) /
-        dry_mass;
+                      plane.polar_shape.reference_mass;
 
       MessageOperationEnvironment env;
-      devices->PutBallast(fraction, overload, env);
+      backend_components->devices->PutBallast(fraction, overload, env);
     }
   }
 }
@@ -219,9 +199,9 @@ FlightSetupPanel::SetBugs(double bugs) {
   polar_settings.SetBugs(bugs);
   PublishPolarSettings();
 
-  if (devices != nullptr) {
+  if (backend_components->devices != nullptr) {
     MessageOperationEnvironment env;
-    devices->PutBugs(bugs, env);
+    backend_components->devices->PutBugs(bugs, env);
   }
 }
 
@@ -234,9 +214,9 @@ FlightSetupPanel::SetQNH(AtmosphericPressure qnh)
   settings_computer.pressure = qnh;
   settings_computer.pressure_available.Update(basic.clock);
 
-  if (devices != nullptr) {
+  if (backend_components->devices != nullptr) {
     MessageOperationEnvironment env;
-    devices->PutQNH(qnh, env);
+    backend_components->devices->PutQNH(qnh, env);
   }
 
   RefreshAltitudeControl();
@@ -285,10 +265,10 @@ FlightSetupPanel::Prepare(ContainerWindow &parent,
   AddFloat(_("Crew"),
            _("All masses loaded to the glider beyond the empty weight including pilot and copilot, but not water ballast."),
            _T("%.0f %s"), _T("%.0f"),
-           0, 300, 5, false, UnitGroup::MASS,
+           0, Units::ToUserMass(300), 5, false, UnitGroup::MASS,
            polar_settings.glide_polar_task.GetCrewMass(),
            this);
-  
+
   const double db = 5;
   AddFloat(_("Ballast"),
            _("Ballast of the glider. Press \"Dump/Stop\" to toggle count-down of the ballast volume according to the dump rate specified in the configuration settings."),
@@ -305,7 +285,7 @@ FlightSetupPanel::Prepare(ContainerWindow &parent,
 
   AddFloat(_("Bugs"), /* xgettext:no-c-format */
            _("How clean the glider is. Set to 0% for clean, larger numbers as the wings "
-               "pick up bugs or gets wet.  50% indicates the glider's sink rate is doubled."),
+               "pick up bugs or get wet. 50% indicates the glider's sink rate is doubled."),
            _T("%.0f %%"), _T("%.0f"),
            0, 50, 1, false,
            (1 - polar_settings.bugs) * 100,
@@ -313,7 +293,7 @@ FlightSetupPanel::Prepare(ContainerWindow &parent,
 
   WndProperty *wp;
   wp = AddFloat(_("QNH"),
-                _("Area pressure for barometric altimeter calibration.  This is set automatically if Vega connected."),
+                _("Area pressure for barometric altimeter calibration. This is set automatically if Vega is connected."),
                 GetUserPressureFormat(true), GetUserPressureFormat(),
                 Units::ToUserPressure(Units::ToSysUnit(850, Unit::HECTOPASCAL)),
                 Units::ToUserPressure(Units::ToSysUnit(1300, Unit::HECTOPASCAL)),
@@ -329,7 +309,7 @@ FlightSetupPanel::Prepare(ContainerWindow &parent,
               UnitGroup::ALTITUDE, 0);
 
   wp = AddFloat(_("Max. temp."),
-                _("Set to forecast ground temperature.  Used by convection estimator (temperature trace page of Analysis dialog)"),
+                _("Set to forecast ground temperature. Used by convection estimator (temperature trace page of Analysis dialog)."),
                 _T("%.0f %s"), _T("%.0f"),
                 Temperature::FromCelsius(-50).ToUser(),
                 Temperature::FromCelsius(60).ToUser(),
@@ -373,7 +353,7 @@ dlgBasicSettingsShowModal()
     instance->FlipBallastTimer();
   }));
 
-  dialog.AddButton(_("OK"), mrOK);
+  dialog.AddButton(_("Close"), mrOK);
 
   dialog.ShowModal();
 }

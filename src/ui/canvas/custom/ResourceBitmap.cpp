@@ -1,30 +1,18 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2021 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "ui/canvas/Bitmap.hpp"
 #include "Screen/Debug.hpp"
 #include "ResourceLoader.hpp"
 #include "ResourceId.hpp"
+
+#ifdef USE_MEMORY_CANVAS
+#ifdef __ARM_NEON__
+#include "ui/canvas/memory/NEON.hpp"
+#endif
+#include "ui/canvas/memory/RasterCanvas.hpp"
+#include "ui/canvas/memory/PixelOperations.hpp"
+#endif
 
 #ifdef ENABLE_OPENGL
 
@@ -59,12 +47,24 @@ Bitmap::Load(ResourceId id, Type type)
 #ifdef USE_MEMORY_CANVAS
 
 bool
-Bitmap::LoadStretch(ResourceId id, [[maybe_unused]] unsigned zoom)
+Bitmap::LoadStretch(ResourceId id, unsigned zoom)
 {
   assert(zoom > 0);
 
-  // XXX
-  return Load(id);
+  if (!Load(id))
+    return false;
+
+  Bitmap stretched;
+  stretched.Create(GetSize() * zoom);
+
+  {
+    RasterCanvas canvas{stretched.buffer};
+    canvas.ScaleRectangle({}, stretched.GetSize(),
+                          buffer.data, buffer.pitch, buffer.size);
+  }
+
+  *this = std::move(stretched);
+  return true;
 }
 
 #endif

@@ -1,30 +1,12 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #pragma once
 
 #include "Features.hpp"
 #include "ui/dim/Rect.hpp"
+#include "ui/dim/Point.hpp"
+#include "ui/dim/Size.hpp"
 
 #include <cassert>
 
@@ -32,7 +14,7 @@ Copyright_License {
 #include <windef.h> // for HWND (needed by winuser.h)
 #include <winuser.h>
 #else
-#include <boost/intrusive/list_hook.hpp>
+#include "util/IntrusiveList.hxx"
 #endif
 
 class Font;
@@ -149,8 +131,7 @@ class Window {
 
 #ifndef USE_WINUSER
   friend class WindowList;
-  typedef boost::intrusive::list_member_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>> SiblingsHook;
-  SiblingsHook siblings;
+  IntrusiveListHook<IntrusiveHookMode::NORMAL> siblings;
 #endif
 
 protected:
@@ -325,9 +306,11 @@ public:
 
   void MoveToCenter() noexcept {
     const PixelSize window_size = GetSize();
-    const PixelSize parent_size = GetParentClientRect().GetSize();
-    int dialog_x = (int(parent_size.width) - int(window_size.width)) / 2;
-    int dialog_y = (int(parent_size.height) - int(window_size.height)) / 2;
+    const PixelRect parent_rect = GetParentClientRect();
+    const PixelSize parent_size = parent_rect.GetSize();
+    int dialog_x = parent_rect.left + (int(parent_size.width) - int(window_size.width)) / 2;
+    int dialog_y = parent_rect.top + (int(parent_size.height) - int(window_size.height)) / 2;
+    
     Move({dialog_x, dialog_y});
   }
 
@@ -694,7 +677,7 @@ public:
   }
 
   [[gnu::pure]]
-  const PixelRect GetClientRect() const noexcept
+  virtual const PixelRect GetClientRect() const noexcept
   {
     assert(IsDefined());
 

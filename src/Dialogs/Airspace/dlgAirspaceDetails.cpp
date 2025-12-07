@@ -1,25 +1,5 @@
-/*
-Copyright_License {
-
-  XCSoar Glide Computer - http://www.xcsoar.org/
-  Copyright (C) 2000-2022 The XCSoar Project
-  A detailed list of copyright holders can be found in the file "AUTHORS".
-
-  This program is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License
-  as published by the Free Software Foundation; either version 2
-  of the License, or (at your option) any later version.
-
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-}
-*/
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright The XCSoar Project
 
 #include "Airspace.hpp"
 #include "Dialogs/WidgetDialog.hpp"
@@ -32,6 +12,7 @@ Copyright_License {
 #include "Interface.hpp"
 #include "ActionInterface.hpp"
 #include "Language/Language.hpp"
+#include "TransponderMode.hpp"
 #include "util/StaticString.hxx"
 
 #include <cassert>
@@ -68,23 +49,45 @@ AirspaceDetailsWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
 
   AddMultiLine(airspace->GetName());
 
-  if (airspace->GetRadioFrequency().Format(buffer.data(),
-                                           buffer.capacity()) != nullptr) {
-    buffer += _T(" MHz");
-    AddReadOnly(_("Radio"), nullptr, buffer);
+  const TransponderCode transponderCode = airspace->GetTransponderCode();
+  TCHAR buffer2[5];
 
-    AddButton(_("Set Active Frequency"), [this](){
-      ActionInterface::SetActiveFrequency(airspace->GetRadioFrequency(),
-                                          airspace->GetName());
-    });
+  transponderCode.Format(buffer2, sizeof(buffer2));
 
-    AddButton(_("Set Standby Frequency"), [this](){
-      ActionInterface::SetStandbyFrequency(airspace->GetRadioFrequency(),
-                                           airspace->GetName());
+  if (transponderCode.IsDefined()) {
+    AddReadOnly(_("Squawk code"), nullptr, buffer2);
+    AddButton(_("Set Squawk Code"), [transponderCode]() {
+      ActionInterface::SetTransponderCode(
+          transponderCode, TransponderMode(TransponderMode::ALT));
     });
   }
 
-  AddReadOnly(_("Type"), nullptr, AirspaceFormatter::GetClass(*airspace));
+  if (airspace->GetRadioFrequency().Format(buffer.data(), buffer.capacity()) !=
+      nullptr) {
+    buffer += _T(" MHz");
+    AddReadOnly(_("Radio"), nullptr, buffer);
+
+    const TCHAR *frequencyName = airspace->GetName();
+    const TCHAR *stationName = airspace->GetStationName();
+
+    if (stationName != nullptr && stationName[0] != '\0') {
+      AddReadOnly(_("Station"), nullptr, stationName);
+      frequencyName = stationName;
+    }
+
+    AddButton(_("Set Active Frequency"), [this, frequencyName]() {
+      ActionInterface::SetActiveFrequency(airspace->GetRadioFrequency(),
+                                          frequencyName);
+    });
+
+    AddButton(_("Set Standby Frequency"), [this, frequencyName]() {
+      ActionInterface::SetStandbyFrequency(airspace->GetRadioFrequency(),
+                                           frequencyName);
+    });
+  }
+
+  AddReadOnly(_("Class"), nullptr, AirspaceFormatter::GetClassShort(*airspace));
+  AddReadOnly(_("Type"), nullptr, AirspaceFormatter::GetType(*airspace));
 
   AirspaceFormatter::FormatAltitude(buffer.data(), airspace->GetTop());
   AddReadOnly(_("Top"), nullptr, buffer);
@@ -97,8 +100,7 @@ AirspaceDetailsWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
       airspace->ClosestPoint(basic.location, warnings->GetProjection());
     const auto distance = closest.Distance(basic.location);
 
-    FormatUserDistance(distance, buffer.data());
-    AddReadOnly(_("Distance"), nullptr, buffer);
+    AddReadOnly(_("Distance"), nullptr, FormatUserDistance(distance));
   }
 }
 
@@ -122,7 +124,6 @@ dlgAirspaceDetails(ConstAirspacePtr airspace,
   WidgetDialog dialog(WidgetDialog::Auto{}, UIGlobals::GetMainWindow(),
                       UIGlobals::GetDialogLook(),
                       _("Airspace Details"), widget);
-  dialog.AddButton(_("Close"), mrOK);
 
   if (warnings != nullptr) {
     widget->dialog = &dialog;
@@ -130,6 +131,7 @@ dlgAirspaceDetails(ConstAirspacePtr airspace,
                      ? _("Enable") : _("Ack Day"),
                      [widget](){ widget->AckDayOrEnable(); });
   }
+  dialog.AddButton(_("Close"), mrOK);
 
   dialog.ShowModal();
 }
