@@ -68,6 +68,7 @@ PageLayout::MakeTitle(const InfoBoxSettings &info_box_settings,
       break;
 
     case Bottom::CROSS_SECTION:
+    case Bottom::FLARM_RADAR:
       // TODO: better text and translate
       builder.Append(_T(", XS"));
       break;
@@ -78,20 +79,6 @@ PageLayout::MakeTitle(const InfoBoxSettings &info_box_settings,
   } catch (BasicStringBuilder<TCHAR>::Overflow) {
   }
 
-  switch (bottom) {
-  case Bottom::NOTHING:
-  case Bottom::CUSTOM:
-    break;
-
-  case Bottom::CROSS_SECTION:
-  case Bottom::FLARM_RADAR:
-    // TODO: better text and translate
-    _tcscat(buffer, _T(", XS"));
-    break;
-
-  case Bottom::MAX:
-    gcc_unreachable();
-  }
   return buffer.data();
 }
 

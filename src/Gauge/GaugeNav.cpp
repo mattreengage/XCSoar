@@ -28,6 +28,7 @@ Copyright_License {
 #include "Task/ProtectedTaskManager.hpp"
 #include "Engine/Task/TaskManager.hpp"
 #include "Components.hpp"
+#include "BackendComponents.hpp"
 #include "Engine/Waypoint/Waypoint.hpp"
 #include "Math/Screen.hpp"
 #include "util/Macros.hpp"
@@ -62,8 +63,11 @@ GaugeNav::OnPaintBuffer(Canvas &canvas) noexcept
     return;
   }
 
-  const auto way_point = protected_task_manager != nullptr
-    ? protected_task_manager->GetActiveWaypoint()
+  if (!backend_components->protected_task_manager)
+    return;
+
+  const auto way_point = backend_components->protected_task_manager != nullptr
+    ? backend_components->protected_task_manager->GetActiveWaypoint()
     : nullptr;
 
   if (!way_point)

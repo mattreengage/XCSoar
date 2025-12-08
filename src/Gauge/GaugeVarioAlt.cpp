@@ -28,12 +28,13 @@ Copyright_License {
 #include "Renderer/UnitSymbolRenderer.hpp"
 #include "Math/FastRotation.hpp"
 #include "Units/Units.hpp"
-#include "util/Clamp.hpp"
 #include "util/Macros.hpp"
 #include "Formatter/Units.hpp"
 #include "Units/System.hpp"
 #include "Units/Descriptor.hpp"
 #include "Interface.hpp"
+
+#include <algorithm> // for std::clamp()
 
 #define DELTA_V_STEP 4.
 #define DELTA_V_LIMIT 16.
@@ -402,7 +403,7 @@ GaugeVarioAlt::ValueToNeedlePos(double Value) noexcept
   }
 
   i = iround(Value * degrees_per_unit);
-  i = Clamp(i, int(gmin), int(gmax));
+  i = std::clamp(i, int(gmin), int(gmax));
   return i;
 }
 
@@ -413,13 +414,13 @@ GaugeVarioAlt::RenderNeedles(Canvas &canvas, int var, int avg, int th) noexcept
   {
     canvas.Select(look.ave_brush);
     canvas.Select(look.ave_pen);
-    canvas.DrawPolygon(getAvePolygon(Clamp(avg, int(gmin) + 2, int(gmax) - 2)), 4);
+    canvas.DrawPolygon(getAvePolygon(std::clamp(avg, int(gmin) + 2, int(gmax) - 2)), 4);
   }
 
   if (Settings().show_thermal_average_needle)
   {
     canvas.Select(look.th_ave_pen);
-    canvas.DrawPolyline(getThAvePolygon(Clamp(th, int(gmin) + 2, int(gmax) - 2)), 4);
+    canvas.DrawPolyline(getThAvePolygon(std::clamp(th, int(gmin) + 2, int(gmax) - 2)), 4);
   }
 
   canvas.SelectNullPen();
@@ -431,7 +432,7 @@ GaugeVarioAlt::RenderNeedles(Canvas &canvas, int var, int avg, int th) noexcept
     canvas.SelectBlackBrush();
     canvas.SelectBlackPen();
   }
-  canvas.DrawPolygon(getPolygon(Clamp(var, int(gmin) + 2, int(gmax) - 2)), 3);
+  canvas.DrawPolygon(getPolygon(std::clamp(var, int(gmin) + 2, int(gmax) - 2)), 3);
 }
 
 // TODO code: Optimise vario rendering, this is slow

@@ -21,7 +21,7 @@ enum ControlIndex {
   EnableFinalGlideBarMC0,
   EnableVarioBar,
   EnableNavRibbon,
-  EnableGlideRibbon
+  EnableGlideRibbon,
   NoPositionTargetDistanceRing
 };
 
