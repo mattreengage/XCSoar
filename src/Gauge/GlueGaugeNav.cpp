@@ -53,7 +53,7 @@ GlueGaugeNav::Hide() noexcept
 }
 
 void
-GlueGaugeNav::OnGPSUpdate(const MoreData &basic)
+GlueGaugeNav::OnGPSUpdate(const MoreData /* unused &basic */)
 {
   ((GaugeNav &)GetWindow()).Invalidate();
 }

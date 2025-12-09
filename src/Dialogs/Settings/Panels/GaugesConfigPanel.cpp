@@ -20,9 +20,9 @@ enum ControlIndex {
   FinalGlideBarDisplayModeControl,
   EnableFinalGlideBarMC0,
   EnableVarioBar,
+  NoPositionTargetDistanceRing,
   EnableNavRibbon,
-  EnableGlideRibbon,
-  NoPositionTargetDistanceRing
+  EnableGlideRibbon
 };
 
 static constexpr StaticEnumChoice final_glide_bar_display_mode_list[] = {
@@ -109,7 +109,7 @@ static constexpr StaticEnumChoice nav_ribbon_type_list[] = {
     N_("Show navigation ribbon above map") },
   { (unsigned)NavRibbonType::BOTTOM, N_("Bottom"),
     N_("Show navigation ribbon below map") },
-  { 0 }
+  nullptr
 };
 
 static constexpr StaticEnumChoice glide_ribbon_type_list[] = {
@@ -119,7 +119,7 @@ static constexpr StaticEnumChoice glide_ribbon_type_list[] = {
     N_("Show glide ratio ribbon left of map") },
   { (unsigned)GlideRibbonType::RIGHT, N_("Right"),
     N_("how glide ratio ribbon right of map") },
-  { 0 }
+  nullptr
 };
 
 class GaugesConfigPanel final : public RowFormWidget, DataFieldListener {
@@ -211,12 +211,12 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
              (unsigned)map_settings.nav_ribbon_mode,
              this);
 
-
   AddEnum(_("Glide Ratio Ribbon"),
              _("If set to ON the Glide Ratio Ribbon will be shown"),
              glide_ribbon_type_list,
              (unsigned)map_settings.glide_ribbon_mode,
              this);
+
 }
 
 bool
@@ -253,11 +253,13 @@ GaugesConfigPanel::Save(bool &_changed) noexcept
                        map_settings.vario_bar_enabled);
 
   bool ribbon_geometry_changed = false;
-  ribbon_geometry_changed |= SaveValueEnum(EnableNavRibbon, ProfileKeys::EnableNavRibbon,
-                       map_settings.nav_ribbon_mode);
+  ribbon_geometry_changed |= SaveValueEnum(EnableNavRibbon, 
+                                          ProfileKeys::EnableNavRibbon,
+                                          map_settings.nav_ribbon_mode);
 
-  ribbon_geometry_changed |= SaveValueEnum(EnableGlideRibbon, ProfileKeys::EnableGlideRibbon,
-                       map_settings.glide_ribbon_mode);
+  ribbon_geometry_changed |= SaveValueEnum(EnableGlideRibbon, 
+                                          ProfileKeys::EnableGlideRibbon,
+                                          map_settings.glide_ribbon_mode);
 
   changed |= ribbon_geometry_changed;
   changed |= SaveValue(NoPositionTargetDistanceRing, ProfileKeys::NoPositionTargetDistanceRing,

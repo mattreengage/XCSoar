@@ -53,14 +53,11 @@ Look::InitialiseConfigured(const UISettings &settings,
                    infobox_width,
                    info_box.title_font);
   vario_alt.Initialise(dark_mode,
-                   settings.info_boxes.use_colors,
-                   info_box.title_font);
+                   settings.info_boxes.use_colors);
   glide.Initialise(dark_mode,
-                   settings.info_boxes.use_colors,
-                   info_box.title_font);
+                   settings.info_boxes.use_colors);
   nav.Initialise(dark_mode,
-                   settings.info_boxes.use_colors,
-                   info_box.title_font);
+                   settings.info_boxes.use_colors);
   wind_arrow_info_box.Initialise(map_bold_font, dark_mode);
   flarm_gauge.Initialise(traffic, true, dark_mode);
   thermal_assistant_gauge.Initialise(true, dark_mode);

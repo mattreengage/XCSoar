@@ -27,5 +27,5 @@ public:
   void Hide() noexcept override;
 
 private:
-  virtual void OnGPSUpdate(const MoreData &basic) override;
+  virtual void OnGPSUpdate(const MoreData &basic);
 };

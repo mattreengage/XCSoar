@@ -53,7 +53,7 @@ GlueGaugeVarioAlt::Hide() noexcept
 }
 
 void
-GlueGaugeVarioAlt::OnGPSUpdate(const MoreData &basic)
+GlueGaugeVarioAlt::OnGPSUpdate(const MoreData /* unused &basic */)
 {
   ((GaugeVarioAlt &)GetWindow()).Invalidate();
 }

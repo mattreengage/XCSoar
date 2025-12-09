@@ -30,8 +30,7 @@ Copyright_License {
 #include <algorithm>
 
 void
-NavLook::Initialise(bool _inverse, bool _colors,
-                      const Font &_text_font)
+NavLook::Initialise(bool _inverse, bool _colors)
 {
   inverse = _inverse;
   colors = _colors;

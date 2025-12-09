@@ -160,7 +160,7 @@ protected:
 private:
   void RenderBase(Canvas &canvas, PixelRect rc) noexcept;
   void RenderValue(Canvas &canvas, const LabelValueGeometry &g,
-                   LabelValueDrawInfo &di,
+                   LabelValueDrawInfo /* unused &di */,
                    double Value, const TCHAR *Label, 
                    bool frac, int infinity) noexcept;
   void RenderBallast(Canvas &canvas) noexcept;

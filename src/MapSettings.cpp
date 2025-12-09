@@ -49,6 +49,8 @@ MapSettings::SetDefaults() noexcept
   show_fai_triangle_areas = false;
   skylines_traffic_map_mode = DisplaySkyLinesTrafficMapMode::SYMBOL;
   show_95_percent_rule_helpers = false;
+  nav_ribbon_mode = NavRibbonType::NONE;
+  glide_ribbon_mode = GlideRibbonType::NONE;
 
   trail.SetDefaults();
   item_list.SetDefaults();

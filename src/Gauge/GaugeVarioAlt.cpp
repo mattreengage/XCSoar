@@ -438,7 +438,7 @@ GaugeVarioAlt::RenderNeedles(Canvas &canvas, int var, int avg, int th) noexcept
 // TODO code: Optimise vario rendering, this is slow
 void
 GaugeVarioAlt::RenderValue(Canvas &canvas, const LabelValueGeometry &g,
-                        LabelValueDrawInfo &di,
+                        LabelValueDrawInfo /* unused &di */,
                         double value, const TCHAR *label, 
                         bool frac, int infinity) noexcept
 {

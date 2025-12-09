@@ -45,8 +45,7 @@ struct GlideLook {
   bool fonts_valid;
   PixelRect old_rc;
 
-  void Initialise(bool inverse, bool colors,
-                  const Font &text_font);
+  void Initialise(bool inverse, bool colors);
 
   void Resize(Canvas &canvas, PixelRect rc);
   bool HasChanged(PixelRect rc);

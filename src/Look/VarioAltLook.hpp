@@ -52,8 +52,7 @@ struct VarioAltLook {
   PixelRect info_box, old_rc;
   unsigned num_info_box, info_height;
 
-  void Initialise(bool inverse, bool colors,
-                  const Font &text_font);
+  void Initialise(bool inverse, bool colors);
 
   void Resize(Canvas &canvas, PixelRect rc);
   bool HasChanged(PixelRect rc);
