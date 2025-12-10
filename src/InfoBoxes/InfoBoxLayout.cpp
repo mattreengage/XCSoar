@@ -124,7 +124,27 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
   layout.ClearNav();
 
   unsigned right = rc.right;
-  unsigned top_offset = 0;
+
+  if (layout.landscape && map_settings.nav_ribbon_mode != NavRibbonType::NONE) {
+    layout.control_size.height = layout.control_size.height * 6 / 6.5;
+
+    layout.nav.right = rc.right;
+    layout.nav.left = rc.left;
+
+    if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
+    {
+      layout.nav.top = rc.top;
+      layout.nav.bottom = rc.top + layout.control_size.height / 2;
+      rc.top = layout.nav.bottom;
+    }
+    else
+    {
+      layout.nav.bottom = rc.bottom;
+      layout.nav.top = rc.bottom - layout.control_size.height / 2;
+      rc.bottom = layout.nav.top;
+    }
+  }
+
 
   switch (geometry) {
   case InfoBoxSettings::Geometry::SPLIT_8:
@@ -211,62 +231,22 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     break;
 
   case InfoBoxSettings::Geometry::LEFT_6_RIGHT_3_VARIO:
-    if (map_settings.nav_ribbon_mode != NavRibbonType::NONE) {
-      layout.control_size.height = layout.control_size.height * 6 / 6.5;
-
-      layout.nav.right = rc.right;
-      layout.nav.left = rc.left;
-
-      if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
-      {
-        layout.nav.top = rc.top;
-        layout.nav.bottom = rc.top + layout.control_size.height / 2;
-        top_offset = layout.nav.bottom;
-      }
-      else
-      {
-        layout.nav.bottom = rc.bottom;
-        layout.nav.top = rc.bottom - layout.control_size.height / 2;
-        rc.bottom = layout.nav.top;
-      }
-    }
-
     layout.vario.left = rc.right - layout.control_size.width * 2;
     layout.vario.right = rc.right;
-    layout.vario.top = rc.top + top_offset;
+    layout.vario.top = rc.top;
     layout.vario.bottom = layout.vario.top + layout.control_size.height * 4;
 
 
     // Info boxes under the vario
     rc.right = MakeRightColumn(layout, layout.positions + 6, 2, rc.right,
-                               rc.top + top_offset + 4 * layout.control_size.height, rc.bottom);
+                               rc.top + 4 * layout.control_size.height, rc.bottom);
     rc.right = MakeRightColumn(layout, layout.positions + 8, 2, rc.right,
-                               rc.top + top_offset + 4 * layout.control_size.height, rc.bottom);
+                               rc.top + 4 * layout.control_size.height, rc.bottom);
 
     // Left hand info boxes
     rc.left = MakeLeftColumn(layout, layout.positions, 6,
-                             rc.left, rc.top + top_offset, rc.bottom);
+                             rc.left, rc.top, rc.bottom);
 
-
-    // Add the glide ratio ribbon if required
-    if (map_settings.glide_ribbon_mode != GlideRibbonType::NONE)
-    {
-      layout.glide.top = rc.top + top_offset;
-      layout.glide.bottom = rc.bottom;
-
-      if (map_settings.glide_ribbon_mode == GlideRibbonType::RIGHT)
-      {
-        layout.glide.right = rc.right;
-        layout.glide.left = layout.glide.right - layout.control_size.width / 2;
-        rc.right = layout.glide.left;
-      }
-      else
-      {
-        layout.glide.left = rc.left;
-        layout.glide.right = layout.glide.left + layout.control_size.width / 2;
-        rc.left = layout.glide.right;
-      }
-    }
     break;
 
   case InfoBoxSettings::Geometry::LEFT_12_RIGHT_3_VARIO:
@@ -465,7 +445,45 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     break;
   };
 
-  rc.top = rc.top + top_offset;
+  if (!layout.landscape && map_settings.nav_ribbon_mode != NavRibbonType::NONE) {
+    layout.control_size.height = layout.control_size.height * 6 / 6.5;
+
+    layout.nav.right = rc.right;
+    layout.nav.left = rc.left;
+
+    if (map_settings.nav_ribbon_mode == NavRibbonType::TOP)
+    {
+      layout.nav.top = rc.top;
+      layout.nav.bottom = rc.top + layout.control_size.height / 2;
+      rc.top = layout.nav.bottom;
+    }
+    else
+    {
+      layout.nav.bottom = rc.bottom;
+      layout.nav.top = rc.bottom - layout.control_size.height / 2;
+      rc.bottom = layout.nav.top;
+    }
+  }
+
+  // Add the glide ratio ribbon if required
+  if (map_settings.glide_ribbon_mode != GlideRibbonType::NONE)
+  {
+    layout.glide.top = rc.top;
+    layout.glide.bottom = rc.bottom;
+
+    if (map_settings.glide_ribbon_mode == GlideRibbonType::RIGHT)
+    {
+      layout.glide.right = rc.right;
+      layout.glide.left = layout.glide.right - layout.control_size.width / 2;
+      rc.right = layout.glide.left;
+    }
+    else
+    {
+      layout.glide.left = rc.left;
+      layout.glide.right = layout.glide.left + layout.control_size.width / 2;
+      rc.left = layout.glide.right;
+    }
+  }
 
   layout.remaining = rc;
   return layout;
