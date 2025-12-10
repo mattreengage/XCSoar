@@ -206,13 +206,13 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
   SetExpertRow(EnableVarioBar);
 
   AddEnum(_("Navigation Ribbon"),
-             _("If set to ON the Navigation Ribbon will be shown"),
+             _("Display a navigation ribbob. This includes the next turnpoint name and distance as wel as the task distance remaining. The blue marker indicates the direction and bearing change required to resume track."),
              nav_ribbon_type_list,
              (unsigned)map_settings.nav_ribbon_mode,
              this);
 
   AddEnum(_("Glide Ratio Ribbon"),
-             _("If set to ON the Glide Ratio Ribbon will be shown"),
+             _("Displays a glide ration ribbon. The required GR is indicated by a horizontal black line. The GR achieved since the last thermal is indicated by a marker on the left of the ribbon. The current GR is indicated by a marker on the right on the ribbon. When the achieved GR is better than required, the indicated will show in gren, otherwise, in red"),
              glide_ribbon_type_list,
              (unsigned)map_settings.glide_ribbon_mode,
              this);
