@@ -35,13 +35,13 @@ class Font;
 struct NavLook {
   bool inverse, colors;
 
-  Color background_color, text_color;
+  Color background_color, text_color, alt_color;
 
   Brush goal_brush, track_brush;
   Pen border_pen, goal_pen, track_pen;
 
   bool fonts_valid;
-  Font text_font, error_font;
+  Font text_font, error_font, alt_font;
 
   PixelRect old_rc;
   unsigned middle;

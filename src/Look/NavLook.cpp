@@ -38,9 +38,11 @@ NavLook::Initialise(bool _inverse, bool _colors)
   if (inverse) {
     background_color = COLOR_BLACK;
     text_color = COLOR_WHITE;
+    alt_color = COLOR_GRAY;
   } else {
     background_color = COLOR_WHITE;
     text_color = COLOR_BLACK;
+    alt_color = COLOR_GRAY;
   }
 
   goal_brush.Create(Color(0x20, 0x20, 0xff));
@@ -59,6 +61,7 @@ NavLook::Resize(Canvas &canvas, PixelRect rc)
 {
   const unsigned height = rc.GetHeight() - 9;
   text_font.Load(FontDescription(height * 2 / 3, true, false, false));
+  alt_font.Load(FontDescription(height * 1 / 3, true, false, false));
 
   // First attempt is to make error text the full height available
   error_font.Load(FontDescription(height, false, false, false));

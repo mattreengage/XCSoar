@@ -114,12 +114,38 @@ GaugeNav::OnPaintBuffer(Canvas &canvas) noexcept
   if (basic.track_available && task_stats.task_valid &&
       vector_remaining.IsValid() && vector_remaining.distance > 10)
   {
+    // Draw 30 and 60 degree labels
+    const TCHAR angle_30[3] = _T("30"); 
+    const TCHAR angle_60[3] = _T("60"); 
+    const TCHAR angle_90[3] = _T("90"); 
+    canvas.SetTextColor(look.alt_color);
+    canvas.Select(look.alt_font);
+    tsize = canvas.CalcTextSize(angle_30);
+    int offset = GetOffset(Angle::Degrees(30.0f));
+    p = PixelPoint((int)look.middle + offset - (tsize.width / 2), rc.top + padding);
+    canvas.DrawText(p, angle_30);
+    p = PixelPoint((int)look.middle - offset - (tsize.width / 2), rc.top + padding);
+    canvas.DrawText(p, angle_30);
+    tsize = canvas.CalcTextSize(angle_60);
+    offset = GetOffset(Angle::Degrees(60.0f));
+    p = PixelPoint((int)look.middle + offset - (tsize.width / 2), rc.top + padding);
+    canvas.DrawText(p, angle_60);
+    p = PixelPoint((int)look.middle - offset - (tsize.width / 2), rc.top + padding);
+    canvas.DrawText(p, angle_60);
+    tsize = canvas.CalcTextSize(angle_90);
+    offset = GetOffset(Angle::Degrees(90.0f));
+    p = PixelPoint((int)look.middle + offset - tsize.width, rc.top + padding);
+    canvas.DrawText(p, angle_90);
+    p = PixelPoint((int)look.middle - offset, rc.top + padding);
+    canvas.DrawText(p, angle_90);
+
+    // Draw the marker arrow
     canvas.Select(look.goal_brush);
     canvas.Select(look.goal_pen);
     int icon_height = rc.GetHeight() * 2 / 3;
     int icon_half_width = icon_height / 4;
 
-    int offset = GetOffset(vector_remaining.bearing - basic.track);
+    offset = GetOffset(vector_remaining.bearing - basic.track);
     BulkPixelPoint blue_triangle[4] = { 
       { (int)look.middle + offset - icon_half_width, rc.top}, 
       { (int)look.middle + offset, rc.top + icon_height }, 
@@ -153,13 +179,12 @@ GaugeNav::GetOffset(Angle angle)
 void
 GaugeNav::NoTarget(Canvas &canvas, PixelRect rc)
 {
-  canvas.Select(look.error_font);
+  const unsigned padding = Layout::GetTextPadding();
+  canvas.Select(look.text_font);
   PixelSize text_size = canvas.CalcTextSize(look.no_target_msg);
   canvas.SetTextColor(look.text_color);
 
-  const int left = look.middle - (text_size.width / 2);
-
-  const PixelPoint text_position{left, rc.top + 1};
+  PixelPoint text_position = PixelPoint(rc.left + padding, rc.bottom - padding - text_size.height);
   canvas.DrawText(text_position, look.no_target_msg);
 
 }
