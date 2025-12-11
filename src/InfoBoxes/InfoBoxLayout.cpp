@@ -125,6 +125,10 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
 
   unsigned right = rc.right;
 
+  /* 
+    If landscape, and we have a Nav Ribbon required, add it now to be full width, 
+    the main info boxes will be above or below the ribbon as required
+  */
   if (layout.landscape && map_settings.nav_ribbon_mode != NavRibbonType::NONE) {
     layout.control_size.height = layout.control_size.height * 6 / 6.5;
 
@@ -445,6 +449,10 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     break;
   };
 
+  /* 
+    If not landscappe, then add the Nav Ribbon if required This will be full width 
+    either above or below the info boxes created as required 
+  */
   if (!layout.landscape && map_settings.nav_ribbon_mode != NavRibbonType::NONE) {
     layout.control_size.height = layout.control_size.height * 6 / 6.5;
 
@@ -465,7 +473,10 @@ InfoBoxLayout::Calculate(PixelRect rc, InfoBoxSettings::Geometry geometry) noexc
     }
   }
 
-  // Add the glide ratio ribbon if required
+  /* 
+    Add the glide ratio ribbon if required. This will be on the left or right of the map as required
+    and in between any nav boxes and nav ribbon that are at the top or bottom of the screen
+  */
   if (map_settings.glide_ribbon_mode != GlideRibbonType::NONE)
   {
     layout.glide.top = rc.top;
