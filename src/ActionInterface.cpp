@@ -184,6 +184,16 @@ ActionInterface::OffsetManualMacCready(double offset, bool to_devices) noexcept
     SetManualMacCready(mc, to_devices);
 }
 
+void 
+ActionInterface::SetVarioRange(unsigned range) noexcept
+{
+  if (range <= 2)
+  {
+    ComputerSettings &comp = CommonInterface::SetComputerSettings();
+    comp.vario_range = (VarioRange)range;
+  }
+}
+
 void
 ActionInterface::SendMapSettings(const bool trigger_draw) noexcept
 {

@@ -6,6 +6,8 @@
 void
 VarioSettings::SetDefaults() noexcept
 {
+  vario_range = VarioRange::RANGE_NORMAL;
+  show_alt_vario = false;
   show_average = false;
   show_mc = false;
   show_speed_to_fly = false;

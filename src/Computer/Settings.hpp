@@ -22,6 +22,7 @@
 #include "TransponderCode.hpp"
 #include "TransponderMode.hpp"
 #include "net/client/WeGlide/Settings.hpp"
+#include "Gauge/VarioSettings.hpp"
 
 #include <cstdint>
 #include <type_traits>
@@ -244,6 +245,7 @@ struct ComputerSettings {
 
   RadioSettings radio;
 
+  VarioRange vario_range;
   TransponderSettings transponder;
 
   void SetDefaults();

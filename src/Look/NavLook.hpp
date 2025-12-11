@@ -1,0 +1,60 @@
+/*
+Copyright_License {
+
+  XCSoar Glide Computer - http://www.xcsoar.org/
+  Copyright (C) 2000-2021 The XCSoar Project
+  A detailed list of copyright holders can be found in the file "AUTHORS".
+
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+}
+*/
+
+#ifndef XCSOAR_NAV_LOOK_HPP
+#define XCSOAR_NAV_LOOK_HPP
+
+#include "ui/canvas/Color.hpp"
+#include "ui/canvas/Brush.hpp"
+#include "ui/canvas/Pen.hpp"
+#include "ui/canvas/Font.hpp"
+#include "ui/canvas/Canvas.hpp"
+
+class Font;
+
+struct NavLook {
+  bool inverse, colors;
+
+  Color background_color, text_color, alt_color;
+
+  Brush goal_brush, track_brush;
+  Pen border_pen, goal_pen, track_pen;
+
+  bool fonts_valid;
+  Font text_font, error_font, alt_font;
+
+  PixelRect old_rc;
+  unsigned middle;
+
+  const TCHAR no_target_msg[22] = _T("No Navigation Target");
+  const TCHAR angle_30_text[3] = _T("30"); 
+  const TCHAR angle_60_text[3] = _T("60"); 
+  const TCHAR angle_90_text[3] = _T("90"); 
+
+  void Initialise(bool inverse, bool colors);
+
+  void Resize(Canvas &canvas, PixelRect rc);
+  bool HasChanged(PixelRect rc);
+};
+
+#endif

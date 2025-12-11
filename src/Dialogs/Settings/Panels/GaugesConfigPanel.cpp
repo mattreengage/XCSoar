@@ -20,7 +20,9 @@ enum ControlIndex {
   FinalGlideBarDisplayModeControl,
   EnableFinalGlideBarMC0,
   EnableVarioBar,
-  NoPositionTargetDistanceRing
+  NoPositionTargetDistanceRing,
+  EnableNavRibbon,
+  EnableGlideRibbon
 };
 
 static constexpr StaticEnumChoice final_glide_bar_display_mode_list[] = {
@@ -97,6 +99,26 @@ static constexpr StaticEnumChoice thermal_assistant_position_list[] = {
   { UISettings::ThermalAssistantPosition::CENTER_TOP_AVOID_IB,
     N_("Center top (avoid InfoBoxes)"),
     N_("Show thermal assistant in center top (avoid InfoBoxes).") },
+  nullptr
+};
+
+static constexpr StaticEnumChoice nav_ribbon_type_list[] = {
+  { (unsigned)NavRibbonType::NONE, N_("Off"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)NavRibbonType::TOP, N_("Top"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)NavRibbonType::BOTTOM, N_("Bottom"),
+    N_("Show navigation ribbon below map") },
+  nullptr
+};
+
+static constexpr StaticEnumChoice glide_ribbon_type_list[] = {
+  { (unsigned)GlideRibbonType::NONE, N_("Off"),
+    N_("Disable glide ratio ribbon.") },
+  { (unsigned)GlideRibbonType::LEFT, N_("Left"),
+    N_("Show glide ratio ribbon left of map") },
+  { (unsigned)GlideRibbonType::RIGHT, N_("Right"),
+    N_("how glide ratio ribbon right of map") },
   nullptr
 };
 
@@ -182,6 +204,19 @@ GaugesConfigPanel::Prepare(ContainerWindow &parent,
              ui_settings.traffic.no_position_target_distance_ring);
 
   SetExpertRow(EnableVarioBar);
+
+  AddEnum(_("Navigation Ribbon"),
+             _("Display a navigation ribbob. This includes the next turnpoint name and distance as wel as the task distance remaining. The blue marker indicates the direction and bearing change required to resume track."),
+             nav_ribbon_type_list,
+             (unsigned)map_settings.nav_ribbon_mode,
+             this);
+
+  AddEnum(_("Glide Ratio Ribbon"),
+             _("Displays a glide ration ribbon. The required GR is indicated by a horizontal black line. The GR achieved since the last thermal is indicated by a marker on the left of the ribbon. The current GR is indicated by a marker on the right on the ribbon. When the achieved GR is better than required, the indicated will show in gren, otherwise, in red"),
+             glide_ribbon_type_list,
+             (unsigned)map_settings.glide_ribbon_mode,
+             this);
+
 }
 
 bool
@@ -217,10 +252,23 @@ GaugesConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(EnableVarioBar, ProfileKeys::EnableVarioBar,
                        map_settings.vario_bar_enabled);
 
+  bool ribbon_geometry_changed = false;
+  ribbon_geometry_changed |= SaveValueEnum(EnableNavRibbon, 
+                                          ProfileKeys::EnableNavRibbon,
+                                          map_settings.nav_ribbon_mode);
+
+  ribbon_geometry_changed |= SaveValueEnum(EnableGlideRibbon, 
+                                          ProfileKeys::EnableGlideRibbon,
+                                          map_settings.glide_ribbon_mode);
+
+  changed |= ribbon_geometry_changed;
   changed |= SaveValue(NoPositionTargetDistanceRing, ProfileKeys::NoPositionTargetDistanceRing,
                        ui_settings.traffic.no_position_target_distance_ring);
 
   _changed |= changed;
+
+  if (ribbon_geometry_changed)
+    CommonInterface::main_window->ReinitialiseLayout();
 
   return true;
 }

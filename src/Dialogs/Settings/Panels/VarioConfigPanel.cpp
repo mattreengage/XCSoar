@@ -5,7 +5,10 @@
 #include "Profile/Keys.hpp"
 #include "Language/Language.hpp"
 #include "Interface.hpp"
+#include "MainWindow.hpp"
 #include "Widget/RowFormWidget.hpp"
+#include "Form/DataField/Enum.hpp"
+#include "Form/DataField/Listener.hpp"
 #include "UIGlobals.hpp"
 
 enum ControlIndex {
@@ -17,8 +20,39 @@ enum ControlIndex {
   AppGaugeVarioGross,
   AppAveNeedle,
   AppAveThermalNeedle,
+  AppGaugeVarioAlternate,
+  AppGaugeVarioRange,
 };
 
+static constexpr StaticEnumChoice vario_range_ms[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("2.5 m/s"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("5 m/s"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("10 m/s"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
+
+static constexpr StaticEnumChoice vario_range_kt[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("5 knots"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("10 knots"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("20 knots"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
+
+static constexpr StaticEnumChoice vario_range_ft[] = {
+  { (unsigned)VarioRange::RANGE_LOW, N_("500 fpm"),
+    N_("Disable navigation ribbon.") },
+  { (unsigned)VarioRange::RANGE_NORMAL, N_("1000 fpm"),
+    N_("Show navigation ribbon above map") },
+  { (unsigned)VarioRange::RANGE_HIGH, N_("2000 fpm"),
+    N_("how navigation ribbon below map") },
+  { 0 }
+};
 
 class VarioConfigPanel final : public RowFormWidget {
 public:
@@ -35,6 +69,7 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
                           const PixelRect &rc) noexcept
 {
   const VarioSettings &settings = CommonInterface::GetUISettings().vario;
+  const UnitSetting &units = CommonInterface::GetUISettings().format.units;
 
   RowFormWidget::Prepare(parent, rc);
 
@@ -75,14 +110,40 @@ VarioConfigPanel::Prepare(ContainerWindow &parent,
                "average net value."),
              settings.show_thermal_average_needle);
   SetExpertRow(AppAveThermalNeedle);
+
+  AddBoolean(_("Use Alternate Vario"),
+             _("If true, the vario gauge will use a dynamic vario display. "
+               "The face is dynamically rendered and offers a changeable scale "
+               "but requires a fast device to run on"),
+             settings.show_alt_vario);
+  SetExpertRow(AppGaugeVarioAlternate);
+
+  AddEnum(_("Vario Range"),
+             _("Maximum range for the alternate vario display"),
+                (units.vertical_speed_unit == Unit::METER_PER_SECOND) ? vario_range_ms :
+                (units.vertical_speed_unit == Unit::KNOTS) ? vario_range_kt :
+                vario_range_ft,
+             (unsigned)settings.vario_range);
+  SetExpertRow(AppGaugeVarioRange);
 }
 
 bool
 VarioConfigPanel::Save(bool &_changed) noexcept
 {
   bool changed = false;
+  bool range_changed = false;;
+  bool type_changed = false;;
 
   VarioSettings &settings = CommonInterface::SetUISettings().vario;
+
+  range_changed |= SaveValueEnum(AppGaugeVarioRange,
+                           ProfileKeys::AppGaugeVarioRange,
+                           settings.vario_range);
+  changed |= range_changed;
+
+  type_changed |= SaveValue(AppGaugeVarioAlternate, ProfileKeys::AppGaugeVarioAlternate, settings.show_alt_vario);
+
+  changed |= type_changed;
 
   changed |= SaveValue(AppGaugeVarioSpeedToFly, ProfileKeys::AppGaugeVarioSpeedToFly, settings.show_speed_to_fly);
 
@@ -101,6 +162,18 @@ VarioConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(AppAveThermalNeedle, ProfileKeys::AppAveThermalNeedle, settings.show_thermal_average_needle);
 
   _changed |= changed;
+
+
+  if (range_changed)
+  {
+    ComputerSettings &comp = CommonInterface::SetComputerSettings();
+    comp.vario_range = settings.vario_range;
+  }
+
+  /* Need a good way to re-initialise the vario if the type changes
+  if (type_changed)
+    CommonInterface::main_window->ResetVario();
+    */
 
   return true;
 }

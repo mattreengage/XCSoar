@@ -218,6 +218,7 @@ PageLayoutEditWidget::Prepare([[maybe_unused]] ContainerWindow &parent, [[maybe_
   static constexpr StaticEnumChoice bottom_list[] = {
     { PageLayout::Bottom::NOTHING, N_("Nothing") },
     { PageLayout::Bottom::CROSS_SECTION, N_("Cross section") },
+    { PageLayout::Bottom::FLARM_RADAR, N_("FLARM radar") },
     nullptr
   };
   AddEnum(_("Bottom area"),
@@ -386,6 +387,10 @@ PageListWidget::OnPaintItem(Canvas &canvas, const PixelRect rc,
 
   case PageLayout::Bottom::CROSS_SECTION:
     buffer.AppendFormat(_T(", %s"), _("Cross section"));
+    break;
+
+  case PageLayout::Bottom::FLARM_RADAR:
+    buffer.AppendFormat(_T(", %s"), _("Flarm Radar"));
     break;
 
   case PageLayout::Bottom::MAX:

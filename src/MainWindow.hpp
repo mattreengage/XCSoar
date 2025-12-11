@@ -65,6 +65,10 @@ class MainWindow : public UI::SingleWindow {
 
   ManagedWidget vario{*this};
 
+  ManagedWidget glide{*this};
+
+  ManagedWidget nav{*this};
+
   ManagedWidget traffic_gauge{*this};
   bool suppress_traffic_gauge = false, force_traffic_gauge = false;
 
@@ -202,6 +206,10 @@ private:
    * Adjust vario
    */
   void ReinitialiseLayout_vario(const InfoBoxLayout::Layout &layout) noexcept;
+
+  void ReinitialiseLayout_glide(const InfoBoxLayout::Layout &layout);
+
+  void ReinitialiseLayout_nav(const InfoBoxLayout::Layout &layout);
 
   void ReinitialiseLayoutTA(PixelRect rc,
                             const InfoBoxLayout::Layout &layout) noexcept;
@@ -363,6 +371,7 @@ public:
   bool IsMenuButtonEnabled(unsigned idx) noexcept;
 
   void UpdateGaugeVisibility() noexcept;
+  void UpdateRibbonVisibility() noexcept;
 
   [[gnu::pure]]
   const MapWindowProjection &GetProjection() const noexcept;

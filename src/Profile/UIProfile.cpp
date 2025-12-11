@@ -39,6 +39,7 @@ Profile::Load(const ProfileMap &map, FormatSettings &settings)
 void
 Profile::Load(const ProfileMap &map, VarioSettings &settings)
 {
+  map.GetEnum(ProfileKeys::AppGaugeVarioRange, settings.vario_range);
   map.Get(ProfileKeys::AppGaugeVarioSpeedToFly, settings.show_speed_to_fly);
   map.Get(ProfileKeys::AppGaugeVarioAvgText, settings.show_average);
   map.Get(ProfileKeys::AppGaugeVarioMc, settings.show_mc);
@@ -47,6 +48,7 @@ Profile::Load(const ProfileMap &map, VarioSettings &settings)
   map.Get(ProfileKeys::AppGaugeVarioGross, settings.show_gross);
   map.Get(ProfileKeys::AppAveNeedle, settings.show_average_needle);
   map.Get(ProfileKeys::AppAveThermalNeedle, settings.show_thermal_average_needle);
+  map.Get(ProfileKeys::AppGaugeVarioAlternate, settings.show_alt_vario);
 }
 
 void

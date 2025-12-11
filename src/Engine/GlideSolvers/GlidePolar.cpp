@@ -223,6 +223,8 @@ GlidePolar::UpdateSMin() noexcept
 
   Vmin = std::min(Vmax, -0.5 * polar.b / polar.a);
   Smin = SinkRate(Vmin);
+  TSmin = Smin * THERMAL_SINK_FACTOR;
+
 #endif
 
   UpdateBestLD();

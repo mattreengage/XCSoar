@@ -12,6 +12,8 @@
 #include "Pan.hpp"
 #include "UIGlobals.hpp"
 #include "MapWindow/GlueMapWindow.hpp"
+#include "Gauge/BigTrafficWidget.hpp"
+#include "FLARM/Glue.hpp"
 #include "Components.hpp"
 
 #if defined(ENABLE_SDL) && defined(main)
@@ -206,6 +208,11 @@ LoadBottom(PageLayout::Bottom bottom)
 
   case PageLayout::Bottom::CROSS_SECTION:
     CommonInterface::main_window->SetBottomWidget(new CrossSectionWidget(*data_components));
+    break;
+
+  case PageLayout::Bottom::FLARM_RADAR:
+    LoadFlarmDatabases();
+    CommonInterface::main_window->SetBottomWidget(new TrafficWidget());
     break;
 
   case PageLayout::Bottom::CUSTOM:

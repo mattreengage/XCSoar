@@ -7,6 +7,9 @@
 #include "GestureLook.hpp"
 #include "TerminalLook.hpp"
 #include "VarioLook.hpp"
+#include "VarioAltLook.hpp"
+#include "GlideLook.hpp"
+#include "NavLook.hpp"
 #include "ChartLook.hpp"
 #include "ThermalBandLook.hpp"
 #include "TraceHistoryLook.hpp"
@@ -31,6 +34,9 @@ struct Look {
   GestureLook gesture;
   TerminalLook terminal;
   VarioLook vario;
+  VarioAltLook vario_alt;
+  GlideLook glide;
+  NavLook nav;
   ChartLook chart;
   ThermalBandLook thermal_band;
   TraceHistoryLook trace_history;

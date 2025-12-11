@@ -19,6 +19,9 @@
 #include "Gauge/GaugeFLARM.hpp"
 #include "Gauge/GaugeThermalAssistant.hpp"
 #include "Gauge/GlueGaugeVario.hpp"
+#include "Gauge/GlueGaugeVarioAlt.hpp"
+#include "Gauge/GlueGaugeGlide.hpp"
+#include "Gauge/GlueGaugeNav.hpp"
 #include "Form/Form.hpp"
 #include "Widget/Widget.hpp"
 #include "Look/GlobalFonts.hpp"
@@ -239,6 +242,11 @@ MainWindow::InitialiseConfigured()
   menu_bar = new MenuBar(*this, look->dialog.button);
 
   ReinitialiseLayout_vario(ib_layout);
+
+  ReinitialiseLayout_glide(ib_layout);
+
+  ReinitialiseLayout_nav(ib_layout);
+
   ReinitialiseLayoutTA(rc, ib_layout);
   ReinitialiseLayout_flarm(rc, ib_layout);
 
@@ -288,6 +296,8 @@ MainWindow::Deinitialise() noexcept
   show_zoom_out_button = nullptr;
 
   vario.Clear();
+  glide.Clear();
+  nav.Clear();
   traffic_gauge.Clear();
   thermal_assistant.Clear();
 
@@ -304,13 +314,51 @@ MainWindow::ReinitialiseLayout_vario(const InfoBoxLayout::Layout &layout) noexce
   }
 
   if (!vario.IsDefined())
-    vario.Set(new GlueGaugeVario(CommonInterface::GetLiveBlackboard(),
+  {
+    if (CommonInterface::GetUISettings().vario.show_alt_vario)
+      vario.Set(new GlueGaugeVarioAlt(CommonInterface::GetLiveBlackboard(),
+                                 look->vario_alt));
+    else
+      vario.Set(new GlueGaugeVario(CommonInterface::GetLiveBlackboard(),
                                  look->vario));
+  }
 
   vario.Move(layout.vario);
   vario.Show();
 
   // XXX vario->BringToTop();
+}
+
+void
+MainWindow::ReinitialiseLayout_glide(const InfoBoxLayout::Layout &layout)
+{
+  if (!layout.HasGlide()) {
+    glide.Clear();
+    return;
+  }
+
+  if (!glide.IsDefined())
+    glide.Set(new GlueGaugeGlide(CommonInterface::GetLiveBlackboard(),
+                                 look->glide));
+
+  glide.Move(layout.glide);
+  glide.Show();
+}
+
+void
+MainWindow::ReinitialiseLayout_nav(const InfoBoxLayout::Layout &layout)
+{
+  if (!layout.HasNav()) {
+    nav.Clear();
+    return;
+  }
+
+  if (!nav.IsDefined())
+    nav.Set(new GlueGaugeNav(CommonInterface::GetLiveBlackboard(),
+                                 look->nav));
+
+  nav.Move(layout.nav);
+  nav.Show();
 }
 
 void
@@ -411,6 +459,10 @@ MainWindow::ReinitialiseLayout() noexcept
   popup->UpdateLayout(map_rect);
 
   ReinitialiseLayout_vario(ib_layout);
+
+  ReinitialiseLayout_glide(ib_layout);
+
+  ReinitialiseLayout_nav(ib_layout);
 
   ReinitialiseLayout_flarm(rc, ib_layout);
 
@@ -1207,6 +1259,10 @@ MainWindow::UpdateVarioGaugeVisibility() noexcept
 
   vario.SetVisible(!full_screen &&
                    !CommonInterface::GetUIState().screen_blanked);
+  glide.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
+  nav.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
 }
 
 void
@@ -1214,6 +1270,18 @@ MainWindow::UpdateGaugeVisibility() noexcept
 {
   UpdateVarioGaugeVisibility();
   UpdateTrafficGaugeVisibility();
+  UpdateRibbonVisibility();
+}
+
+void
+MainWindow::UpdateRibbonVisibility() noexcept
+{
+  bool full_screen = GetFullScreen();
+
+  glide.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
+  nav.SetVisible(!full_screen &&
+                   !CommonInterface::GetUIState().screen_blanked);
 }
 
 void

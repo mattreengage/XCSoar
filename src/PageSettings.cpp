@@ -68,6 +68,7 @@ PageLayout::MakeTitle(const InfoBoxSettings &info_box_settings,
       break;
 
     case Bottom::CROSS_SECTION:
+    case Bottom::FLARM_RADAR:
       // TODO: better text and translate
       builder.Append(_T(", XS"));
       break;
