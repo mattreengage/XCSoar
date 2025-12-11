@@ -47,6 +47,9 @@ struct NavLook {
   unsigned middle;
 
   const TCHAR no_target_msg[22] = _T("No Navigation Target");
+  const TCHAR angle_30_text[3] = _T("30"); 
+  const TCHAR angle_60_text[3] = _T("60"); 
+  const TCHAR angle_90_text[3] = _T("90"); 
 
   void Initialise(bool inverse, bool colors);
 

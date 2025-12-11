@@ -114,30 +114,31 @@ GaugeNav::OnPaintBuffer(Canvas &canvas) noexcept
   if (basic.track_available && task_stats.task_valid &&
       vector_remaining.IsValid() && vector_remaining.distance > 10)
   {
-    // Draw 30 and 60 degree labels
-    const TCHAR angle_30[3] = _T("30"); 
-    const TCHAR angle_60[3] = _T("60"); 
-    const TCHAR angle_90[3] = _T("90"); 
+    // Draw 30 degree labels
     canvas.SetTextColor(look.alt_color);
     canvas.Select(look.alt_font);
-    tsize = canvas.CalcTextSize(angle_30);
+    tsize = canvas.CalcTextSize(look.angle_30_text);
     int offset = GetOffset(Angle::Degrees(30.0f));
     p = PixelPoint((int)look.middle + offset - (tsize.width / 2), rc.top + padding);
-    canvas.DrawText(p, angle_30);
+    canvas.DrawText(p, look.angle_30_text);
     p = PixelPoint((int)look.middle - offset - (tsize.width / 2), rc.top + padding);
-    canvas.DrawText(p, angle_30);
-    tsize = canvas.CalcTextSize(angle_60);
+    canvas.DrawText(p, look.angle_30_text);
+
+    // Draw 60 degree labels
+    tsize = canvas.CalcTextSize(look.angle_60_text);
     offset = GetOffset(Angle::Degrees(60.0f));
     p = PixelPoint((int)look.middle + offset - (tsize.width / 2), rc.top + padding);
-    canvas.DrawText(p, angle_60);
+    canvas.DrawText(p, look.angle_60_text);
     p = PixelPoint((int)look.middle - offset - (tsize.width / 2), rc.top + padding);
-    canvas.DrawText(p, angle_60);
-    tsize = canvas.CalcTextSize(angle_90);
+    canvas.DrawText(p, look.angle_60_text);
+
+    // Draw 90 degree labels
+    tsize = canvas.CalcTextSize(look.angle_90_text);
     offset = GetOffset(Angle::Degrees(90.0f));
     p = PixelPoint((int)look.middle + offset - tsize.width, rc.top + padding);
-    canvas.DrawText(p, angle_90);
+    canvas.DrawText(p, look.angle_90_text);
     p = PixelPoint((int)look.middle - offset, rc.top + padding);
-    canvas.DrawText(p, angle_90);
+    canvas.DrawText(p, look.angle_90_text);
 
     // Draw the marker arrow
     canvas.Select(look.goal_brush);
